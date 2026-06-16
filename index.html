@@ -382,7 +382,7 @@ function CalendarPage({ state, setState }) {
                 {/* hero normal */}
                 {heroNormal && (
                   <div style={{background:'var(--brand)',borderRadius:'16px',padding:'28px',display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'24px',color:'#fff'}}>
-                    <div style={{maxWidth:'440px'}}>
+                    <div style={{flex:'1 1 260px',minWidth:0,maxWidth:'440px'}}>
                       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11.5px',fontWeight:'500',letterSpacing:'.13em',textTransform:'uppercase',color:'#a9cde6'}}>Next deadline</div>
                       <h2 style={{fontSize:'24px',fontWeight:'700',letterSpacing:'-.02em',marginTop:'11px',lineHeight:'1.15'}}>{hero.title}</h2>
                       <p style={{fontSize:'14px',lineHeight:'1.55',color:'#cdddea',marginTop:'10px'}}>{hero.desc}</p>
