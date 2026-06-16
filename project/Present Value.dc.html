@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:#eef2f6;font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  ::selection{background:#d4e6f6}
+</style>
+</helmet>
+
+<div style="--bg:#f5f8fb;--sf:#ffffff;--line:#e6edf3;--line2:#eef2f7;--ink:#27384a;--mut:#76869a;--dim:#9aabbc;--brand:#2a4d62;--acc:#3f7cae;--accSoft:#e8f1fa;--accInk:#2e5f88;--accDot:#4f88b8;--good:#2f8a5b;--goodSoft:#e3f3ea;--warn:#c2843c;--warnSoft:#f6edd9;min-height:100vh;background:var(--bg);color:var(--ink);font-size:14px">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;padding:14px 28px;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:16px;flex:1 1 auto;min-width:0">
+      <div style="display:flex;align-items:center;gap:11px;flex-shrink:0">
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">₱</div>
+        <span style="font-weight:700;font-size:16.5px;letter-spacing:-.02em;color:var(--ink);white-space:nowrap">Present Value</span>
+      </div>
+      <nav style="display:flex;gap:2px;flex:0 1 auto;overflow-x:auto;min-width:0">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+          <button type="button" style="{{ n.style }}" onClick="{{ n.onClick }}">{{ n.label }}</button>
+        </sc-for>
+      </nav>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-shrink:0">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--accSoft);color:var(--accInk);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">M</div>
+    </div>
+  </header>
+
+  <!-- ===== CALENDAR PAGE ===== -->
+  <sc-if value="{{ isCalendar }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <!-- context bar -->
+    <div style="background:var(--sf);border-bottom:1px solid var(--line)">
+      <div style="max-width:1080px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="display:flex;gap:3px;background:#eef3f8;border:1px solid var(--line);border-radius:11px;padding:3px;overflow-x:auto;max-width:100%">
+            <sc-for list="{{ typeTabs }}" as="t" hint-placeholder-count="4">
+              <button type="button" style="{{ t.style }}" onClick="{{ t.onClick }}">{{ t.label }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ showRegime }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:3px;background:#eef3f8;border:1px solid var(--line);border-radius:11px;padding:3px;overflow-x:auto;max-width:100%">
+              <sc-for list="{{ regimeTabs }}" as="r" hint-placeholder-count="2">
+                <button type="button" style="{{ r.style }}" onClick="{{ r.onClick }}">{{ r.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--mut)">FY 2026</span>
+      </div>
+    </div>
+
+    <div style="max-width:1080px;margin:0 auto;padding:26px 28px 56px">
+      <!-- page heading + view toggle -->
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+        <div>
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">Your tax calendar</h1>
+          <p style="font-size:14px;color:var(--mut);margin-top:4px">{{ summaryLine }}</p>
+        </div>
+        <div style="display:flex;gap:3px;background:#eef3f8;border:1px solid var(--line);border-radius:11px;padding:3px;overflow-x:auto;max-width:100%">
+          <sc-for list="{{ viewTabs }}" as="v" hint-placeholder-count="3">
+            <button type="button" style="{{ v.style }}" onClick="{{ v.onClick }}">{{ v.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+        <!-- ===== MAIN COLUMN ===== -->
+        <div style="flex:1 1 440px;min-width:0">
+
+          <!-- FEED VIEW -->
+          <sc-if value="{{ isFeed }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <!-- HERO normal -->
+            <sc-if value="{{ heroNormal }}" hint-placeholder-val="{{ true }}">
+            <div style="background:var(--brand);border-radius:16px;padding:28px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;color:#fff">
+              <div style="max-width:440px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#a9cde6">Next deadline</div>
+                <h2 style="font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:11px;line-height:1.15">{{ hero.title }}</h2>
+                <p style="font-size:14px;line-height:1.55;color:#cdddea;margin-top:10px">{{ hero.desc }}</p>
+                <div style="display:flex;gap:8px;margin-top:16px">
+                  <span style="padding:5px 10px;border-radius:7px;background:rgba(255,255,255,.12);font-size:12px;font-weight:600;color:#e4eef6">{{ hero.form }}</span>
+                  <span style="padding:5px 10px;border-radius:7px;background:rgba(255,255,255,.12);font-size:12px;font-weight:600;color:#e4eef6">{{ hero.freq }}</span>
+                </div>
+                <button type="button" style="margin-top:20px;padding:11px 18px;border-radius:10px;border:none;background:#fff;color:var(--brand);font-family:inherit;font-weight:600;font-size:13.5px;cursor:pointer">Start preparing →</button>
+              </div>
+              <div style="text-align:right;flex-shrink:0;border-left:1px solid rgba(255,255,255,.14);padding-left:24px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:52px;font-weight:600;line-height:1;letter-spacing:-.02em">{{ hero.days }}</div>
+                <div style="font-size:12.5px;color:#a9cde6;margin-top:4px">days left</div>
+                <div style="margin-top:18px;font-size:14px;font-weight:600">{{ hero.dateLabel }}</div>
+                <div style="font-size:12px;color:#9bbdd6;margin-top:3px">{{ hero.shift }}</div>
+              </div>
+            </div>
+            </sc-if>
+
+            <!-- HERO special (employee) -->
+            <sc-if value="{{ heroSpecial }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--brand);border-radius:16px;padding:30px;color:#fff">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#a9cde6">Good news</div>
+              <h2 style="font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:11px;line-height:1.2;max-width:480px">{{ heroSpecialTitle }}</h2>
+              <p style="font-size:14.5px;line-height:1.6;color:#cdddea;margin-top:11px;max-width:520px">{{ heroSpecialDesc }}</p>
+            </div>
+            </sc-if>
+
+            <!-- DUE THIS MONTH -->
+            <sc-if value="{{ hasMonth }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin:28px 0 12px">
+                <h3 style="font-size:15px;font-weight:700;letter-spacing:-.01em">Due this month</h3>
+                <span style="font-size:13px;color:var(--mut)">{{ monthLabel }}</span>
+              </div>
+              <div style="border:1px solid var(--line);border-radius:13px;background:var(--sf);overflow:hidden">
+                <sc-for list="{{ monthItems }}" as="item" hint-placeholder-count="1">
+                  <div style="display:flex;align-items:center;gap:16px;padding:15px 18px;border-bottom:1px solid var(--line2)">
+                    <sc-if value="{{ item.isDated }}" hint-placeholder-val="{{ true }}">
+                      <div style="text-align:center;flex-shrink:0;width:44px"><div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--ink)">{{ item.dateTop }}</div><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)">{{ item.dateBot }}</div></div>
+                    </sc-if>
+                    <sc-if value="{{ item.isOngoing }}" hint-placeholder-val="{{ false }}">
+                      <div style="width:44px;flex-shrink:0;display:flex;justify-content:center"><span style="width:9px;height:9px;border-radius:50%;background:var(--dim)"></span></div>
+                    </sc-if>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;font-size:14.5px">{{ item.title }}</div>
+                      <div style="font-size:13px;color:var(--mut);margin-top:2px">{{ item.desc }}</div>
+                    </div>
+                    <sc-if value="{{ item.hasAmount }}" hint-placeholder-val="{{ true }}">
+                      <div style="text-align:right;flex-shrink:0"><div style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;color:var(--ink)">{{ item.amount }}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">estimate</div></div>
+                    </sc-if>
+                    <sc-if value="{{ item.hasTag }}" hint-placeholder-val="{{ false }}">
+                      <span style="{{ item.tagStyle }}">{{ item.tag }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+
+            <!-- COMING UP LATER -->
+            <sc-if value="{{ hasLater }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin:28px 0 12px">
+                <h3 style="font-size:15px;font-weight:700;letter-spacing:-.01em">Coming up later</h3>
+                <span style="font-size:13px;color:var(--mut)">rest of FY 2026–27</span>
+              </div>
+              <div style="border:1px solid var(--line);border-radius:13px;background:var(--sf);overflow:hidden">
+                <sc-for list="{{ laterItems }}" as="item" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:16px;padding:15px 18px;border-bottom:1px solid var(--line2)">
+                    <div style="text-align:center;flex-shrink:0;width:44px"><div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--ink)">{{ item.dateTop }}</div><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)">{{ item.dateBot }}</div></div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;font-size:14.5px">{{ item.title }}</div>
+                      <div style="font-size:13px;color:var(--mut);margin-top:2px">{{ item.desc }}</div>
+                    </div>
+                    <span style="{{ item.tagStyle }}">{{ item.tag }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+
+            <!-- ALWAYS-ON -->
+            <sc-if value="{{ hasAlways }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div style="margin:28px 0 12px"><h3 style="font-size:15px;font-weight:700;letter-spacing:-.01em">Always-on</h3></div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+                <sc-for list="{{ alwaysItems }}" as="item" hint-placeholder-count="2">
+                  <div style="border:1px solid var(--line);border-radius:13px;background:var(--sf);padding:16px 18px">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:var(--accDot)"></span><span style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">{{ item.tag }}</span></div>
+                    <div style="font-weight:600;font-size:14.5px;margin-top:9px">{{ item.title }}</div>
+                    <div style="font-size:13px;color:var(--mut);margin-top:3px">{{ item.desc }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+          </div>
+          </sc-if>
+
+          <!-- TIMELINE VIEW -->
+          <sc-if value="{{ isTimeline }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative;padding-left:8px">
+            <div style="position:absolute;left:14px;top:8px;bottom:8px;width:2px;background:var(--line)"></div>
+            <sc-for list="{{ timelineItems }}" as="item" hint-placeholder-count="5">
+              <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:14px;position:relative">
+                <span style="{{ item.dotStyle }}"></span>
+                <div style="flex:1;min-width:0;background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:14px 17px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                    <span style="{{ item.statusStyle }}">{{ item.status }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--mut)">{{ item.dateLabel }}</span>
+                  </div>
+                  <div style="font-weight:600;font-size:14.5px;margin-top:7px">{{ item.title }}</div>
+                  <div style="font-size:13px;color:var(--mut);margin-top:2px">{{ item.desc }}</div>
+                  <sc-if value="{{ item.hasForm }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:inline-block;margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accInk);background:var(--accSoft);padding:3px 8px;border-radius:6px">{{ item.form }}</span>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+
+          <!-- TABLE VIEW -->
+          <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid var(--line);border-radius:13px;background:var(--sf);overflow:hidden">
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+              <thead><tr style="background:#f3f7fb">
+                <th style="text-align:left;padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)">Date</th>
+                <th style="text-align:left;padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)">Obligation</th>
+                <th style="text-align:left;padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)">Form</th>
+                <th style="text-align:left;padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)">Type</th>
+                <th style="text-align:right;padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)">Est.</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ tableItems }}" as="item" hint-placeholder-count="6">
+                  <tr style="border-top:1px solid var(--line2)">
+                    <td style="padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink);white-space:nowrap">{{ item.dateLabel }}</td>
+                    <td style="padding:12px 16px;font-weight:600;color:var(--ink)">{{ item.title }}</td>
+                    <td style="padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--mut)">{{ item.form }}</td>
+                    <td style="padding:12px 16px;color:var(--mut)">{{ item.catLabel }}</td>
+                    <td style="padding:12px 16px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink)">{{ item.amount }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          </sc-if>
+        </div>
+
+        <!-- ===== RIGHT RAIL ===== -->
+        <div style="flex:1 1 300px;max-width:340px">
+          <sc-if value="{{ hasProgress }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid var(--line);border-radius:13px;background:var(--sf);padding:18px">
+            <div style="font-size:13px;font-weight:700;letter-spacing:-.01em">{{ progress.title }}</div>
+            <div style="height:6px;border-radius:3px;background:var(--line);margin:14px 0 16px;overflow:hidden"><div style="{{ progress.barStyle }}"></div></div>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <sc-for list="{{ progress.rows }}" as="row" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px"><span style="{{ row.markStyle }}">{{ row.mark }}</span><span style="{{ row.labelStyle }}">{{ row.label }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ hasSetAside }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid var(--line);border-radius:13px;background:var(--sf);padding:18px;margin-top:16px">
+            <div style="font-size:13px;font-weight:700;letter-spacing:-.01em">Set aside for tax</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:600;letter-spacing:-.01em;margin-top:9px">{{ setAside.amount }}</div>
+            <div style="font-size:12.5px;color:var(--mut);margin-top:4px">{{ setAside.basis }}</div>
+            <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--line2);font-size:12.5px;color:var(--mut);line-height:1.5">A running estimate — open the calculator for the exact figure.</div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ showRailNote }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid var(--line);border-radius:13px;background:var(--accSoft);padding:18px">
+            <div style="font-size:13px;font-weight:700;letter-spacing:-.01em;color:var(--accInk)">{{ railNoteTitle }}</div>
+            <div style="font-size:13px;color:var(--accInk);margin-top:7px;line-height:1.55;opacity:.85">{{ railNoteBody }}</div>
+          </div>
+          </sc-if>
+
+          <div style="border:1px solid var(--line);border-radius:13px;background:var(--sf);padding:16px 18px;margin-top:16px">
+            <div style="display:flex;align-items:center;gap:9px"><span style="width:7px;height:7px;border-radius:50%;background:var(--warn)"></span><span style="font-size:12px;font-weight:600;color:var(--mut)">Heads up</span></div>
+            <div style="font-size:12.5px;color:var(--mut);margin-top:8px;line-height:1.55">This is a reference tool, not formal tax advice. Verify dates and rates against the BIR before filing.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===== CALCULATOR PAGE ===== -->
+  <sc-if value="{{ isCalc }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1080px;margin:0 auto;padding:26px 28px 64px">
+    <div style="margin-bottom:20px">
+      <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">Which regime saves you the most?</h1>
+      <p style="font-size:14px;color:var(--mut);margin-top:4px">Enter your numbers once — compare 8%, graduated + OSD, and graduated + itemized, with the full math.</p>
+    </div>
+
+    <!-- inputs -->
+    <div style="border:1px solid var(--line);border-radius:14px;background:var(--sf);padding:22px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px">
+        <div>
+          <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">Gross sales / receipts · year</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:#fbfdff">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--mut)">₱</span>
+            <input type="text" inputmode="numeric" value="{{ grossStr }}" onInput="{{ onGross }}" style="border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;color:var(--ink);width:100%;min-width:0" />
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">Itemized expenses</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:#fbfdff">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--mut)">₱</span>
+            <input type="text" inputmode="numeric" value="{{ expensesStr }}" onInput="{{ onExpenses }}" style="border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:100%;min-width:0" />
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">Tax already withheld</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:#fbfdff">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--mut)">₱</span>
+            <input type="text" inputmode="numeric" value="{{ cwtStr }}" onInput="{{ onCwt }}" style="border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:100%;min-width:0" />
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+        <span style="padding:5px 11px;border-radius:7px;background:#eef3f8;font-size:12px;font-weight:600;color:var(--mut)">Self-Employed</span>
+        <span style="padding:5px 11px;border-radius:7px;background:#eef3f8;font-size:12px;font-weight:600;color:var(--mut)">Non-VAT</span>
+        <span style="padding:5px 11px;border-radius:7px;background:#eef3f8;font-size:12px;font-weight:600;color:var(--mut)">Pure professional</span>
+        <span style="padding:5px 11px;border-radius:7px;background:#eef3f8;font-size:12px;font-weight:600;color:var(--mut)">CWT credited to income tax</span>
+      </div>
+    </div>
+
+    <!-- over-VAT-threshold notice -->
+    <sc-if value="{{ overVat }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:16px;background:var(--warnSoft);border:1px solid #e7d3ad;border-radius:12px;padding:15px 18px;display:flex;align-items:flex-start;gap:12px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--warn);margin-top:6px;flex-shrink:0"></span>
+      <span style="font-size:13.5px;color:#7a5a1f;line-height:1.5">You're above the <b>₱3,000,000 VAT threshold</b>. The 8% and 3% percentage-tax options no longer apply — you must register for VAT (12%). The figures below cover <b>income tax only</b>; VAT is computed separately on your value added.</span>
+    </div>
+    </sc-if>
+
+    <!-- comparison cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px">
+      <sc-for list="{{ regimeCards }}" as="c" hint-placeholder-count="3">
+        <div style="{{ c.cardStyle }}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font-weight:700;font-size:14.5px">{{ c.name }}</span>
+            <sc-if value="{{ c.isBest }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:100px;background:var(--good);color:#fff">Lowest</span></sc-if>
+            <sc-if value="{{ c.disabled }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:100px;background:#eef3f8;color:var(--mut)">N/A</span></sc-if>
+          </div>
+          <div style="{{ c.totalStyle }}">{{ c.total }}</div>
+          <div style="font-size:12px;color:var(--mut);margin-top:3px">{{ c.subline }}</div>
+          <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--line2);display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12.5px;color:var(--mut)">Income tax</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;color:var(--ink)">{{ c.incomeTax }}</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12.5px;color:var(--mut)">Percentage tax</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;color:var(--ink)">{{ c.pctTax }}</span></div>
+          </div>
+          <div style="margin-top:12px;font-size:11.5px;color:var(--dim)">{{ c.form }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- recommendation -->
+    <div style="margin-top:16px;background:var(--brand);color:#fff;border-radius:13px;padding:17px 20px;display:flex;align-items:center;gap:13px">
+      <span style="width:26px;height:26px;border-radius:50%;background:var(--good);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">✓</span>
+      <span style="font-size:15px;font-weight:600;line-height:1.4">{{ recoText }}</span>
+    </div>
+
+    <!-- breakdown + form -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:20px;align-items:start">
+      <div style="border:1px solid var(--line);border-radius:14px;background:var(--sf);padding:22px">
+        <h3 style="font-size:15px;font-weight:700;letter-spacing:-.01em">How we got there — {{ bestName }}</h3>
+        <div style="margin-top:8px">
+          <sc-for list="{{ breakdownRows }}" as="row" hint-placeholder-count="6">
+            <div>
+              <div style="{{ row.rowStyle }}"><span style="{{ row.labelStyle }}">{{ row.label }}</span><span style="{{ row.valueStyle }}">{{ row.value }}</span></div>
+              <sc-if value="{{ row.hasSub }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--mut);margin-top:-3px;padding-bottom:6px;font-style:italic">{{ row.sub }}</div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--line);border-radius:14px;background:var(--sf);overflow:hidden">
+        <div style="background:#f3f7fb;border-bottom:1px solid var(--line);padding:15px 18px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)">Form preview</div>
+          <div style="font-weight:700;font-size:14.5px;margin-top:3px">{{ formTitle }}</div>
+        </div>
+        <div style="padding:6px 18px 16px">
+          <sc-for list="{{ formRows }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line2)">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);width:18px;flex-shrink:0">{{ f.no }}</span>
+              <span style="flex:1;font-size:13px;color:var(--mut)">{{ f.label }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;color:var(--ink)">{{ f.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===== FORMS PAGE ===== -->
+  <sc-if value="{{ isForms }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1080px;margin:0 auto;padding:26px 28px 64px">
+    <div style="margin-bottom:18px">
+      <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">BIR form reference</h1>
+      <p style="font-size:14px;color:var(--mut);margin-top:4px">Every form a freelancer is likely to meet, in plain language. Tap one for what it’s for, who files it, and the boxes that matter.</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:var(--sf);min-width:240px">
+        <span style="color:var(--dim);font-size:14px">⌕</span>
+        <input type="text" value="{{ formQueryVal }}" onInput="{{ onFormQuery }}" placeholder="Search forms…" style="border:none;outline:none;background:transparent;font-family:inherit;font-size:14px;color:var(--ink);width:100%;min-width:0" />
+      </div>
+      <div style="display:flex;gap:3px;background:#eef3f8;border:1px solid var(--line);border-radius:11px;padding:3px;flex-wrap:wrap">
+        <sc-for list="{{ catTabs }}" as="t" hint-placeholder-count="5">
+          <button type="button" style="{{ t.style }}" onClick="{{ t.onClick }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ formItems }}" as="f" hint-placeholder-count="6">
+        <div style="{{ f.cardStyle }}">
+          <div onClick="{{ f.onClick }}" style="display:flex;align-items:center;gap:16px;padding:16px 18px;cursor:pointer">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;color:var(--accInk);background:var(--accSoft);padding:6px 10px;border-radius:8px;white-space:nowrap;flex-shrink:0">{{ f.code }}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:14.5px">{{ f.name }}</div>
+              <div style="font-size:12.5px;color:var(--mut);margin-top:2px">{{ f.who }}</div>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mut);white-space:nowrap;flex-shrink:0">{{ f.when }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--dim);width:16px;text-align:center;flex-shrink:0">{{ f.chevron }}</span>
+          </div>
+          <sc-if value="{{ f.isOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:0 18px 18px;border-top:1px solid var(--line2)">
+            <p style="font-size:14px;line-height:1.6;color:var(--ink);margin-top:14px">{{ f.summary }}</p>
+            <sc-if value="{{ f.hasLines }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ f.lines }}" as="ln" hint-placeholder-count="3">
+                <div style="display:flex;gap:12px;align-items:baseline">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;color:var(--accInk);background:var(--accSoft);padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;min-width:56px;text-align:center">{{ ln.box }}</span>
+                  <span style="font-size:13.5px;color:var(--mut);line-height:1.5">{{ ln.desc }}</span>
+                </div>
+              </sc-for>
+            </div>
+            </sc-if>
+          </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===== TOOLS PAGE ===== -->
+  <sc-if value="{{ isTools }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1080px;margin:0 auto;padding:26px 28px 64px">
+    <div style="margin-bottom:20px">
+      <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">Tools &amp; calculators</h1>
+      <p style="font-size:14px;color:var(--mut);margin-top:4px">Quick utilities for the in-between moments — estimate a penalty, figure out withholding, or project where your year is heading.</p>
+    </div>
+
+    <!-- penalty -->
+    <div style="border:1px solid var(--line);border-radius:14px;background:var(--sf);padding:22px;margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:700;letter-spacing:-.01em">Late-filing penalty estimator</h3>
+      <p style="font-size:13.5px;color:var(--mut);margin-top:3px">Surcharge, interest and compromise penalty if you miss a deadline. EOPT gives micro &amp; small taxpayers reduced rates.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-top:18px;align-items:end">
+        <div>
+          <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">Basic tax due</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:#fbfdff"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--mut)">₱</span><input type="text" inputmode="numeric" value="{{ penDueVal }}" onInput="{{ onPenDue }}" style="border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:100%;min-width:0" /></div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">Days late</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:#fbfdff"><input type="text" inputmode="numeric" value="{{ penDaysVal }}" onInput="{{ onPenDays }}" style="border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:100%;min-width:0" /></div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">Taxpayer size</label>
+          <div style="display:flex;gap:3px;background:#eef3f8;border:1px solid var(--line);border-radius:11px;padding:3px;margin-top:8px">
+            <sc-for list="{{ eoptTabs }}" as="t" hint-placeholder-count="2"><button type="button" style="{{ t.style }}" onClick="{{ t.onClick }}">{{ t.label }}</button></sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:18px;border-top:1px solid var(--line2);padding-top:6px">
+        <sc-for list="{{ penRows }}" as="row" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0"><span style="font-size:13.5px;color:var(--mut)">{{ row.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:500;color:var(--ink)">{{ row.value }}</span></div>
+        </sc-for>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 2px;border-top:1px solid var(--line);margin-top:4px"><span style="font-size:14px;font-weight:700;color:var(--ink)">Estimated total to pay</span><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:var(--accInk)">{{ penTotal }}</span></div>
+      </div>
+    </div>
+
+    <!-- withholding + ytd -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+      <div style="border:1px solid var(--line);border-radius:14px;background:var(--sf);padding:22px">
+        <h3 style="font-size:16px;font-weight:700;letter-spacing:-.01em">Compensation withholding</h3>
+        <p style="font-size:13.5px;color:var(--mut);margin-top:3px">Monthly tax to withhold from an employee’s taxable pay (TRAIN table).</p>
+        <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin-top:18px">Monthly taxable pay</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:#fbfdff"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--mut)">₱</span><input type="text" inputmode="numeric" value="{{ whCompVal }}" onInput="{{ onWhComp }}" style="border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:100%;min-width:0" /></div>
+        <div style="margin-top:18px;background:var(--accSoft);border-radius:11px;padding:16px">
+          <div style="font-size:12px;color:var(--accInk);font-weight:600">Tax to withhold each month</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;color:var(--accInk);margin-top:5px">{{ whTax }}</div>
+          <div style="font-size:12.5px;color:var(--accInk);opacity:.8;margin-top:3px">Effective rate {{ whRate }}</div>
+        </div>
+      </div>
+      <div style="border:1px solid var(--line);border-radius:14px;background:var(--sf);padding:22px">
+        <h3 style="font-size:16px;font-weight:700;letter-spacing:-.01em">Year-to-date projector</h3>
+        <p style="font-size:13.5px;color:var(--mut);margin-top:3px">Where your annual income and 8% tax are heading.</p>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-top:18px">
+          <div>
+            <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">Gross so far</label>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:#fbfdff"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--mut)">₱</span><input type="text" inputmode="numeric" value="{{ ytdGrossVal }}" onInput="{{ onYtdGross }}" style="border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:100%;min-width:0" /></div>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)">Months in</label>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 13px;background:#fbfdff"><input type="text" inputmode="numeric" value="{{ ytdMonthsVal }}" onInput="{{ onYtdMonths }}" style="border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:100%;min-width:0" /></div>
+          </div>
+        </div>
+        <div style="margin-top:18px;display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13.5px;color:var(--mut)">Projected annual income</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--ink)">{{ ytdAnnual }}</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13.5px;color:var(--mut)">Estimated 8% tax</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--ink)">{{ ytdTax }}</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line2);padding-top:9px"><span style="font-size:13.5px;font-weight:600;color:var(--ink)">Set aside / month</span><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--accInk)">{{ ytdMonthly }}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===== BLOG PAGE ===== -->
+  <sc-if value="{{ isBlog }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <!-- index -->
+    <sc-if value="{{ blogIndex }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width:1080px;margin:0 auto;padding:34px 28px 64px">
+      <div style="margin-bottom:26px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--acc)">The Present Value Journal</div>
+        <h1 style="font-size:30px;font-weight:800;letter-spacing:-.025em;margin-top:10px">Plain-language tax, for people who’d rather be working</h1>
+      </div>
+      <!-- featured -->
+      <div onClick="{{ featured.onClick }}" style="border:1px solid var(--line);border-radius:16px;background:var(--sf);overflow:hidden;cursor:pointer;display:flex;flex-wrap:wrap">
+        <div style="flex:1 1 200px;background:var(--brand);padding:28px;display:flex;flex-direction:column;justify-content:space-between;gap:22px">
+          <span style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#a9cde6">{{ featured.cat }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#cdddea">{{ featured.meta }}</span>
+        </div>
+        <div style="flex:2.4 1 300px;padding:28px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--acc)">Featured</div>
+          <h2 style="font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-top:10px">{{ featured.title }}</h2>
+          <p style="font-size:14.5px;color:var(--mut);line-height:1.6;margin-top:11px">{{ featured.excerpt }}</p>
+          <div style="margin-top:16px;font-size:13.5px;font-weight:600;color:var(--accInk)">Read article →</div>
+        </div>
+      </div>
+      <!-- list -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:18px">
+        <sc-for list="{{ posts }}" as="p" hint-placeholder-count="3">
+          <div onClick="{{ p.onClick }}" style="border:1px solid var(--line);border-radius:14px;background:var(--sf);padding:20px;cursor:pointer;display:flex;flex-direction:column">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--acc)">{{ p.cat }}</span>
+            <h3 style="font-size:16.5px;font-weight:700;letter-spacing:-.015em;line-height:1.25;margin-top:10px">{{ p.title }}</h3>
+            <p style="font-size:13.5px;color:var(--mut);line-height:1.55;margin-top:9px;flex:1">{{ p.excerpt }}</p>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim);margin-top:14px">{{ p.meta }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- article -->
+    <sc-if value="{{ articleView }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:680px;margin:0 auto;padding:30px 28px 72px">
+      <button type="button" onClick="{{ onBack }}" style="border:none;background:transparent;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--mut);cursor:pointer;padding:0;margin-bottom:24px">← All articles</button>
+      <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--acc)">{{ article.cat }}</div>
+      <h1 style="font-size:32px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-top:12px">{{ article.title }}</h1>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--mut);margin-top:14px;padding-bottom:24px;border-bottom:1px solid var(--line)">{{ article.meta }}</div>
+      <div style="margin-top:8px">
+        <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="6">
+          <div>
+            <sc-if value="{{ b.isP }}" hint-placeholder-val="{{ true }}"><p style="font-size:17px;line-height:1.7;color:#34465a;margin-top:20px">{{ b.text }}</p></sc-if>
+            <sc-if value="{{ b.isH }}" hint-placeholder-val="{{ false }}"><h2 style="font-size:20px;font-weight:700;letter-spacing:-.015em;color:var(--ink);margin-top:32px">{{ b.text }}</h2></sc-if>
+            <sc-if value="{{ b.isQuote }}" hint-placeholder-val="{{ false }}"><blockquote style="margin-top:24px;padding:4px 0 4px 22px;border-left:3px solid var(--acc);font-size:19px;line-height:1.5;font-weight:500;color:var(--brand)">{{ b.text }}</blockquote></sc-if>
+            <sc-if value="{{ b.isList }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:18px;display:flex;flex-direction:column;gap:11px">
+              <sc-for list="{{ b.items }}" as="li" hint-placeholder-count="4">
+                <div style="display:flex;gap:13px;align-items:baseline"><span style="width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0;margin-top:8px"></span><span style="font-size:16.5px;line-height:1.6;color:#34465a">{{ li.text }}</span></div>
+              </sc-for>
+            </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { type:'se', regime:'8pct', view:'feed', page:'calendar', gross:480000, expenses:180000, cwt:0, formQuery:'', formCat:'all', openForm:'1701Q', penDue:50000, penDays:60, penEopt:true, whComp:50000, ytdGross:240000, ytdMonths:6, blogPost:null };
+
+  get TODAY(){ return new Date(2026,5,16); }
+
+  TYPES = {
+    se:{ name:'Self-Employed', vat:'Non-VAT', regimes:[{key:'8pct',label:'8% income tax'},{key:'grad',label:'Graduated + 3%'}] },
+    mi:{ name:'Mixed Income', vat:'Non-VAT', regimes:[{key:'8pct',label:'8% on business'},{key:'grad',label:'Graduated + 3%'}] },
+    corp:{ name:'Corporation', vat:'VAT-registered', regimes:[{key:'reg',label:'Regular CIT'}] },
+    emp:{ name:'Employee', vat:'—', regimes:[{key:'comp',label:'Compensation only'}] },
+  };
+
+  OB = [
+    {id:'se_q2', t:'File & pay Q2 income tax', d:'Your quarterly income tax on earnings above the ₱250,000 yearly allowance.', form:'1701Q', freq:'Quarterly', cat:'income', kind:'dated', date:'2026-08-17', shift:'moved from Aug 15 (Sat)', amt:18400, types:['se','mi'], reg:['8pct','grad']},
+    {id:'se_q3', t:'File & pay Q3 income tax', d:'Third-quarter income tax installment.', form:'1701Q', freq:'Quarterly', cat:'income', kind:'dated', date:'2026-11-16', shift:'moved from Nov 15 (Sun)', amt:null, types:['se','mi'], reg:['8pct','grad']},
+    {id:'se_ann', t:'File annual income tax return', d:'Your year-end return reconciling all four quarters.', form:'1701A', freq:'Annual', cat:'income', kind:'dated', date:'2027-04-15', shift:null, amt:null, types:['se','mi'], reg:['8pct','grad']},
+    {id:'se_pt2', t:'File & pay percentage tax (Q2)', d:'3% of your gross receipts for the quarter — graduated filers only.', form:'2551Q', freq:'Quarterly', cat:'biz', kind:'dated', date:'2026-07-25', shift:null, amt:null, types:['se','mi'], reg:['grad']},
+    {id:'se_pt3', t:'File & pay percentage tax (Q3)', d:'3% of your gross receipts for the quarter.', form:'2551Q', freq:'Quarterly', cat:'biz', kind:'dated', date:'2026-10-26', shift:'moved from Oct 25 (Sun)', amt:null, types:['se','mi'], reg:['grad']},
+    {id:'contrib', t:'Pay SSS, PhilHealth & Pag-IBIG', d:'Due end of month for the prior month. As a freelancer you cover both shares.', form:'Agency', freq:'Monthly', cat:'contrib', kind:'monthly', amt:2640, types:['se','mi'], reg:'all'},
+    {id:'inv', t:'Issue BIR-registered invoices', d:'For every sale or receipt — no minimum amount.', form:null, freq:'Ongoing', cat:'admin', kind:'ongoing', types:['se','mi'], reg:'all'},
+    {id:'books', t:'Keep your books of accounts updated', d:'Record income and expenses as they happen.', form:null, freq:'Ongoing', cat:'admin', kind:'ongoing', types:['se','mi'], reg:'all'},
+
+    {id:'c_vat', t:'File & pay quarterly VAT', d:'Output VAT less your input VAT for the quarter.', form:'2550Q', freq:'Quarterly', cat:'biz', kind:'dated', date:'2026-07-27', shift:'moved from Jul 25 (Sat)', amt:null, types:['corp'], reg:'all'},
+    {id:'c_q2', t:'File quarterly income tax', d:'Second-quarter corporate income tax.', form:'1702Q', freq:'Quarterly', cat:'income', kind:'dated', date:'2026-08-29', shift:null, amt:null, types:['corp'], reg:'all'},
+    {id:'c_comp', t:'Remit withholding on compensation', d:'Tax withheld from your employees’ salaries.', form:'1601-C', freq:'Monthly', cat:'wh', kind:'monthly', amt:null, types:['corp'], reg:'all'},
+    {id:'c_exp', t:'Remit expanded withholding', d:'Creditable tax withheld from your suppliers.', form:'0619-E', freq:'Monthly', cat:'wh', kind:'monthly', amt:null, types:['corp'], reg:'all'},
+    {id:'c_ann', t:'File annual income tax return', d:'Year-end corporate return.', form:'1702-RT', freq:'Annual', cat:'income', kind:'dated', date:'2027-04-15', shift:null, amt:null, types:['corp'], reg:'all'},
+    {id:'c_books', t:'Keep books & issue invoices', d:'Maintain registered books and issue invoices for all sales.', form:null, freq:'Ongoing', cat:'admin', kind:'ongoing', types:['corp'], reg:'all'},
+
+    {id:'e_2316', t:'Get BIR Form 2316 from your employer', d:'Your employer files for you and hands you a stamped copy by Jan 31.', form:'2316', freq:'Annual', cat:'income', kind:'dated', date:'2027-01-31', shift:null, amt:null, types:['emp'], reg:'all'},
+    {id:'e_sub', t:'You likely don’t need to file', d:'With a single employer, substituted filing covers your return.', form:null, freq:'Ongoing', cat:'admin', kind:'ongoing', types:['emp'], reg:'all'},
+    {id:'e_upd', t:'Keep your BIR records current', d:'Use Form 1905 if you change employer, RDO, or civil status.', form:'1905', freq:'As needed', cat:'admin', kind:'ongoing', types:['emp'], reg:'all'},
+  ];
+
+  CATLABEL = { income:'Income tax', biz:'Business tax', wh:'Withholding', contrib:'Contributions', admin:'Admin' };
+
+  parse(s){ const p=s.split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+  days(d){ return Math.round((d - this.TODAY)/86400000); }
+  fmtDate(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  mShort(d){ return d.toLocaleDateString('en-US',{month:'short'}).toUpperCase(); }
+  money(n){ return '₱'+Math.round(n).toLocaleString('en-US'); }
+  endOfMonth(){ const t=this.TODAY; return new Date(t.getFullYear(), t.getMonth()+1, 0); }
+
+  // ===== TAX MATH (TRAIN, 2023+) =====
+  gradTax(n){
+    if(n<=250000) return 0;
+    if(n<=400000) return (n-250000)*0.15;
+    if(n<=800000) return 22500+(n-400000)*0.20;
+    if(n<=2000000) return 102500+(n-800000)*0.25;
+    if(n<=8000000) return 402500+(n-2000000)*0.30;
+    return 2202500+(n-8000000)*0.35;
+  }
+  setNum(key,e){ const v=parseInt(String(e.target.value).replace(/[^0-9]/g,''))||0; this.setState({[key]:v}); }
+
+  computeCalc(){
+    const gross=this.state.gross, expenses=this.state.expenses, cwt=this.state.cwt;
+    const m=n=>this.money(n);
+    const vat=gross>3000000;
+    const elig8=!vat;
+    const base8=Math.max(0,gross-250000), tax8=base8*0.08;
+    const pct=vat?0:gross*0.03;
+    const osdDed=gross*0.40, osdNet=gross-osdDed, osdInc=this.gradTax(osdNet), osdTot=osdInc+pct;
+    const itemNet=Math.max(0,gross-expenses), itemInc=this.gradTax(itemNet), itemTot=itemInc+pct;
+
+    const cards=[
+      {key:'8pct', name:'8% flat tax', eligible:elig8, income:tax8, pct:0, total:tax8, form:'Files: 1701Q + 1701A'},
+      {key:'osd', name:'Graduated + OSD', eligible:true, income:osdInc, pct, total:osdTot, form:'Files: 1701A + 2551Q'},
+      {key:'item', name:'Graduated + itemized', eligible:true, income:itemInc, pct, total:itemTot, form:'Files: 1701 + 2551Q'},
+    ];
+    const eligible=cards.filter(c=>c.eligible);
+    const bestTotal=Math.min(...eligible.map(c=>c.total));
+    const best=eligible.find(c=>c.total===bestTotal);
+    const others=eligible.filter(c=>c!==best).map(c=>c.total).sort((a,b)=>a-b);
+    const nextTotal=others.length?others[0]:null;
+
+    const regimeCards=cards.map(c=>{
+      const isBest=c.eligible && c===best;
+      let cardStyle='border-radius:13px;padding:18px;';
+      if(!c.eligible) cardStyle+='border:1.5px solid var(--line);background:var(--sf);opacity:.6';
+      else if(isBest) cardStyle+='border:1.5px solid var(--acc);background:var(--accSoft)';
+      else cardStyle+='border:1.5px solid var(--line);background:var(--sf)';
+      return {
+        name:c.name, cardStyle, isBest, disabled:!c.eligible,
+        total:c.eligible?m(c.total):'—',
+        totalStyle:"font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-.01em;margin-top:10px;color:"+(isBest?'var(--accInk)':'var(--ink)'),
+        subline:c.eligible?'estimated annual tax':'Over ₱3M — VAT instead',
+        incomeTax:c.eligible?m(c.income):'—',
+        pctTax:c.eligible?(vat?'VAT 12%':(c.pct>0?m(c.pct):'₱0')):'—',
+        form:c.form,
+      };
+    });
+
+    const r=(label,value,o)=>Object.assign({label,value,strong:false,rule:false,sub:''},o||{});
+    let rows;
+    if(best.key==='8pct'){
+      rows=[ r('Gross sales / receipts',m(gross)), r('Less: annual allowance','('+m(250000)+')'), r('Taxable base',m(base8),{rule:true}), r('Income tax @ 8%',m(tax8),{strong:true}), r('Percentage tax','₱0',{sub:'The 8% rate is in lieu of the 3% percentage tax'}) ];
+    } else if(best.key==='osd'){
+      rows=[ r('Gross sales / receipts',m(gross)), r('Less: OSD (40% of gross)','('+m(osdDed)+')'), r('Net taxable income',m(osdNet),{rule:true}), r('Graduated income tax',m(osdInc),{strong:true}) ];
+      rows.push(vat ? r('Business tax','VAT 12%',{sub:'Above ₱3M you register for VAT — computed separately on value added.'}) : r('Percentage tax (3% of gross)',m(pct),{strong:true}));
+    } else {
+      rows=[ r('Gross sales / receipts',m(gross)), r('Less: itemized expenses','('+m(expenses)+')'), r('Net taxable income',m(itemNet),{rule:true}), r('Graduated income tax',m(itemInc),{strong:true}) ];
+      rows.push(vat ? r('Business tax','VAT 12%',{sub:'Above ₱3M you register for VAT — computed separately on value added.'}) : r('Percentage tax (3% of gross)',m(pct),{strong:true}));
+    }
+    rows.push(r('Total annual tax',m(best.total),{strong:true,rule:true}));
+    if(cwt>0){ rows.push(r('Less: tax already withheld','('+m(cwt)+')')); rows.push(r('Tax still payable',m(Math.max(0,best.total-cwt)),{strong:true})); }
+
+    const breakdownRows=rows.map(x=>({
+      label:x.label, value:x.value,
+      rowStyle:'display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:9px 0;'+(x.rule?'border-top:1px solid var(--line);margin-top:2px;':''),
+      labelStyle:'font-size:13.5px;color:'+(x.strong?'var(--ink)':'var(--mut)')+';font-weight:'+(x.strong?'600':'400'),
+      valueStyle:"font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);font-weight:"+(x.strong?'700':'500'),
+      hasSub:!!x.sub, sub:x.sub,
+    }));
+
+    let recoText;
+    if(nextTotal!=null){ const save=Math.round(nextTotal-best.total); recoText=best.name+' is your cheapest option at '+m(best.total)+(save>0?' — saving '+m(save)+' versus the next best.':' (tied with another option).'); }
+    else recoText=best.name+' applies at '+m(best.total)+'.';
+
+    const taxableBase=best.key==='8pct'?base8:(best.key==='osd'?osdNet:itemNet);
+    const formRows=[
+      {no:'19', label:'Net taxable income', value:m(taxableBase)},
+      {no:'20', label:'Income tax due', value:m(best.income)},
+      {no:'—', label:vat?'Business tax (VAT)':'Percentage tax (2551Q)', value:vat?'VAT 12%':(best.pct>0?m(best.pct):'—')},
+      {no:'26', label:'Total tax payable'+(cwt>0?' (net of CWT)':''), value:m(Math.max(0,best.total-cwt))},
+    ];
+    const formTitle=best.key==='item'?'BIR Form 1701':'BIR Form 1701A';
+
+    return {
+      grossStr:gross.toLocaleString('en-US'), expensesStr:expenses.toLocaleString('en-US'), cwtStr:cwt.toLocaleString('en-US'),
+      onGross:e=>this.setNum('gross',e), onExpenses:e=>this.setNum('expenses',e), onCwt:e=>this.setNum('cwt',e),
+      regimeCards, recoText, breakdownRows, bestName:best.name, formTitle, formRows, overVat:vat,
+    };
+  }
+
+  // ===== FORMS =====
+  FORMS = [
+    {code:'1701Q', name:'Quarterly Income Tax Return', cat:'income', who:'Self-employed, professionals & mixed-income earners', when:'May 15 · Aug 15 · Nov 15', summary:'Your income tax, paid three times a year and cumulatively. Each quarter you total your income since January, compute the tax, and subtract what you already paid in earlier quarters.', lines:[{box:'Part II', desc:'Choose 8% or graduated — it must match what you elected for the year.'},{box:'Sch 1', desc:'Cumulative gross sales / receipts for the quarter.'},{box:'Item 47', desc:'Tax still due after prior payments and creditable withholding.'}]},
+    {code:'1701A', name:'Annual Income Tax Return (8% / OSD)', cat:'income', who:'Pure business or professional income, on 8% or OSD', when:'April 15', summary:'The simplified annual return for people whose only income is from business or practice of profession, using the 8% rate or the 40% OSD. One page of math reconciling your four quarters.', lines:[{box:'Item 16', desc:'Total gross sales / receipts for the year.'},{box:'Item 19', desc:'Taxable income after the ₱250k allowance (8%) or OSD.'},{box:'Item 26', desc:'Tax payable after creditable withholding (your 2307s).'}]},
+    {code:'1701', name:'Annual Income Tax Return (itemized / mixed)', cat:'income', who:'Itemized-deduction filers & mixed-income earners', when:'April 15', summary:'The full annual return — used if you itemize your actual expenses or also earn compensation. Longer, because it carries detailed schedules of income and deductions.', lines:[{box:'Sch 3', desc:'Itemized deductions — must match your books and receipts.'},{box:'Part VI', desc:'Computation of tax due across all your income types.'}]},
+    {code:'2551Q', name:'Quarterly Percentage Tax', cat:'business', who:'Non-VAT taxpayers on graduated rates', when:'Apr 25 · Jul 25 · Oct 25 · Jan 25', summary:'A 3% tax on your gross receipts, filed quarterly. You only file this on graduated rates — electing the 8% income tax exempts you from it entirely.', lines:[{box:'Sch 1', desc:'Taxable gross receipts for the quarter.'},{box:'Item 17', desc:'Tax due at 3% (ATC PT010).'}]},
+    {code:'2307', name:'Certificate of Creditable Tax Withheld', cat:'withholding', who:'You receive this from clients who withhold', when:'Given with payment / per quarter', summary:'When a client withholds tax from your fee (often 5% or 10%) they hand you a 2307. It is cash you have already paid the BIR — attach it to your returns to reduce what you owe.', lines:[{box:'Part II', desc:'Income payments and the tax withheld.'},{box:'Use', desc:'Claim the amount as a creditable tax on your 1701Q / 1701A.'}]},
+    {code:'0605', name:'Payment Form', cat:'business', who:'Anyone making a BIR payment', when:'As needed', summary:'The generic form for paying the BIR when no specific return applies — registration-related items, penalties, or deficiency taxes.', lines:[{box:'Tax type', desc:'Select the matching tax type and period.'}]},
+    {code:'2316', name:'Certificate of Compensation / Tax Withheld', cat:'withholding', who:'Employees receive this from their employer', when:'By January 31', summary:'Your employer’s summary of your salary and the tax they withheld for the year. With a single employer, this doubles as your filed return through substituted filing.', lines:[{box:'Part IV-A', desc:'Total compensation and tax withheld.'}]},
+    {code:'1901', name:'Registration — Self-Employed', cat:'registration', who:'New freelancers & professionals', when:'Before starting business', summary:'How you register as self-employed, receive your Certificate of Registration (2303), and choose your tax type. The old ₱500 annual registration fee was removed in 2024 under EOPT.', lines:[{box:'Result', desc:'You receive Form 2303 and authority to issue invoices.'}]},
+    {code:'1905', name:'Update of Registration', cat:'registration', who:'Anyone changing their BIR details', when:'When details change', summary:'Used to update registered information — change of RDO, civil status, or line of business, or to close a registration.', lines:[{box:'Use', desc:'Tick the change you need and attach supporting documents.'}]},
+    {code:'0619-E', name:'Monthly Remittance — Expanded Withholding', cat:'withholding', who:'Businesses that withhold from suppliers', when:'10th of the following month', summary:'If you pay suppliers or contractors and are required to withhold, this remits that creditable tax monthly, with 1601-EQ filed quarterly.', lines:[{box:'Item', desc:'Total expanded withholding for the month.'}]},
+    {code:'2550Q', name:'Quarterly VAT Return', cat:'business', who:'VAT-registered taxpayers (over ₱3M)', when:'25 days after quarter-end', summary:'Once your sales pass ₱3M you register for VAT and file this quarterly — output VAT on sales, less input VAT on purchases.', lines:[{box:'Output', desc:'12% VAT on your taxable sales.'},{box:'Input', desc:'12% VAT on purchases, credited against output.'}]},
+  ];
+
+  computeForms(){
+    const q=this.state.formQuery.toLowerCase(), cat=this.state.formCat, open=this.state.openForm;
+    const cats=[['all','All'],['income','Income tax'],['business','Business tax'],['withholding','Withholding'],['registration','Registration']];
+    const catTabs=cats.map(([k,l])=>({label:l, style:this.segStyle(cat===k), onClick:()=>this.setState({formCat:k})}));
+    const cl={income:'Income tax',business:'Business tax',withholding:'Withholding',registration:'Registration'};
+    const filtered=this.FORMS.filter(f=> (cat==='all'||f.cat===cat) && (!q || (f.code+' '+f.name+' '+f.summary).toLowerCase().includes(q)) );
+    const formItems=filtered.map(f=>{
+      const isOpen=open===f.code;
+      return {
+        code:f.code, name:f.name, who:f.who, when:f.when, summary:f.summary, catLabel:cl[f.cat],
+        isOpen, hasLines:isOpen && !!f.lines && f.lines.length>0,
+        lines:(f.lines||[]).map(l=>({box:l.box,desc:l.desc})),
+        onClick:()=>this.setState({openForm:isOpen?null:f.code}),
+        chevron:isOpen?'–':'+',
+        cardStyle:'border:1.5px solid '+(isOpen?'var(--acc)':'var(--line)')+';border-radius:13px;background:var(--sf);overflow:hidden;transition:border-color .15s',
+      };
+    });
+    return { onFormQuery:e=>this.setState({formQuery:e.target.value}), formQueryVal:this.state.formQuery, catTabs, formItems, formCount:filtered.length };
+  }
+
+  // ===== TOOLS =====
+  compromise(a){ if(a<=5000)return 1000; if(a<=10000)return 3000; if(a<=20000)return 5000; if(a<=50000)return 10000; if(a<=100000)return 15000; if(a<=500000)return 20000; if(a<=1000000)return 30000; return 50000; }
+  monthlyWH(x){ if(x<=20833)return 0; if(x<=33332)return (x-20833)*0.15; if(x<=66666)return 1875+(x-33333)*0.20; if(x<=166666)return 8541.80+(x-66667)*0.25; if(x<=666666)return 33541.80+(x-166667)*0.30; return 183541.80+(x-666667)*0.35; }
+
+  computeTools(){
+    const m=n=>this.money(n);
+    // penalty
+    const due=this.state.penDue, days=this.state.penDays, eopt=this.state.penEopt;
+    const surRate=eopt?0.10:0.25, intRate=eopt?0.06:0.12;
+    const surcharge=due*surRate, interest=due*intRate*(days/365), comp=this.compromise(due);
+    const penTotal=due+surcharge+interest+comp;
+    const eoptTabs=[['m','Micro / Small'],['r','Regular']].map(([k,l])=>({label:l, style:this.segStyle(eopt===(k==='m')), onClick:()=>this.setState({penEopt:k==='m'})}));
+    const penRows=[
+      {label:'Basic tax due', value:m(due)},
+      {label:'Surcharge ('+Math.round(surRate*100)+'%)', value:m(surcharge)},
+      {label:'Interest · '+days+' days @ '+Math.round(intRate*100)+'%/yr', value:m(interest)},
+      {label:'Compromise penalty', value:m(comp)},
+    ];
+    // withholding
+    const comp2=this.state.whComp, whTax=this.monthlyWH(comp2), whRate=comp2>0?(whTax/comp2*100):0;
+    // ytd
+    const g=this.state.ytdGross, mo=this.state.ytdMonths;
+    const projAnnual= mo>0? g/mo*12 : 0;
+    const proj8=Math.max(0,(projAnnual-250000))*0.08, perMonth=proj8/12;
+
+    return {
+      onPenDue:e=>this.setNum('penDue',e), onPenDays:e=>this.setNum('penDays',e),
+      penDueVal:this.state.penDue.toLocaleString('en-US'), penDaysVal:String(this.state.penDays),
+      eoptTabs, penRows, penTotal:m(penTotal),
+      onWhComp:e=>this.setNum('whComp',e), whCompVal:comp2.toLocaleString('en-US'),
+      whTax:m(whTax), whRate:whRate.toFixed(1)+'%',
+      onYtdGross:e=>this.setNum('ytdGross',e), onYtdMonths:e=>this.setNum('ytdMonths',e),
+      ytdGrossVal:g.toLocaleString('en-US'), ytdMonthsVal:String(mo),
+      ytdAnnual:m(projAnnual), ytdTax:m(proj8), ytdMonthly:m(perMonth),
+    };
+  }
+
+  // ===== BLOG =====
+  POSTS = [
+    {id:'8-vs-grad', cat:'Guides', title:'8% or graduated? A freelancer’s five-minute decision', excerpt:'The single choice you make at registration quietly shapes every deadline and every peso you owe. Here’s how to get it right.', read:'6 min read', date:'June 2026', feature:true, body:[
+      {kind:'p', text:'When you register as self-employed, the BIR asks how your income should be taxed. There are two roads, and the one you pick quietly shapes every deadline and every peso you owe for the rest of the year.'},
+      {kind:'h', text:'The 8% road'},
+      {kind:'p', text:'You pay a flat 8% on your gross receipts above ₱250,000 — and nothing else. No percentage tax, no itemizing, no separate 2551Q. For most freelancers with low overhead, it is both the simplest and the cheapest option.'},
+      {kind:'h', text:'The graduated road'},
+      {kind:'p', text:'You pay the regular income-tax brackets on your profit — after either the 40% OSD or your actual expenses — plus a separate 3% percentage tax on gross. It wins when your expenses are high enough to pull your taxable income well down.'},
+      {kind:'quote', text:'Rule of thumb: if your real costs sit under about 40% of your income, 8% usually wins. Above that, run both numbers.'},
+      {kind:'h', text:'How to actually decide'},
+      {kind:'list', items:['Estimate your gross income for the year.','Estimate your deductible expenses as a share of it.','Run both through the Regime Calculator — it shows the exact peso difference.','Remember the election locks for the year once you file your first quarter.']},
+      {kind:'p', text:'When in doubt, most low-overhead freelancers are well served by 8%: fewer forms, fewer deadlines, and usually a smaller bill.'},
+    ]},
+    {id:'first-year', cat:'Getting started', title:'Your first year as a registered freelancer', excerpt:'Registering is the easy part. Here is the shape of the twelve months that follow — month by month, without the dread.', read:'8 min read', date:'May 2026', body:[
+      {kind:'p', text:'Registering is the easy part. Knowing what happens next is what keeps people up at night. Here is the shape of your first twelve months.'},
+      {kind:'h', text:'Month one — register and set up'},
+      {kind:'p', text:'File Form 1901, receive your Certificate of Registration (2303), and register your books and invoices. Good news: the old ₱500 annual registration fee was scrapped in 2024.'},
+      {kind:'h', text:'Every month — contribute and invoice'},
+      {kind:'list', items:['Issue a BIR-registered invoice for every payment you receive.','Pay SSS, PhilHealth and Pag-IBIG — as a freelancer you cover both shares.','Keep your books current so quarter-end is painless.']},
+      {kind:'h', text:'Every quarter — file 1701Q'},
+      {kind:'p', text:'Three times a year you total your income so far, compute the tax, and pay the difference. The calendar in this app counts down each one for you.'},
+      {kind:'h', text:'Once a year — the annual return'},
+      {kind:'p', text:'By April 15 you file your annual return (1701A or 1701) reconciling all four quarters. Attach any 2307 certificates your clients gave you — that is tax already paid on your behalf.'},
+      {kind:'quote', text:'The whole system rewards small, steady habits. Invoice, set aside, file. Repeat.'},
+    ]},
+    {id:'2307', cat:'Withholding', title:'What to do with every 2307 your clients hand you', excerpt:'One of the few pieces of BIR paperwork that works in your favour — and the money you lose by ignoring it.', read:'4 min read', date:'May 2026', body:[
+      {kind:'p', text:'A 2307 is one of the rare pieces of BIR paperwork that works in your favour. It is proof that a client already paid part of your tax for you.'},
+      {kind:'h', text:'Why it matters'},
+      {kind:'p', text:'When a client withholds — commonly 5% or 10% of your fee — they remit it to the BIR and hand you a 2307. That amount is a credit: it directly reduces what you owe on your quarterly and annual returns.'},
+      {kind:'list', items:['Collect every 2307 — chase clients who forget.','Check the amounts and period match your invoices.','Attach them to your 1701Q / 1701A to claim the credit.']},
+      {kind:'quote', text:'A drawer full of unclaimed 2307s is just tax you paid twice.'},
+    ]},
+    {id:'deadlines', cat:'Calendar', title:'The five deadlines that actually matter', excerpt:'The BIR calendar is long. For a low-overhead freelancer, only a handful of dates decide whether you sleep well.', read:'5 min read', date:'April 2026', body:[
+      {kind:'p', text:'The BIR calendar is long, but for a low-overhead freelancer only a handful of dates truly decide whether you sleep well.'},
+      {kind:'list', items:['1701Q — quarterly income tax, around May 15, Aug 15 and Nov 15.','1701A — your annual return, every April 15.','Monthly contributions — SSS, PhilHealth and Pag-IBIG.','2551Q — only if you chose graduated rates.','Invoices and books — the quiet daily habit behind all of it.']},
+      {kind:'p', text:'Everything else is either situational or handled for you. Master these five and the rest follows.'},
+    ]},
+  ];
+
+  computeBlog(){
+    if(!this.state.blogPost){
+      const featured=this.POSTS.find(p=>p.feature)||this.POSTS[0];
+      const rest=this.POSTS.filter(p=>p!==featured);
+      return {
+        blogIndex:true, articleView:false,
+        featured:{ cat:featured.cat, title:featured.title, excerpt:featured.excerpt, meta:featured.read+' · '+featured.date, onClick:()=>this.setState({blogPost:featured.id}) },
+        posts:rest.map(p=>({ cat:p.cat, title:p.title, excerpt:p.excerpt, meta:p.read+' · '+p.date, onClick:()=>this.setState({blogPost:p.id}) })),
+      };
+    }
+    const p=this.POSTS.find(x=>x.id===this.state.blogPost)||this.POSTS[0];
+    const blocks=(p.body||[]).map(b=>({
+      isH:b.kind==='h', isP:b.kind==='p', isQuote:b.kind==='quote', isList:b.kind==='list',
+      text:b.text||'', items:(b.items||[]).map(t=>({text:t})),
+    }));
+    return {
+      blogIndex:false, articleView:true,
+      article:{ cat:p.cat, title:p.title, meta:p.read+' · '+p.date },
+      blocks, onBack:()=>this.setState({blogPost:null}),
+    };
+  }
+
+  setType(type){ const regimes=this.TYPES[type].regimes; this.setState({ type, regime:regimes[0].key, view:this.state.view }); }
+
+  navStyle(active){ return 'padding:8px 14px;border:none;border-radius:9px;font-family:inherit;font-size:13.5px;cursor:pointer;transition:all .15s;'+(active?'background:var(--accSoft);color:var(--accInk);font-weight:600':'background:transparent;color:var(--mut);font-weight:500'); }
+  segStyle(active){ return 'padding:7px 13px;border:none;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;white-space:nowrap;transition:all .15s;'+(active?'background:#fff;color:var(--brand);box-shadow:0 1px 2px rgba(20,40,60,.1);font-weight:600':'background:transparent;color:var(--mut);font-weight:500'); }
+  tagStyle(){ return 'font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:100px;background:#eef3f8;color:var(--mut);white-space:nowrap;flex-shrink:0'; }
+
+  effDate(o){ if(o.kind==='dated') return this.parse(o.date); if(o.kind==='monthly') return this.endOfMonth(); return null; }
+
+  feedItem(o){
+    const ed=this.effDate(o);
+    const it={ isDated:o.kind!=='ongoing', isOngoing:o.kind==='ongoing', title:o.t, desc:o.d };
+    if(ed){ it.dateTop=String(ed.getDate()); it.dateBot=this.mShort(ed); }
+    if(o.amt!=null){ it.hasAmount=true; it.amount=(o.kind==='monthly'?'≈ ':'')+this.money(o.amt); it.hasTag=false; }
+    else { it.hasAmount=false; it.hasTag=true; it.tag=o.freq; it.tagStyle=this.tagStyle(); }
+    return it;
+  }
+
+  renderVals(){
+    const type=this.state.type, regime=this.state.regime;
+    const T=this.TYPES[type];
+    const page=this.state.page;
+    const nav=[['calendar','Calendar'],['calculator','Calculator'],['forms','Forms'],['tools','Tools'],['blog','Blog']].map(([k,l])=>({
+      label:l, style:this.navStyle(page===k), onClick:()=>this.setState({page:k})
+    }));
+    const isCalendar=page==='calendar';
+    const base={ nav, typeName:T.name, isCalendar:false, isCalc:false, isForms:false, isTools:false, isBlog:false, showStub:false };
+    if(page==='calculator') return Object.assign({}, base, {isCalc:true}, this.computeCalc());
+    if(page==='forms') return Object.assign({}, base, {isForms:true}, this.computeForms());
+    if(page==='tools') return Object.assign({}, base, {isTools:true}, this.computeTools());
+    if(page==='blog') return Object.assign({}, base, {isBlog:true}, this.computeBlog());
+
+    // ---- calendar ----
+    const typeTabs=Object.keys(this.TYPES).map(k=>({ label:this.TYPES[k].name, style:this.segStyle(type===k), onClick:()=>this.setType(k) }));
+    const showRegime=T.regimes.length>1;
+    const regimeTabs=T.regimes.map(r=>({ label:r.label, style:this.segStyle(regime===r.key), onClick:()=>this.setState({regime:r.key}) }));
+    const viewTabs=[['feed','Feed'],['timeline','Timeline'],['table','Table']].map(([k,l])=>({ label:l, style:this.segStyle(this.state.view===k), onClick:()=>this.setState({view:k}) }));
+
+    const applicable=this.OB.filter(o=> o.types.includes(type) && (o.reg==='all'||o.reg.includes(regime)) );
+    const today=this.TODAY, eom=this.endOfMonth();
+
+    // hero = next dated income/biz filing
+    const heroPool=applicable.filter(o=>o.kind==='dated' && (o.cat==='income'||o.cat==='biz') && this.parse(o.date)>=today)
+      .sort((a,b)=>this.parse(a.date)-this.parse(b.date));
+    let heroNormal=false, heroSpecial=false, hero={}, heroSpecialTitle='', heroSpecialDesc='', heroId=null;
+    if(type==='emp'){
+      heroSpecial=true;
+      heroSpecialTitle='Nothing for you to file right now.';
+      heroSpecialDesc='Your employer withholds tax from every payslip and files on your behalf. The one thing to watch for: collect your BIR Form 2316 by January 31 — it’s your proof of tax paid for the year.';
+    } else if(heroPool.length){
+      heroNormal=true; const h=heroPool[0]; heroId=h.id; const d=this.parse(h.date);
+      hero={ title:h.t, desc:h.d, form:h.form, freq:h.freq, days:String(this.days(d)), dateLabel:this.fmtDate(d), shift:h.shift||'' };
+    }
+
+    const notHero=o=>o.id!==heroId;
+    // due this month: dated/monthly with eff date within current month, >= today
+    const inThisMonth=d=> d && d>=today && d.getMonth()===today.getMonth() && d.getFullYear()===today.getFullYear();
+    const monthObs=applicable.filter(o=>o.kind!=='ongoing' && notHero(o) && inThisMonth(this.effDate(o)));
+    const monthItems=monthObs.map(o=>this.feedItem(o));
+
+    // coming up later: dated after this month, excl hero
+    const laterObs=applicable.filter(o=>o.kind==='dated' && notHero(o) && this.effDate(o)>eom)
+      .sort((a,b)=>this.parse(a.date)-this.parse(b.date));
+    const laterItems=laterObs.map(o=>{ const ed=this.parse(o.date); return { dateTop:String(ed.getDate()), dateBot:this.mShort(ed), title:o.t, desc:o.d, tag:o.freq, tagStyle:this.tagStyle() }; });
+
+    const alwaysObs=applicable.filter(o=>o.kind==='ongoing');
+    const alwaysItems=alwaysObs.map(o=>({ title:o.t, desc:o.d, tag:o.freq }));
+
+    // timeline + table use all applicable, sorted (dated/monthly by date, ongoing last)
+    const sortable=applicable.map(o=>({o, d:this.effDate(o)}));
+    sortable.sort((a,b)=>{ if(!a.d) return 1; if(!b.d) return -1; return a.d-b.d; });
+    const statusFor=(o,d)=>{
+      if(!d) return {status:'Ongoing', color:'var(--mut)', soft:'#eef3f8'};
+      const dd=this.days(d);
+      if(dd<0) return {status:'Filed', color:'var(--good)', soft:'var(--goodSoft)'};
+      if(dd<=30) return {status:'Due soon', color:'var(--warn)', soft:'var(--warnSoft)'};
+      return {status:'Upcoming', color:'var(--accInk)', soft:'var(--accSoft)'};
+    };
+    const timelineItems=sortable.map(({o,d})=>{
+      const st=statusFor(o,d);
+      return {
+        dotStyle:'width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:14px;background:'+st.color+';box-shadow:0 0 0 3px var(--bg),0 0 0 4px '+st.color+';position:relative;z-index:1',
+        statusStyle:'font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:100px;color:'+st.color+';background:'+st.soft,
+        status:st.status, dateLabel:d?this.fmtDate(d):'No fixed date', title:o.t, desc:o.d,
+        hasForm:!!o.form, form:o.form||''
+      };
+    });
+    const tableItems=sortable.map(({o,d})=>({
+      dateLabel:d?this.fmtDate(d):'Ongoing', title:o.t, form:o.form||'—', catLabel:this.CATLABEL[o.cat]||'', amount:o.amt!=null?this.money(o.amt):'—'
+    }));
+
+    // right rail
+    let hasProgress=false, progress={}, hasSetAside=false, setAside={}, showRailNote=false, railNoteTitle='', railNoteBody='';
+    const mk=(state,label)=>{
+      if(state==='done') return { mark:'✓', markStyle:'width:18px;height:18px;border-radius:50%;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0', label, labelStyle:'font-size:13px;color:var(--mut)' };
+      if(state==='current') return { mark:'', markStyle:'width:18px;height:18px;border-radius:50%;border:2px solid var(--acc);flex-shrink:0', label, labelStyle:'font-size:13px;font-weight:600;color:var(--ink)' };
+      return { mark:'', markStyle:'width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex-shrink:0', label, labelStyle:'font-size:13px;color:var(--dim)' };
+    };
+    if(type==='se'||type==='mi'){
+      hasProgress=true;
+      progress={ title:'2026 filing progress', barStyle:'width:25%;height:100%;background:var(--acc);border-radius:3px', rows:[
+        mk('done','Q1 · filed May 15'),
+        mk('current','Q2 · due Aug 17'),
+        mk('todo','Q3 · due Nov 16'),
+        mk('todo','Annual · Apr 2027'),
+      ]};
+      hasSetAside=true;
+      setAside={ amount:this.money(18400), basis:'8% of ₱230,000 taxable year-to-date' };
+    } else if(type==='corp'){
+      hasProgress=true;
+      progress={ title:'2026 filing progress', barStyle:'width:25%;height:100%;background:var(--acc);border-radius:3px', rows:[
+        mk('done','Q1 · filed May 29'),
+        mk('current','Q2 · due Aug 29'),
+        mk('todo','Q3 · due Nov 29'),
+        mk('todo','Annual · Apr 2027'),
+      ]};
+    } else {
+      showRailNote=true; railNoteTitle='You’re covered'; railNoteBody='Your employer handles your monthly withholding and your annual return through substituted filing. Just keep your 2316 each year.';
+    }
+
+    const summaryLine=type==='emp'
+      ? 'Showing what applies to an employee on compensation income.'
+      : 'Showing '+applicable.length+' obligations for '+T.name+' · '+T.regimes.find(r=>r.key===regime).label+'.';
+
+    return {
+      nav, typeName:T.name, isCalendar:true, showStub:false, isCalc:false, isForms:false, isTools:false, isBlog:false,
+      typeTabs, showRegime, regimeTabs, viewTabs, summaryLine,
+      isFeed:this.state.view==='feed', isTimeline:this.state.view==='timeline', isTable:this.state.view==='table',
+      heroNormal, heroSpecial, hero, heroSpecialTitle, heroSpecialDesc,
+      hasMonth:monthItems.length>0, monthItems, monthLabel:today.toLocaleDateString('en-US',{month:'long',year:'numeric'}),
+      hasLater:laterItems.length>0, laterItems,
+      hasAlways:alwaysItems.length>0, alwaysItems,
+      timelineItems, tableItems,
+      hasProgress, progress, hasSetAside, setAside, showRailNote, railNoteTitle, railNoteBody,
+    };
+  }
+}
+</script>
+</body>
+</html>
