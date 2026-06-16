@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Present Value — Philippine Tax Suite</title>
+<meta name="description" content="Tax calendar, regime calculator, BIR form reference, and tools for self-employed Filipino professionals.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+body {
+  background: #eef2f6;
+  font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #27384a;
+  font-size: 14px;
+}
+::selection { background: #d4e6f6; }
+button { font-family: inherit; }
+input { font-family: inherit; }
+a { color: inherit; }
+:root {
+  --bg: #f5f8fb;
+  --sf: #ffffff;
+  --line: #e6edf3;
+  --line2: #eef2f7;
+  --ink: #27384a;
+  --mut: #76869a;
+  --dim: #9aabbc;
+  --brand: #2a4d62;
+  --acc: #3f7cae;
+  --accSoft: #e8f1fa;
+  --accInk: #2e5f88;
+  --accDot: #4f88b8;
+  --good: #2f8a5b;
+  --goodSoft: #e3f3ea;
+  --warn: #c2843c;
+  --warnSoft: #f6edd9;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js" crossorigin></script>
+<script type="text/babel">
+const { useState, useCallback, useMemo } = React;
+
+// ── constants ──────────────────────────────────────────────────────────────
+const TODAY = new Date(2026, 5, 16);
+
+const TYPES = {
+  se:   { name: 'Self-Employed',  vat: 'Non-VAT',        regimes: [{key:'8pct',label:'8% income tax'},{key:'grad',label:'Graduated + 3%'}] },
+  mi:   { name: 'Mixed Income',   vat: 'Non-VAT',        regimes: [{key:'8pct',label:'8% on business'},{key:'grad',label:'Graduated + 3%'}] },
+  corp: { name: 'Corporation',    vat: 'VAT-registered', regimes: [{key:'reg',label:'Regular CIT'}] },
+  emp:  { name: 'Employee',       vat: '—',              regimes: [{key:'comp',label:'Compensation only'}] },
+};
+
+const OB = [
+  {id:'se_q2',   t:'File & pay Q2 income tax',           d:'Your quarterly income tax on earnings above the ₱250,000 yearly allowance.',  form:'1701Q',  freq:'Quarterly', cat:'income',  kind:'dated',   date:'2026-08-17', shift:'moved from Aug 15 (Sat)', amt:18400, types:['se','mi'], reg:['8pct','grad']},
+  {id:'se_q3',   t:'File & pay Q3 income tax',           d:'Third-quarter income tax installment.',                                        form:'1701Q',  freq:'Quarterly', cat:'income',  kind:'dated',   date:'2026-11-16', shift:'moved from Nov 15 (Sun)', amt:null,  types:['se','mi'], reg:['8pct','grad']},
+  {id:'se_ann',  t:'File annual income tax return',       d:'Your year-end return reconciling all four quarters.',                          form:'1701A',  freq:'Annual',    cat:'income',  kind:'dated',   date:'2027-04-15', shift:null,                      amt:null,  types:['se','mi'], reg:['8pct','grad']},
+  {id:'se_pt2',  t:'File & pay percentage tax (Q2)',      d:'3% of your gross receipts for the quarter — graduated filers only.',           form:'2551Q',  freq:'Quarterly', cat:'biz',     kind:'dated',   date:'2026-07-25', shift:null,                      amt:null,  types:['se','mi'], reg:['grad']},
+  {id:'se_pt3',  t:'File & pay percentage tax (Q3)',      d:'3% of your gross receipts for the quarter.',                                   form:'2551Q',  freq:'Quarterly', cat:'biz',     kind:'dated',   date:'2026-10-26', shift:'moved from Oct 25 (Sun)', amt:null,  types:['se','mi'], reg:['grad']},
+  {id:'contrib', t:'Pay SSS, PhilHealth & Pag-IBIG',      d:'Due end of month for the prior month. As a freelancer you cover both shares.', form:'Agency', freq:'Monthly',   cat:'contrib', kind:'monthly', date:null,         shift:null,                      amt:2640,  types:['se','mi'], reg:'all'},
+  {id:'inv',     t:'Issue BIR-registered invoices',       d:'For every sale or receipt — no minimum amount.',                               form:null,     freq:'Ongoing',   cat:'admin',   kind:'ongoing', date:null,         shift:null,                      amt:null,  types:['se','mi'], reg:'all'},
+  {id:'books',   t:'Keep your books of accounts updated', d:'Record income and expenses as they happen.',                                   form:null,     freq:'Ongoing',   cat:'admin',   kind:'ongoing', date:null,         shift:null,                      amt:null,  types:['se','mi'], reg:'all'},
+  {id:'c_vat',   t:'File & pay quarterly VAT',            d:'Output VAT less your input VAT for the quarter.',                              form:'2550Q',  freq:'Quarterly', cat:'biz',     kind:'dated',   date:'2026-07-27', shift:'moved from Jul 25 (Sat)', amt:null,  types:['corp'],    reg:'all'},
+  {id:'c_q2',    t:'File quarterly income tax',           d:'Second-quarter corporate income tax.',                                         form:'1702Q',  freq:'Quarterly', cat:'income',  kind:'dated',   date:'2026-08-29', shift:null,                      amt:null,  types:['corp'],    reg:'all'},
+  {id:'c_comp',  t:'Remit withholding on compensation',   d:'Tax withheld from your employees\' salaries.',                                 form:'1601-C', freq:'Monthly',   cat:'wh',      kind:'monthly', date:null,         shift:null,                      amt:null,  types:['corp'],    reg:'all'},
+  {id:'c_exp',   t:'Remit expanded withholding',          d:'Creditable tax withheld from your suppliers.',                                 form:'0619-E', freq:'Monthly',   cat:'wh',      kind:'monthly', date:null,         shift:null,                      amt:null,  types:['corp'],    reg:'all'},
+  {id:'c_ann',   t:'File annual income tax return',       d:'Year-end corporate return.',                                                   form:'1702-RT',freq:'Annual',    cat:'income',  kind:'dated',   date:'2027-04-15', shift:null,                      amt:null,  types:['corp'],    reg:'all'},
+  {id:'c_books', t:'Keep books & issue invoices',         d:'Maintain registered books and issue invoices for all sales.',                  form:null,     freq:'Ongoing',   cat:'admin',   kind:'ongoing', date:null,         shift:null,                      amt:null,  types:['corp'],    reg:'all'},
+  {id:'e_2316',  t:'Get BIR Form 2316 from your employer',d:'Your employer files for you and hands you a stamped copy by Jan 31.',          form:'2316',   freq:'Annual',    cat:'income',  kind:'dated',   date:'2027-01-31', shift:null,                      amt:null,  types:['emp'],     reg:'all'},
+  {id:'e_sub',   t:'You likely don\'t need to file',      d:'With a single employer, substituted filing covers your return.',               form:null,     freq:'Ongoing',   cat:'admin',   kind:'ongoing', date:null,         shift:null,                      amt:null,  types:['emp'],     reg:'all'},
+  {id:'e_upd',   t:'Keep your BIR records current',       d:'Use Form 1905 if you change employer, RDO, or civil status.',                  form:'1905',   freq:'As needed', cat:'admin',   kind:'ongoing', date:null,         shift:null,                      amt:null,  types:['emp'],     reg:'all'},
+];
+
+const CATLABEL = { income:'Income tax', biz:'Business tax', wh:'Withholding', contrib:'Contributions', admin:'Admin' };
+
+const FORMS_DATA = [
+  {code:'1701Q', name:'Quarterly Income Tax Return', cat:'income', who:'Self-employed, professionals & mixed-income earners', when:'May 15 · Aug 15 · Nov 15', summary:'Your income tax, paid three times a year and cumulatively. Each quarter you total your income since January, compute the tax, and subtract what you already paid in earlier quarters.', lines:[{box:'Part II',desc:'Choose 8% or graduated — it must match what you elected for the year.'},{box:'Sch 1',desc:'Cumulative gross sales / receipts for the quarter.'},{box:'Item 47',desc:'Tax still due after prior payments and creditable withholding.'}]},
+  {code:'1701A', name:'Annual Income Tax Return (8% / OSD)', cat:'income', who:'Pure business or professional income, on 8% or OSD', when:'April 15', summary:'The simplified annual return for people whose only income is from business or practice of profession, using the 8% rate or the 40% OSD. One page of math reconciling your four quarters.', lines:[{box:'Item 16',desc:'Total gross sales / receipts for the year.'},{box:'Item 19',desc:'Taxable income after the ₱250k allowance (8%) or OSD.'},{box:'Item 26',desc:'Tax payable after creditable withholding (your 2307s).'}]},
+  {code:'1701',  name:'Annual Income Tax Return (itemized / mixed)', cat:'income', who:'Itemized-deduction filers & mixed-income earners', when:'April 15', summary:'The full annual return — used if you itemize your actual expenses or also earn compensation. Longer, because it carries detailed schedules of income and deductions.', lines:[{box:'Sch 3',desc:'Itemized deductions — must match your books and receipts.'},{box:'Part VI',desc:'Computation of tax due across all your income types.'}]},
+  {code:'2551Q', name:'Quarterly Percentage Tax', cat:'business', who:'Non-VAT taxpayers on graduated rates', when:'Apr 25 · Jul 25 · Oct 25 · Jan 25', summary:'A 3% tax on your gross receipts, filed quarterly. You only file this on graduated rates — electing the 8% income tax exempts you from it entirely.', lines:[{box:'Sch 1',desc:'Taxable gross receipts for the quarter.'},{box:'Item 17',desc:'Tax due at 3% (ATC PT010).'}]},
+  {code:'2307',  name:'Certificate of Creditable Tax Withheld', cat:'withholding', who:'You receive this from clients who withhold', when:'Given with payment / per quarter', summary:'When a client withholds tax from your fee (often 5% or 10%) they hand you a 2307. It is cash you have already paid the BIR — attach it to your returns to reduce what you owe.', lines:[{box:'Part II',desc:'Income payments and the tax withheld.'},{box:'Use',desc:'Claim the amount as a creditable tax on your 1701Q / 1701A.'}]},
+  {code:'0605',  name:'Payment Form', cat:'business', who:'Anyone making a BIR payment', when:'As needed', summary:'The generic form for paying the BIR when no specific return applies — registration-related items, penalties, or deficiency taxes.', lines:[{box:'Tax type',desc:'Select the matching tax type and period.'}]},
+  {code:'2316',  name:'Certificate of Compensation / Tax Withheld', cat:'withholding', who:'Employees receive this from their employer', when:'By January 31', summary:'Your employer\'s summary of your salary and the tax they withheld for the year. With a single employer, this doubles as your filed return through substituted filing.', lines:[{box:'Part IV-A',desc:'Total compensation and tax withheld.'}]},
+  {code:'1901',  name:'Registration — Self-Employed', cat:'registration', who:'New freelancers & professionals', when:'Before starting business', summary:'How you register as self-employed, receive your Certificate of Registration (2303), and choose your tax type. The old ₱500 annual registration fee was removed in 2024 under EOPT.', lines:[{box:'Result',desc:'You receive Form 2303 and authority to issue invoices.'}]},
+  {code:'1905',  name:'Update of Registration', cat:'registration', who:'Anyone changing their BIR details', when:'When details change', summary:'Used to update registered information — change of RDO, civil status, or line of business, or to close a registration.', lines:[{box:'Use',desc:'Tick the change you need and attach supporting documents.'}]},
+  {code:'0619-E',name:'Monthly Remittance — Expanded Withholding', cat:'withholding', who:'Businesses that withhold from suppliers', when:'10th of the following month', summary:'If you pay suppliers or contractors and are required to withhold, this remits that creditable tax monthly, with 1601-EQ filed quarterly.', lines:[{box:'Item',desc:'Total expanded withholding for the month.'}]},
+  {code:'2550Q', name:'Quarterly VAT Return', cat:'business', who:'VAT-registered taxpayers (over ₱3M)', when:'25 days after quarter-end', summary:'Once your sales pass ₱3M you register for VAT and file this quarterly — output VAT on sales, less input VAT on purchases.', lines:[{box:'Output',desc:'12% VAT on your taxable sales.'},{box:'Input',desc:'12% VAT on purchases, credited against output.'}]},
+];
+
+const POSTS = [
+  {id:'8-vs-grad', cat:'Guides', title:'8% or graduated? A freelancer\'s five-minute decision', excerpt:'The single choice you make at registration quietly shapes every deadline and every peso you owe. Here\'s how to get it right.', read:'6 min read', date:'June 2026', feature:true, body:[
+    {kind:'p', text:'When you register as self-employed, the BIR asks how your income should be taxed. There are two roads, and the one you pick quietly shapes every deadline and every peso you owe for the rest of the year.'},
+    {kind:'h', text:'The 8% road'},
+    {kind:'p', text:'You pay a flat 8% on your gross receipts above ₱250,000 — and nothing else. No percentage tax, no itemizing, no separate 2551Q. For most freelancers with low overhead, it is both the simplest and the cheapest option.'},
+    {kind:'h', text:'The graduated road'},
+    {kind:'p', text:'You pay the regular income-tax brackets on your profit — after either the 40% OSD or your actual expenses — plus a separate 3% percentage tax on gross. It wins when your expenses are high enough to pull your taxable income well down.'},
+    {kind:'quote', text:'Rule of thumb: if your real costs sit under about 40% of your income, 8% usually wins. Above that, run both numbers.'},
+    {kind:'h', text:'How to actually decide'},
+    {kind:'list', items:['Estimate your gross income for the year.','Estimate your deductible expenses as a share of it.','Run both through the Regime Calculator — it shows the exact peso difference.','Remember the election locks for the year once you file your first quarter.']},
+    {kind:'p', text:'When in doubt, most low-overhead freelancers are well served by 8%: fewer forms, fewer deadlines, and usually a smaller bill.'},
+  ]},
+  {id:'first-year', cat:'Getting started', title:'Your first year as a registered freelancer', excerpt:'Registering is the easy part. Here is the shape of the twelve months that follow — month by month, without the dread.', read:'8 min read', date:'May 2026', body:[
+    {kind:'p', text:'Registering is the easy part. Knowing what happens next is what keeps people up at night. Here is the shape of your first twelve months.'},
+    {kind:'h', text:'Month one — register and set up'},
+    {kind:'p', text:'File Form 1901, receive your Certificate of Registration (2303), and register your books and invoices. Good news: the old ₱500 annual registration fee was scrapped in 2024.'},
+    {kind:'h', text:'Every month — contribute and invoice'},
+    {kind:'list', items:['Issue a BIR-registered invoice for every payment you receive.','Pay SSS, PhilHealth and Pag-IBIG — as a freelancer you cover both shares.','Keep your books current so quarter-end is painless.']},
+    {kind:'h', text:'Every quarter — file 1701Q'},
+    {kind:'p', text:'Three times a year you total your income so far, compute the tax, and pay the difference. The calendar in this app counts down each one for you.'},
+    {kind:'h', text:'Once a year — the annual return'},
+    {kind:'p', text:'By April 15 you file your annual return (1701A or 1701) reconciling all four quarters. Attach any 2307 certificates your clients gave you — that is tax already paid on your behalf.'},
+    {kind:'quote', text:'The whole system rewards small, steady habits. Invoice, set aside, file. Repeat.'},
+  ]},
+  {id:'2307', cat:'Withholding', title:'What to do with every 2307 your clients hand you', excerpt:'One of the few pieces of BIR paperwork that works in your favour — and the money you lose by ignoring it.', read:'4 min read', date:'May 2026', body:[
+    {kind:'p', text:'A 2307 is one of the rare pieces of BIR paperwork that works in your favour. It is proof that a client already paid part of your tax for you.'},
+    {kind:'h', text:'Why it matters'},
+    {kind:'p', text:'When a client withholds — commonly 5% or 10% of your fee — they remit it to the BIR and hand you a 2307. That amount is a credit: it directly reduces what you owe on your quarterly and annual returns.'},
+    {kind:'list', items:['Collect every 2307 — chase clients who forget.','Check the amounts and period match your invoices.','Attach them to your 1701Q / 1701A to claim the credit.']},
+    {kind:'quote', text:'A drawer full of unclaimed 2307s is just tax you paid twice.'},
+  ]},
+  {id:'deadlines', cat:'Calendar', title:'The five deadlines that actually matter', excerpt:'The BIR calendar is long. For a low-overhead freelancer, only a handful of dates decide whether you sleep well.', read:'5 min read', date:'April 2026', body:[
+    {kind:'p', text:'The BIR calendar is long, but for a low-overhead freelancer only a handful of dates truly decide whether you sleep well.'},
+    {kind:'list', items:['1701Q — quarterly income tax, around May 15, Aug 15 and Nov 15.','1701A — your annual return, every April 15.','Monthly contributions — SSS, PhilHealth and Pag-IBIG.','2551Q — only if you chose graduated rates.','Invoices and books — the quiet daily habit behind all of it.']},
+    {kind:'p', text:'Everything else is either situational or handled for you. Master these five and the rest follows.'},
+  ]},
+];
+
+// ── helpers ────────────────────────────────────────────────────────────────
+function parseDate(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function daysUntil(d) { return Math.round((d - TODAY) / 86400000); }
+function fmtDate(d) { return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function mShort(d) { return d.toLocaleDateString('en-US',{month:'short'}).toUpperCase(); }
+function money(n) { return '₱' + Math.round(n).toLocaleString('en-US'); }
+function endOfMonth() { return new Date(TODAY.getFullYear(), TODAY.getMonth()+1, 0); }
+
+function gradTax(n) {
+  if (n <= 250000) return 0;
+  if (n <= 400000) return (n-250000)*0.15;
+  if (n <= 800000) return 22500+(n-400000)*0.20;
+  if (n <= 2000000) return 102500+(n-800000)*0.25;
+  if (n <= 8000000) return 402500+(n-2000000)*0.30;
+  return 2202500+(n-8000000)*0.35;
+}
+function monthlyWH(x) {
+  if (x <= 20833) return 0;
+  if (x <= 33332) return (x-20833)*0.15;
+  if (x <= 66666) return 1875+(x-33333)*0.20;
+  if (x <= 166666) return 8541.80+(x-66667)*0.25;
+  if (x <= 666666) return 33541.80+(x-166667)*0.30;
+  return 183541.80+(x-666667)*0.35;
+}
+function compromise(a) {
+  if (a <= 5000) return 1000;
+  if (a <= 10000) return 3000;
+  if (a <= 20000) return 5000;
+  if (a <= 50000) return 10000;
+  if (a <= 100000) return 15000;
+  if (a <= 500000) return 20000;
+  if (a <= 1000000) return 30000;
+  return 50000;
+}
+
+function navStyle(active) {
+  return {
+    padding:'8px 14px', border:'none', borderRadius:'9px', fontFamily:'inherit',
+    fontSize:'13.5px', cursor:'pointer', transition:'all .15s', whiteSpace:'nowrap',
+    background: active ? 'var(--accSoft)' : 'transparent',
+    color: active ? 'var(--accInk)' : 'var(--mut)',
+    fontWeight: active ? '600' : '500',
+  };
+}
+function segStyle(active) {
+  return {
+    padding:'7px 13px', border:'none', borderRadius:'8px', fontFamily:'inherit',
+    fontSize:'13px', cursor:'pointer', whiteSpace:'nowrap', transition:'all .15s',
+    background: active ? '#fff' : 'transparent',
+    color: active ? 'var(--brand)' : 'var(--mut)',
+    boxShadow: active ? '0 1px 2px rgba(20,40,60,.1)' : 'none',
+    fontWeight: active ? '600' : '500',
+  };
+}
+function tagStyle() {
+  return {
+    fontSize:'11.5px', fontWeight:'600', padding:'5px 11px', borderRadius:'100px',
+    background:'#eef3f8', color:'var(--mut)', whiteSpace:'nowrap', flexShrink:0,
+  };
+}
+
+function effDate(o) {
+  if (o.kind === 'dated') return parseDate(o.date);
+  if (o.kind === 'monthly') return endOfMonth();
+  return null;
+}
+
+function feedItem(o) {
+  const ed = effDate(o);
+  const it = { isDated: o.kind!=='ongoing', isOngoing: o.kind==='ongoing', title: o.t, desc: o.d };
+  if (ed) { it.dateTop = String(ed.getDate()); it.dateBot = mShort(ed); }
+  if (o.amt != null) { it.hasAmount=true; it.amount=(o.kind==='monthly'?'≈ ':'')+money(o.amt); it.hasTag=false; }
+  else { it.hasAmount=false; it.hasTag=true; it.tag=o.freq; }
+  return it;
+}
+
+// ── sub-components ─────────────────────────────────────────────────────────
+function SegmentedGroup({ children }) {
+  return (
+    <div style={{display:'flex',gap:'3px',background:'#eef3f8',border:'1px solid var(--line)',borderRadius:'11px',padding:'3px',overflowX:'auto',maxWidth:'100%'}}>
+      {children}
+    </div>
+  );
+}
+
+function FeedItem({ item }) {
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:'16px',padding:'15px 18px',borderBottom:'1px solid var(--line2)'}}>
+      {item.isDated && (
+        <div style={{textAlign:'center',flexShrink:0,width:'44px'}}>
+          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'17px',fontWeight:'600',color:'var(--ink)'}}>{item.dateTop}</div>
+          <div style={{fontSize:'10.5px',textTransform:'uppercase',letterSpacing:'.08em',color:'var(--dim)'}}>{item.dateBot}</div>
+        </div>
+      )}
+      {item.isOngoing && (
+        <div style={{width:'44px',flexShrink:0,display:'flex',justifyContent:'center'}}>
+          <span style={{width:'9px',height:'9px',borderRadius:'50%',background:'var(--dim)',display:'block'}}></span>
+        </div>
+      )}
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:'600',fontSize:'14.5px'}}>{item.title}</div>
+        <div style={{fontSize:'13px',color:'var(--mut)',marginTop:'2px'}}>{item.desc}</div>
+      </div>
+      {item.hasAmount && (
+        <div style={{textAlign:'right',flexShrink:0}}>
+          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'13.5px',fontWeight:'600',color:'var(--ink)'}}>{item.amount}</div>
+          <div style={{fontSize:'11px',color:'var(--dim)',marginTop:'2px'}}>estimate</div>
+        </div>
+      )}
+      {item.hasTag && <span style={tagStyle()}>{item.tag}</span>}
+    </div>
+  );
+}
+
+// ── Calendar page ──────────────────────────────────────────────────────────
+function CalendarPage({ state, setState }) {
+  const { type, regime, view } = state;
+  const T = TYPES[type];
+
+  function setType(t) {
+    setState(s => ({ ...s, type: t, regime: TYPES[t].regimes[0].key }));
+  }
+
+  const applicable = OB.filter(o =>
+    o.types.includes(type) && (o.reg === 'all' || o.reg.includes(regime))
+  );
+  const today = TODAY, eom = endOfMonth();
+
+  const heroPool = applicable.filter(o => o.kind==='dated' && (o.cat==='income'||o.cat==='biz') && parseDate(o.date)>=today)
+    .sort((a,b) => parseDate(a.date) - parseDate(b.date));
+
+  let heroNormal=false, heroSpecial=false, hero={}, heroId=null;
+  let heroSpecialTitle='', heroSpecialDesc='';
+
+  if (type === 'emp') {
+    heroSpecial = true;
+    heroSpecialTitle = 'Nothing for you to file right now.';
+    heroSpecialDesc = 'Your employer withholds tax from every payslip and files on your behalf. The one thing to watch for: collect your BIR Form 2316 by January 31 — it\'s your proof of tax paid for the year.';
+  } else if (heroPool.length) {
+    heroNormal = true;
+    const h = heroPool[0]; heroId = h.id;
+    const d = parseDate(h.date);
+    hero = { title:h.t, desc:h.d, form:h.form, freq:h.freq, days:String(daysUntil(d)), dateLabel:fmtDate(d), shift:h.shift||'' };
+  }
+
+  const notHero = o => o.id !== heroId;
+  const inThisMonth = d => d && d>=today && d.getMonth()===today.getMonth() && d.getFullYear()===today.getFullYear();
+  const monthObs = applicable.filter(o => o.kind!=='ongoing' && notHero(o) && inThisMonth(effDate(o)));
+  const monthItems = monthObs.map(feedItem);
+
+  const laterObs = applicable.filter(o => o.kind==='dated' && notHero(o) && effDate(o)>eom)
+    .sort((a,b) => parseDate(a.date) - parseDate(b.date));
+  const laterItems = laterObs.map(o => {
+    const ed = parseDate(o.date);
+    return { dateTop:String(ed.getDate()), dateBot:mShort(ed), title:o.t, desc:o.d, tag:o.freq };
+  });
+
+  const alwaysItems = applicable.filter(o => o.kind==='ongoing')
+    .map(o => ({ title:o.t, desc:o.d, tag:o.freq }));
+
+  // timeline + table
+  const sortable = applicable.map(o => ({o, d:effDate(o)}));
+  sortable.sort((a,b) => { if(!a.d) return 1; if(!b.d) return -1; return a.d-b.d; });
+
+  function statusFor(o, d) {
+    if (!d) return {status:'Ongoing', color:'var(--mut)', soft:'#eef3f8'};
+    const dd = daysUntil(d);
+    if (dd<0)  return {status:'Filed',    color:'var(--good)', soft:'var(--goodSoft)'};
+    if (dd<=30) return {status:'Due soon', color:'var(--warn)', soft:'var(--warnSoft)'};
+    return {status:'Upcoming', color:'var(--accInk)', soft:'var(--accSoft)'};
+  }
+
+  // right rail progress
+  let hasProgress=false, progress={}, hasSetAside=false, setAside={}, showRailNote=false, railNoteTitle='', railNoteBody='';
+  function mk(st, label) {
+    if (st==='done') return { mark:'✓', markStyle:{width:'18px',height:'18px',borderRadius:'50%',background:'var(--acc)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',flexShrink:0}, label, labelStyle:{fontSize:'13px',color:'var(--mut)'} };
+    if (st==='current') return { mark:'', markStyle:{width:'18px',height:'18px',borderRadius:'50%',border:'2px solid var(--acc)',flexShrink:0}, label, labelStyle:{fontSize:'13px',fontWeight:'600',color:'var(--ink)'} };
+    return { mark:'', markStyle:{width:'18px',height:'18px',borderRadius:'50%',border:'2px solid var(--line)',flexShrink:0}, label, labelStyle:{fontSize:'13px',color:'var(--dim)'} };
+  }
+  if (type==='se'||type==='mi') {
+    hasProgress=true;
+    progress = { title:'2026 filing progress', barPct:'25%', rows:[mk('done','Q1 · filed May 15'),mk('current','Q2 · due Aug 17'),mk('todo','Q3 · due Nov 16'),mk('todo','Annual · Apr 2027')] };
+    hasSetAside=true;
+    setAside = { amount:money(18400), basis:'8% of ₱230,000 taxable year-to-date' };
+  } else if (type==='corp') {
+    hasProgress=true;
+    progress = { title:'2026 filing progress', barPct:'25%', rows:[mk('done','Q1 · filed May 29'),mk('current','Q2 · due Aug 29'),mk('todo','Q3 · due Nov 29'),mk('todo','Annual · Apr 2027')] };
+  } else {
+    showRailNote=true; railNoteTitle='You\'re covered';
+    railNoteBody='Your employer handles your monthly withholding and your annual return through substituted filing. Just keep your 2316 each year.';
+  }
+
+  const summaryLine = type==='emp'
+    ? 'Showing what applies to an employee on compensation income.'
+    : `Showing ${applicable.length} obligations for ${T.name} · ${T.regimes.find(r=>r.key===regime).label}.`;
+
+  const monthLabel = today.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  return (
+    <div>
+      {/* context bar */}
+      <div style={{background:'var(--sf)',borderBottom:'1px solid var(--line)'}}>
+        <div style={{maxWidth:'1080px',margin:'0 auto',padding:'14px 28px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'16px',flexWrap:'wrap'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'14px',flexWrap:'wrap'}}>
+            <SegmentedGroup>
+              {Object.keys(TYPES).map(k => (
+                <button key={k} style={segStyle(type===k)} onClick={() => setType(k)}>{TYPES[k].name}</button>
+              ))}
+            </SegmentedGroup>
+            {T.regimes.length > 1 && (
+              <SegmentedGroup>
+                {T.regimes.map(r => (
+                  <button key={r.key} style={segStyle(regime===r.key)} onClick={() => setState(s=>({...s,regime:r.key}))}>{r.label}</button>
+                ))}
+              </SegmentedGroup>
+            )}
+          </div>
+          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',color:'var(--mut)'}}>FY 2026</span>
+        </div>
+      </div>
+
+      <div style={{maxWidth:'1080px',margin:'0 auto',padding:'26px 28px 56px'}}>
+        {/* heading + view toggle */}
+        <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:'16px',flexWrap:'wrap',marginBottom:'22px'}}>
+          <div>
+            <h1 style={{fontSize:'24px',fontWeight:'800',letterSpacing:'-.025em'}}>Your tax calendar</h1>
+            <p style={{fontSize:'14px',color:'var(--mut)',marginTop:'4px'}}>{summaryLine}</p>
+          </div>
+          <SegmentedGroup>
+            {[['feed','Feed'],['timeline','Timeline'],['table','Table']].map(([k,l]) => (
+              <button key={k} style={segStyle(view===k)} onClick={() => setState(s=>({...s,view:k}))}>{l}</button>
+            ))}
+          </SegmentedGroup>
+        </div>
+
+        <div style={{display:'flex',flexWrap:'wrap',gap:'28px',alignItems:'flex-start'}}>
+          {/* main column */}
+          <div style={{flex:'1 1 440px',minWidth:0}}>
+
+            {/* FEED VIEW */}
+            {view==='feed' && (
+              <div>
+                {/* hero normal */}
+                {heroNormal && (
+                  <div style={{background:'var(--brand)',borderRadius:'16px',padding:'28px',display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'24px',color:'#fff'}}>
+                    <div style={{maxWidth:'440px'}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11.5px',fontWeight:'500',letterSpacing:'.13em',textTransform:'uppercase',color:'#a9cde6'}}>Next deadline</div>
+                      <h2 style={{fontSize:'24px',fontWeight:'700',letterSpacing:'-.02em',marginTop:'11px',lineHeight:'1.15'}}>{hero.title}</h2>
+                      <p style={{fontSize:'14px',lineHeight:'1.55',color:'#cdddea',marginTop:'10px'}}>{hero.desc}</p>
+                      <div style={{display:'flex',gap:'8px',marginTop:'16px'}}>
+                        <span style={{padding:'5px 10px',borderRadius:'7px',background:'rgba(255,255,255,.12)',fontSize:'12px',fontWeight:'600',color:'#e4eef6'}}>{hero.form}</span>
+                        <span style={{padding:'5px 10px',borderRadius:'7px',background:'rgba(255,255,255,.12)',fontSize:'12px',fontWeight:'600',color:'#e4eef6'}}>{hero.freq}</span>
+                      </div>
+                      <button style={{marginTop:'20px',padding:'11px 18px',borderRadius:'10px',border:'none',background:'#fff',color:'var(--brand)',fontFamily:'inherit',fontWeight:'600',fontSize:'13.5px',cursor:'pointer'}}>Start preparing →</button>
+                    </div>
+                    <div style={{textAlign:'right',flexShrink:0,borderLeft:'1px solid rgba(255,255,255,.14)',paddingLeft:'24px'}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'52px',fontWeight:'600',lineHeight:'1',letterSpacing:'-.02em'}}>{hero.days}</div>
+                      <div style={{fontSize:'12.5px',color:'#a9cde6',marginTop:'4px'}}>days left</div>
+                      <div style={{marginTop:'18px',fontSize:'14px',fontWeight:'600'}}>{hero.dateLabel}</div>
+                      {hero.shift && <div style={{fontSize:'12px',color:'#9bbdd6',marginTop:'3px'}}>{hero.shift}</div>}
+                    </div>
+                  </div>
+                )}
+                {/* hero special */}
+                {heroSpecial && (
+                  <div style={{background:'var(--brand)',borderRadius:'16px',padding:'30px',color:'#fff'}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11.5px',fontWeight:'500',letterSpacing:'.13em',textTransform:'uppercase',color:'#a9cde6'}}>Good news</div>
+                    <h2 style={{fontSize:'24px',fontWeight:'700',letterSpacing:'-.02em',marginTop:'11px',lineHeight:'1.2',maxWidth:'480px'}}>{heroSpecialTitle}</h2>
+                    <p style={{fontSize:'14.5px',lineHeight:'1.6',color:'#cdddea',marginTop:'11px',maxWidth:'520px'}}>{heroSpecialDesc}</p>
+                  </div>
+                )}
+                {/* due this month */}
+                {monthItems.length > 0 && (
+                  <div>
+                    <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',margin:'28px 0 12px'}}>
+                      <h3 style={{fontSize:'15px',fontWeight:'700',letterSpacing:'-.01em'}}>Due this month</h3>
+                      <span style={{fontSize:'13px',color:'var(--mut)'}}>{monthLabel}</span>
+                    </div>
+                    <div style={{border:'1px solid var(--line)',borderRadius:'13px',background:'var(--sf)',overflow:'hidden'}}>
+                      {monthItems.map((item,i) => <FeedItem key={i} item={item} />)}
+                    </div>
+                  </div>
+                )}
+                {/* coming up later */}
+                {laterItems.length > 0 && (
+                  <div>
+                    <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',margin:'28px 0 12px'}}>
+                      <h3 style={{fontSize:'15px',fontWeight:'700',letterSpacing:'-.01em'}}>Coming up later</h3>
+                      <span style={{fontSize:'13px',color:'var(--mut)'}}>rest of FY 2026–27</span>
+                    </div>
+                    <div style={{border:'1px solid var(--line)',borderRadius:'13px',background:'var(--sf)',overflow:'hidden'}}>
+                      {laterItems.map((item,i) => (
+                        <div key={i} style={{display:'flex',alignItems:'center',gap:'16px',padding:'15px 18px',borderBottom:'1px solid var(--line2)'}}>
+                          <div style={{textAlign:'center',flexShrink:0,width:'44px'}}>
+                            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'17px',fontWeight:'600',color:'var(--ink)'}}>{item.dateTop}</div>
+                            <div style={{fontSize:'10.5px',textTransform:'uppercase',letterSpacing:'.08em',color:'var(--dim)'}}>{item.dateBot}</div>
+                          </div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontWeight:'600',fontSize:'14.5px'}}>{item.title}</div>
+                            <div style={{fontSize:'13px',color:'var(--mut)',marginTop:'2px'}}>{item.desc}</div>
+                          </div>
+                          <span style={tagStyle()}>{item.tag}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* always-on */}
+                {alwaysItems.length > 0 && (
+                  <div>
+                    <div style={{margin:'28px 0 12px'}}>
+                      <h3 style={{fontSize:'15px',fontWeight:'700',letterSpacing:'-.01em'}}>Always-on</h3>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:'12px'}}>
+                      {alwaysItems.map((item,i) => (
+                        <div key={i} style={{border:'1px solid var(--line)',borderRadius:'13px',background:'var(--sf)',padding:'16px 18px'}}>
+                          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                            <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'var(--accDot)',display:'block'}}></span>
+                            <span style={{fontSize:'11.5px',fontWeight:'600',textTransform:'uppercase',letterSpacing:'.05em',color:'var(--mut)'}}>{item.tag}</span>
+                          </div>
+                          <div style={{fontWeight:'600',fontSize:'14.5px',marginTop:'9px'}}>{item.title}</div>
+                          <div style={{fontSize:'13px',color:'var(--mut)',marginTop:'3px'}}>{item.desc}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TIMELINE VIEW */}
+            {view==='timeline' && (
+              <div style={{position:'relative',paddingLeft:'8px'}}>
+                <div style={{position:'absolute',left:'14px',top:'8px',bottom:'8px',width:'2px',background:'var(--line)'}}></div>
+                {sortable.map(({o,d},i) => {
+                  const st = statusFor(o,d);
+                  return (
+                    <div key={i} style={{display:'flex',alignItems:'flex-start',gap:'16px',marginBottom:'14px',position:'relative'}}>
+                      <span style={{width:'14px',height:'14px',borderRadius:'50%',flexShrink:0,marginTop:'14px',background:st.color,boxShadow:`0 0 0 3px var(--bg),0 0 0 4px ${st.color}`,position:'relative',zIndex:1,display:'block'}}></span>
+                      <div style={{flex:1,minWidth:0,background:'var(--sf)',border:'1px solid var(--line)',borderRadius:'12px',padding:'14px 17px'}}>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'10px',flexWrap:'wrap'}}>
+                          <span style={{fontSize:'11.5px',fontWeight:'700',padding:'3px 9px',borderRadius:'100px',color:st.color,background:st.soft}}>{st.status}</span>
+                          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',color:'var(--mut)'}}>{d?fmtDate(d):'No fixed date'}</span>
+                        </div>
+                        <div style={{fontWeight:'600',fontSize:'14.5px',marginTop:'7px'}}>{o.t}</div>
+                        <div style={{fontSize:'13px',color:'var(--mut)',marginTop:'2px'}}>{o.d}</div>
+                        {o.form && <span style={{display:'inline-block',marginTop:'9px',fontFamily:"'IBM Plex Mono',monospace",fontSize:'11.5px',color:'var(--accInk)',background:'var(--accSoft)',padding:'3px 8px',borderRadius:'6px'}}>{o.form}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* TABLE VIEW */}
+            {view==='table' && (
+              <div style={{border:'1px solid var(--line)',borderRadius:'13px',background:'var(--sf)',overflow:'hidden'}}>
+                <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13.5px'}}>
+                  <thead>
+                    <tr style={{background:'#f3f7fb'}}>
+                      {['Date','Obligation','Form','Type','Est.'].map((h,i) => (
+                        <th key={i} style={{textAlign:i===4?'right':'left',padding:'11px 16px',fontSize:'11px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.06em',color:'var(--mut)'}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortable.map(({o,d},i) => (
+                      <tr key={i} style={{borderTop:'1px solid var(--line2)'}}>
+                        <td style={{padding:'12px 16px',fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',color:'var(--ink)',whiteSpace:'nowrap'}}>{d?fmtDate(d):'Ongoing'}</td>
+                        <td style={{padding:'12px 16px',fontWeight:'600',color:'var(--ink)'}}>{o.t}</td>
+                        <td style={{padding:'12px 16px',fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',color:'var(--mut)'}}>{o.form||'—'}</td>
+                        <td style={{padding:'12px 16px',color:'var(--mut)'}}>{CATLABEL[o.cat]||''}</td>
+                        <td style={{padding:'12px 16px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',color:'var(--ink)'}}>{o.amt!=null?money(o.amt):'—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* right rail */}
+          <div style={{flex:'1 1 300px',maxWidth:'340px'}}>
+            {hasProgress && (
+              <div style={{border:'1px solid var(--line)',borderRadius:'13px',background:'var(--sf)',padding:'18px'}}>
+                <div style={{fontSize:'13px',fontWeight:'700',letterSpacing:'-.01em'}}>{progress.title}</div>
+                <div style={{height:'6px',borderRadius:'3px',background:'var(--line)',margin:'14px 0 16px',overflow:'hidden'}}>
+                  <div style={{width:progress.barPct,height:'100%',background:'var(--acc)',borderRadius:'3px'}}></div>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:'11px'}}>
+                  {progress.rows.map((row,i) => (
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                      <span style={{...row.markStyle,display:'flex',alignItems:'center',justifyContent:'center'}}>{row.mark}</span>
+                      <span style={row.labelStyle}>{row.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {hasSetAside && (
+              <div style={{border:'1px solid var(--line)',borderRadius:'13px',background:'var(--sf)',padding:'18px',marginTop:'16px'}}>
+                <div style={{fontSize:'13px',fontWeight:'700',letterSpacing:'-.01em'}}>Set aside for tax</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'25px',fontWeight:'600',letterSpacing:'-.01em',marginTop:'9px'}}>{setAside.amount}</div>
+                <div style={{fontSize:'12.5px',color:'var(--mut)',marginTop:'4px'}}>{setAside.basis}</div>
+                <div style={{marginTop:'14px',paddingTop:'13px',borderTop:'1px solid var(--line2)',fontSize:'12.5px',color:'var(--mut)',lineHeight:'1.5'}}>A running estimate — open the calculator for the exact figure.</div>
+              </div>
+            )}
+            {showRailNote && (
+              <div style={{border:'1px solid var(--line)',borderRadius:'13px',background:'var(--accSoft)',padding:'18px'}}>
+                <div style={{fontSize:'13px',fontWeight:'700',letterSpacing:'-.01em',color:'var(--accInk)'}}>{railNoteTitle}</div>
+                <div style={{fontSize:'13px',color:'var(--accInk)',marginTop:'7px',lineHeight:'1.55',opacity:'.85'}}>{railNoteBody}</div>
+              </div>
+            )}
+            <div style={{border:'1px solid var(--line)',borderRadius:'13px',background:'var(--sf)',padding:'16px 18px',marginTop:'16px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'9px'}}>
+                <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--warn)',display:'block'}}></span>
+                <span style={{fontSize:'12px',fontWeight:'600',color:'var(--mut)'}}>Heads up</span>
+              </div>
+              <div style={{fontSize:'12.5px',color:'var(--mut)',marginTop:'8px',lineHeight:'1.55'}}>This is a reference tool, not formal tax advice. Verify dates and rates against the BIR before filing.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Calculator page ────────────────────────────────────────────────────────
+function CalculatorPage({ state, setState }) {
+  const { gross, expenses, cwt } = state;
+
+  function setNum(key, e) {
+    const v = parseInt(String(e.target.value).replace(/[^0-9]/g,'')) || 0;
+    setState(s => ({...s, [key]: v}));
+  }
+
+  const vat = gross > 3000000;
+  const elig8 = !vat;
+  const base8 = Math.max(0, gross-250000), tax8 = base8*0.08;
+  const pct = vat ? 0 : gross*0.03;
+  const osdDed = gross*0.40, osdNet = gross-osdDed, osdInc = gradTax(osdNet), osdTot = osdInc+pct;
+  const itemNet = Math.max(0, gross-expenses), itemInc = gradTax(itemNet), itemTot = itemInc+pct;
+
+  const cards = [
+    {key:'8pct', name:'8% flat tax',             eligible:elig8, income:tax8,    pct:0,   total:tax8,    form:'Files: 1701Q + 1701A'},
+    {key:'osd',  name:'Graduated + OSD',          eligible:true,  income:osdInc,  pct,     total:osdTot,  form:'Files: 1701A + 2551Q'},
+    {key:'item', name:'Graduated + itemized',     eligible:true,  income:itemInc, pct,     total:itemTot, form:'Files: 1701 + 2551Q'},
+  ];
+  const eligible = cards.filter(c => c.eligible);
+  const bestTotal = Math.min(...eligible.map(c => c.total));
+  const best = eligible.find(c => c.total===bestTotal);
+  const others = eligible.filter(c => c!==best).map(c => c.total).sort((a,b)=>a-b);
+  const nextTotal = others.length ? others[0] : null;
+
+  let recoText;
+  if (nextTotal!=null) {
+    const save = Math.round(nextTotal-best.total);
+    recoText = best.name+' is your cheapest option at '+money(best.total)+(save>0?' — saving '+money(save)+' versus the next best.':' (tied with another option).');
+  } else {
+    recoText = best.name+' applies at '+money(best.total)+'.';
+  }
+
+  // breakdown rows
+  let rows = [];
+  const r = (label,value,o={}) => ({label,value,strong:false,rule:false,sub:'',...o});
+  if (best.key==='8pct') {
+    rows=[r('Gross sales / receipts',money(gross)),r('Less: annual allowance','('+money(250000)+')'),r('Taxable base',money(base8),{rule:true}),r('Income tax @ 8%',money(tax8),{strong:true}),r('Percentage tax','₱0',{sub:'The 8% rate is in lieu of the 3% percentage tax'})];
+  } else if (best.key==='osd') {
+    rows=[r('Gross sales / receipts',money(gross)),r('Less: OSD (40% of gross)','('+money(osdDed)+')'),r('Net taxable income',money(osdNet),{rule:true}),r('Graduated income tax',money(osdInc),{strong:true})];
+    rows.push(vat ? r('Business tax','VAT 12%',{sub:'Above ₱3M you register for VAT — computed separately on value added.'}) : r('Percentage tax (3% of gross)',money(pct),{strong:true}));
+  } else {
+    rows=[r('Gross sales / receipts',money(gross)),r('Less: itemized expenses','('+money(expenses)+')'),r('Net taxable income',money(itemNet),{rule:true}),r('Graduated income tax',money(itemInc),{strong:true})];
+    rows.push(vat ? r('Business tax','VAT 12%',{sub:'Above ₱3M you register for VAT — computed separately on value added.'}) : r('Percentage tax (3% of gross)',money(pct),{strong:true}));
+  }
+  rows.push(r('Total annual tax',money(best.total),{strong:true,rule:true}));
+  if (cwt>0) { rows.push(r('Less: tax already withheld','('+money(cwt)+')')); rows.push(r('Tax still payable',money(Math.max(0,best.total-cwt)),{strong:true})); }
+
+  const taxableBase = best.key==='8pct' ? base8 : (best.key==='osd' ? osdNet : itemNet);
+  const formTitle = best.key==='item' ? 'BIR Form 1701' : 'BIR Form 1701A';
+  const formRows = [
+    {no:'19', label:'Net taxable income',     value:money(taxableBase)},
+    {no:'20', label:'Income tax due',          value:money(best.income)},
+    {no:'—',  label:vat?'Business tax (VAT)':'Percentage tax (2551Q)', value:vat?'VAT 12%':(best.pct>0?money(best.pct):'—')},
+    {no:'26', label:'Total tax payable'+(cwt>0?' (net of CWT)':''),    value:money(Math.max(0,best.total-cwt))},
+  ];
+
+  return (
+    <div style={{maxWidth:'1080px',margin:'0 auto',padding:'26px 28px 64px'}}>
+      <div style={{marginBottom:'20px'}}>
+        <h1 style={{fontSize:'24px',fontWeight:'800',letterSpacing:'-.025em'}}>Which regime saves you the most?</h1>
+        <p style={{fontSize:'14px',color:'var(--mut)',marginTop:'4px'}}>Enter your numbers once — compare 8%, graduated + OSD, and graduated + itemized, with the full math.</p>
+      </div>
+
+      {/* inputs */}
+      <div style={{border:'1px solid var(--line)',borderRadius:'14px',background:'var(--sf)',padding:'22px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:'18px'}}>
+          {[
+            {label:'Gross sales / receipts · year', key:'gross', size:'18px', val:gross},
+            {label:'Itemized expenses',              key:'expenses', size:'15px', val:expenses},
+            {label:'Tax already withheld',           key:'cwt', size:'15px', val:cwt},
+          ].map(({label,key,size,val}) => (
+            <div key={key}>
+              <label style={{fontSize:'12px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',color:'var(--mut)'}}>{label}</label>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px',border:'1.5px solid var(--line)',borderRadius:'10px',padding:'9px 13px',background:'#fbfdff'}}>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:size,color:'var(--mut)'}}>₱</span>
+                <input type="text" inputMode="numeric" value={val.toLocaleString('en-US')} onChange={e=>setNum(key,e)} style={{border:'none',outline:'none',background:'transparent',fontFamily:"'IBM Plex Mono',monospace",fontSize:size,fontWeight:'600',color:'var(--ink)',width:'100%',minWidth:0}} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:'8px',marginTop:'16px',flexWrap:'wrap'}}>
+          {['Self-Employed','Non-VAT','Pure professional','CWT credited to income tax'].map(t => (
+            <span key={t} style={{padding:'5px 11px',borderRadius:'7px',background:'#eef3f8',fontSize:'12px',fontWeight:'600',color:'var(--mut)'}}>{t}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* VAT notice */}
+      {vat && (
+        <div style={{marginTop:'16px',background:'var(--warnSoft)',border:'1px solid #e7d3ad',borderRadius:'12px',padding:'15px 18px',display:'flex',alignItems:'flex-start',gap:'12px'}}>
+          <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'var(--warn)',marginTop:'6px',flexShrink:0,display:'block'}}></span>
+          <span style={{fontSize:'13.5px',color:'#7a5a1f',lineHeight:'1.5'}}>You're above the <b>₱3,000,000 VAT threshold</b>. The 8% and 3% percentage-tax options no longer apply — you must register for VAT (12%). The figures below cover <b>income tax only</b>; VAT is computed separately on your value added.</span>
+        </div>
+      )}
+
+      {/* comparison cards */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'14px',marginTop:'16px'}}>
+        {cards.map(c => {
+          const isBest = c.eligible && c===best;
+          const cardStyle = {
+            borderRadius:'13px', padding:'18px',
+            border: isBest ? '1.5px solid var(--acc)' : '1.5px solid var(--line)',
+            background: isBest ? 'var(--accSoft)' : 'var(--sf)',
+            opacity: c.eligible ? 1 : 0.6,
+          };
+          return (
+            <div key={c.key} style={cardStyle}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px'}}>
+                <span style={{fontWeight:'700',fontSize:'14.5px'}}>{c.name}</span>
+                {isBest && <span style={{fontSize:'10px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',padding:'3px 8px',borderRadius:'100px',background:'var(--good)',color:'#fff'}}>Lowest</span>}
+                {!c.eligible && <span style={{fontSize:'10px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',padding:'3px 8px',borderRadius:'100px',background:'#eef3f8',color:'var(--mut)'}}>N/A</span>}
+              </div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'26px',fontWeight:'600',letterSpacing:'-.01em',marginTop:'10px',color:isBest?'var(--accInk)':'var(--ink)'}}>{c.eligible?money(c.total):'—'}</div>
+              <div style={{fontSize:'12px',color:'var(--mut)',marginTop:'3px'}}>{c.eligible?'estimated annual tax':'Over ₱3M — VAT instead'}</div>
+              <div style={{marginTop:'14px',paddingTop:'13px',borderTop:'1px solid var(--line2)',display:'flex',flexDirection:'column',gap:'7px'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span style={{fontSize:'12.5px',color:'var(--mut)'}}>Income tax</span>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',fontWeight:'600',color:'var(--ink)'}}>{c.eligible?money(c.income):'—'}</span>
+                </div>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span style={{fontSize:'12.5px',color:'var(--mut)'}}>Percentage tax</span>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',fontWeight:'600',color:'var(--ink)'}}>{c.eligible?(vat?'VAT 12%':(c.pct>0?money(c.pct):'₱0')):'—'}</span>
+                </div>
+              </div>
+              <div style={{marginTop:'12px',fontSize:'11.5px',color:'var(--dim)'}}>{c.form}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* recommendation */}
+      <div style={{marginTop:'16px',background:'var(--brand)',color:'#fff',borderRadius:'13px',padding:'17px 20px',display:'flex',alignItems:'center',gap:'13px'}}>
+        <span style={{width:'26px',height:'26px',borderRadius:'50%',background:'var(--good)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',flexShrink:0}}>✓</span>
+        <span style={{fontSize:'15px',fontWeight:'600',lineHeight:'1.4'}}>{recoText}</span>
+      </div>
+
+      {/* breakdown + form preview */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:'20px',marginTop:'20px',alignItems:'start'}}>
+        <div style={{border:'1px solid var(--line)',borderRadius:'14px',background:'var(--sf)',padding:'22px'}}>
+          <h3 style={{fontSize:'15px',fontWeight:'700',letterSpacing:'-.01em'}}>How we got there — {best.name}</h3>
+          <div style={{marginTop:'8px'}}>
+            {rows.map((x,i) => (
+              <div key={i}>
+                <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:'16px',padding:'9px 0',borderTop:x.rule?'1px solid var(--line)':undefined,marginTop:x.rule?'2px':undefined}}>
+                  <span style={{fontSize:'13.5px',color:x.strong?'var(--ink)':'var(--mut)',fontWeight:x.strong?'600':'400'}}>{x.label}</span>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'14px',color:'var(--ink)',fontWeight:x.strong?'700':'500'}}>{x.value}</span>
+                </div>
+                {x.sub && <div style={{fontSize:'12px',color:'var(--mut)',marginTop:'-3px',paddingBottom:'6px',fontStyle:'italic'}}>{x.sub}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{border:'1px solid var(--line)',borderRadius:'14px',background:'var(--sf)',overflow:'hidden'}}>
+          <div style={{background:'#f3f7fb',borderBottom:'1px solid var(--line)',padding:'15px 18px'}}>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px',letterSpacing:'.08em',textTransform:'uppercase',color:'var(--mut)'}}>Form preview</div>
+            <div style={{fontWeight:'700',fontSize:'14.5px',marginTop:'3px'}}>{formTitle}</div>
+          </div>
+          <div style={{padding:'6px 18px 16px'}}>
+            {formRows.map((f,i) => (
+              <div key={i} style={{display:'flex',alignItems:'center',gap:'12px',padding:'11px 0',borderTop:'1px solid var(--line2)'}}>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px',color:'var(--dim)',width:'18px',flexShrink:0}}>{f.no}</span>
+                <span style={{flex:1,fontSize:'13px',color:'var(--mut)'}}>{f.label}</span>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'13.5px',fontWeight:'600',color:'var(--ink)'}}>{f.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Forms page ─────────────────────────────────────────────────────────────
+function FormsPage({ state, setState }) {
+  const { formQuery, formCat, openForm } = state;
+  const q = formQuery.toLowerCase();
+
+  const cats = [['all','All'],['income','Income tax'],['business','Business tax'],['withholding','Withholding'],['registration','Registration']];
+  const cl = {income:'Income tax',business:'Business tax',withholding:'Withholding',registration:'Registration'};
+
+  const filtered = FORMS_DATA.filter(f =>
+    (formCat==='all' || f.cat===formCat) &&
+    (!q || (f.code+' '+f.name+' '+f.summary).toLowerCase().includes(q))
+  );
+
+  return (
+    <div style={{maxWidth:'1080px',margin:'0 auto',padding:'26px 28px 64px'}}>
+      <div style={{marginBottom:'18px'}}>
+        <h1 style={{fontSize:'24px',fontWeight:'800',letterSpacing:'-.025em'}}>BIR form reference</h1>
+        <p style={{fontSize:'14px',color:'var(--mut)',marginTop:'4px'}}>Every form a freelancer is likely to meet, in plain language. Tap one for what it's for, who files it, and the boxes that matter.</p>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:'12px',flexWrap:'wrap',marginBottom:'18px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'8px',border:'1.5px solid var(--line)',borderRadius:'10px',padding:'9px 13px',background:'var(--sf)',minWidth:'240px'}}>
+          <span style={{color:'var(--dim)',fontSize:'14px'}}>⌕</span>
+          <input type="text" value={formQuery} onChange={e=>setState(s=>({...s,formQuery:e.target.value}))} placeholder="Search forms…" style={{border:'none',outline:'none',background:'transparent',fontFamily:'inherit',fontSize:'14px',color:'var(--ink)',width:'100%',minWidth:0}} />
+        </div>
+        <SegmentedGroup>
+          {cats.map(([k,l]) => (
+            <button key={k} style={segStyle(formCat===k)} onClick={() => setState(s=>({...s,formCat:k}))}>{l}</button>
+          ))}
+        </SegmentedGroup>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+        {filtered.map(f => {
+          const isOpen = openForm===f.code;
+          return (
+            <div key={f.code} style={{border:`1.5px solid ${isOpen?'var(--acc)':'var(--line)'}`,borderRadius:'13px',background:'var(--sf)',overflow:'hidden',transition:'border-color .15s'}}>
+              <div onClick={() => setState(s=>({...s,openForm:isOpen?null:f.code}))} style={{display:'flex',alignItems:'center',gap:'16px',padding:'16px 18px',cursor:'pointer'}}>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',fontWeight:'600',color:'var(--accInk)',background:'var(--accSoft)',padding:'6px 10px',borderRadius:'8px',whiteSpace:'nowrap',flexShrink:0}}>{f.code}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:'600',fontSize:'14.5px'}}>{f.name}</div>
+                  <div style={{fontSize:'12.5px',color:'var(--mut)',marginTop:'2px'}}>{f.who}</div>
+                </div>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'12px',color:'var(--mut)',whiteSpace:'nowrap',flexShrink:0}}>{f.when}</span>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'18px',color:'var(--dim)',width:'16px',textAlign:'center',flexShrink:0}}>{isOpen?'–':'+'}</span>
+              </div>
+              {isOpen && (
+                <div style={{padding:'0 18px 18px',borderTop:'1px solid var(--line2)'}}>
+                  <p style={{fontSize:'14px',lineHeight:'1.6',color:'var(--ink)',marginTop:'14px'}}>{f.summary}</p>
+                  {f.lines && f.lines.length>0 && (
+                    <div style={{marginTop:'14px',display:'flex',flexDirection:'column',gap:'9px'}}>
+                      {f.lines.map((ln,i) => (
+                        <div key={i} style={{display:'flex',gap:'12px',alignItems:'baseline'}}>
+                          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11.5px',fontWeight:'600',color:'var(--accInk)',background:'var(--accSoft)',padding:'3px 8px',borderRadius:'6px',whiteSpace:'nowrap',flexShrink:0,minWidth:'56px',textAlign:'center'}}>{ln.box}</span>
+                          <span style={{fontSize:'13.5px',color:'var(--mut)',lineHeight:'1.5'}}>{ln.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Tools page ─────────────────────────────────────────────────────────────
+function ToolsPage({ state, setState }) {
+  const { penDue, penDays, penEopt, whComp, ytdGross, ytdMonths } = state;
+
+  function setNum(key, e) {
+    const v = parseInt(String(e.target.value).replace(/[^0-9]/g,'')) || 0;
+    setState(s => ({...s, [key]: v}));
+  }
+
+  const surRate = penEopt?0.10:0.25, intRate = penEopt?0.06:0.12;
+  const surcharge = penDue*surRate, interest = penDue*intRate*(penDays/365), comp = compromise(penDue);
+  const penTotal = penDue+surcharge+interest+comp;
+  const penRows = [
+    {label:'Basic tax due',                                       value:money(penDue)},
+    {label:`Surcharge (${Math.round(surRate*100)}%)`,             value:money(surcharge)},
+    {label:`Interest · ${penDays} days @ ${Math.round(intRate*100)}%/yr`, value:money(interest)},
+    {label:'Compromise penalty',                                  value:money(comp)},
+  ];
+
+  const whTax = monthlyWH(whComp), whRate = whComp>0 ? (whTax/whComp*100) : 0;
+
+  const projAnnual = ytdMonths>0 ? ytdGross/ytdMonths*12 : 0;
+  const proj8 = Math.max(0,(projAnnual-250000))*0.08, perMonth = proj8/12;
+
+  return (
+    <div style={{maxWidth:'1080px',margin:'0 auto',padding:'26px 28px 64px'}}>
+      <div style={{marginBottom:'20px'}}>
+        <h1 style={{fontSize:'24px',fontWeight:'800',letterSpacing:'-.025em'}}>Tools &amp; calculators</h1>
+        <p style={{fontSize:'14px',color:'var(--mut)',marginTop:'4px'}}>Quick utilities for the in-between moments — estimate a penalty, figure out withholding, or project where your year is heading.</p>
+      </div>
+
+      {/* penalty */}
+      <div style={{border:'1px solid var(--line)',borderRadius:'14px',background:'var(--sf)',padding:'22px',marginBottom:'16px'}}>
+        <h3 style={{fontSize:'16px',fontWeight:'700',letterSpacing:'-.01em'}}>Late-filing penalty estimator</h3>
+        <p style={{fontSize:'13.5px',color:'var(--mut)',marginTop:'3px'}}>Surcharge, interest and compromise penalty if you miss a deadline. EOPT gives micro &amp; small taxpayers reduced rates.</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:'16px',marginTop:'18px',alignItems:'end'}}>
+          <div>
+            <label style={{fontSize:'12px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',color:'var(--mut)'}}>Basic tax due</label>
+            <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px',border:'1.5px solid var(--line)',borderRadius:'10px',padding:'9px 13px',background:'#fbfdff'}}>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'15px',color:'var(--mut)'}}>₱</span>
+              <input type="text" inputMode="numeric" value={penDue.toLocaleString('en-US')} onChange={e=>setNum('penDue',e)} style={{border:'none',outline:'none',background:'transparent',fontFamily:"'IBM Plex Mono',monospace",fontSize:'15px',fontWeight:'600',color:'var(--ink)',width:'100%',minWidth:0}} />
+            </div>
+          </div>
+          <div>
+            <label style={{fontSize:'12px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',color:'var(--mut)'}}>Days late</label>
+            <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px',border:'1.5px solid var(--line)',borderRadius:'10px',padding:'9px 13px',background:'#fbfdff'}}>
+              <input type="text" inputMode="numeric" value={String(penDays)} onChange={e=>setNum('penDays',e)} style={{border:'none',outline:'none',background:'transparent',fontFamily:"'IBM Plex Mono',monospace",fontSize:'15px',fontWeight:'600',color:'var(--ink)',width:'100%',minWidth:0}} />
+            </div>
+          </div>
+          <div>
+            <label style={{fontSize:'12px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',color:'var(--mut)'}}>Taxpayer size</label>
+            <SegmentedGroup>
+              <button style={segStyle(penEopt)} onClick={() => setState(s=>({...s,penEopt:true}))}>Micro / Small</button>
+              <button style={segStyle(!penEopt)} onClick={() => setState(s=>({...s,penEopt:false}))}>Regular</button>
+            </SegmentedGroup>
+          </div>
+        </div>
+        <div style={{marginTop:'18px',borderTop:'1px solid var(--line2)',paddingTop:'6px'}}>
+          {penRows.map((row,i) => (
+            <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0'}}>
+              <span style={{fontSize:'13.5px',color:'var(--mut)'}}>{row.label}</span>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'13.5px',fontWeight:'500',color:'var(--ink)'}}>{row.value}</span>
+            </div>
+          ))}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 0 2px',borderTop:'1px solid var(--line)',marginTop:'4px'}}>
+            <span style={{fontSize:'14px',fontWeight:'700',color:'var(--ink)'}}>Estimated total to pay</span>
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'20px',fontWeight:'600',color:'var(--accInk)'}}>{money(penTotal)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* withholding + ytd */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:'16px'}}>
+        <div style={{border:'1px solid var(--line)',borderRadius:'14px',background:'var(--sf)',padding:'22px'}}>
+          <h3 style={{fontSize:'16px',fontWeight:'700',letterSpacing:'-.01em'}}>Compensation withholding</h3>
+          <p style={{fontSize:'13.5px',color:'var(--mut)',marginTop:'3px'}}>Monthly tax to withhold from an employee's taxable pay (TRAIN table).</p>
+          <label style={{display:'block',fontSize:'12px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',color:'var(--mut)',marginTop:'18px'}}>Monthly taxable pay</label>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px',border:'1.5px solid var(--line)',borderRadius:'10px',padding:'9px 13px',background:'#fbfdff'}}>
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'15px',color:'var(--mut)'}}>₱</span>
+            <input type="text" inputMode="numeric" value={whComp.toLocaleString('en-US')} onChange={e=>setNum('whComp',e)} style={{border:'none',outline:'none',background:'transparent',fontFamily:"'IBM Plex Mono',monospace",fontSize:'15px',fontWeight:'600',color:'var(--ink)',width:'100%',minWidth:0}} />
+          </div>
+          <div style={{marginTop:'18px',background:'var(--accSoft)',borderRadius:'11px',padding:'16px'}}>
+            <div style={{fontSize:'12px',color:'var(--accInk)',fontWeight:'600'}}>Tax to withhold each month</div>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'24px',fontWeight:'600',color:'var(--accInk)',marginTop:'5px'}}>{money(whTax)}</div>
+            <div style={{fontSize:'12.5px',color:'var(--accInk)',opacity:'.8',marginTop:'3px'}}>Effective rate {whRate.toFixed(1)}%</div>
+          </div>
+        </div>
+        <div style={{border:'1px solid var(--line)',borderRadius:'14px',background:'var(--sf)',padding:'22px'}}>
+          <h3 style={{fontSize:'16px',fontWeight:'700',letterSpacing:'-.01em'}}>Year-to-date projector</h3>
+          <p style={{fontSize:'13.5px',color:'var(--mut)',marginTop:'3px'}}>Where your annual income and 8% tax are heading.</p>
+          <div style={{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:'12px',marginTop:'18px'}}>
+            <div>
+              <label style={{fontSize:'12px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',color:'var(--mut)'}}>Gross so far</label>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px',border:'1.5px solid var(--line)',borderRadius:'10px',padding:'9px 13px',background:'#fbfdff'}}>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'15px',color:'var(--mut)'}}>₱</span>
+                <input type="text" inputMode="numeric" value={ytdGross.toLocaleString('en-US')} onChange={e=>setNum('ytdGross',e)} style={{border:'none',outline:'none',background:'transparent',fontFamily:"'IBM Plex Mono',monospace",fontSize:'15px',fontWeight:'600',color:'var(--ink)',width:'100%',minWidth:0}} />
+              </div>
+            </div>
+            <div>
+              <label style={{fontSize:'12px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.05em',color:'var(--mut)'}}>Months in</label>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px',border:'1.5px solid var(--line)',borderRadius:'10px',padding:'9px 13px',background:'#fbfdff'}}>
+                <input type="text" inputMode="numeric" value={String(ytdMonths)} onChange={e=>setNum('ytdMonths',e)} style={{border:'none',outline:'none',background:'transparent',fontFamily:"'IBM Plex Mono',monospace",fontSize:'15px',fontWeight:'600',color:'var(--ink)',width:'100%',minWidth:0}} />
+              </div>
+            </div>
+          </div>
+          <div style={{marginTop:'18px',display:'flex',flexDirection:'column',gap:'9px'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span style={{fontSize:'13.5px',color:'var(--mut)'}}>Projected annual income</span>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'14px',fontWeight:'600',color:'var(--ink)'}}>{money(projAnnual)}</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span style={{fontSize:'13.5px',color:'var(--mut)'}}>Estimated 8% tax</span>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'14px',fontWeight:'600',color:'var(--ink)'}}>{money(proj8)}</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',borderTop:'1px solid var(--line2)',paddingTop:'9px'}}>
+              <span style={{fontSize:'13.5px',fontWeight:'600',color:'var(--ink)'}}>Set aside / month</span>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'16px',fontWeight:'600',color:'var(--accInk)'}}>{money(perMonth)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Blog page ──────────────────────────────────────────────────────────────
+function BlogPage({ state, setState }) {
+  const { blogPost } = state;
+
+  if (!blogPost) {
+    const featured = POSTS.find(p=>p.feature) || POSTS[0];
+    const rest = POSTS.filter(p=>p!==featured);
+    return (
+      <div style={{maxWidth:'1080px',margin:'0 auto',padding:'34px 28px 64px'}}>
+        <div style={{marginBottom:'26px'}}>
+          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11.5px',fontWeight:'500',letterSpacing:'.13em',textTransform:'uppercase',color:'var(--acc)'}}>The Present Value Journal</div>
+          <h1 style={{fontSize:'30px',fontWeight:'800',letterSpacing:'-.025em',marginTop:'10px'}}>Plain-language tax, for people who'd rather be working</h1>
+        </div>
+        {/* featured */}
+        <div onClick={() => setState(s=>({...s,blogPost:featured.id}))} style={{border:'1px solid var(--line)',borderRadius:'16px',background:'var(--sf)',overflow:'hidden',cursor:'pointer',display:'flex',flexWrap:'wrap'}}>
+          <div style={{flex:'1 1 200px',background:'var(--brand)',padding:'28px',display:'flex',flexDirection:'column',justifyContent:'space-between',gap:'22px'}}>
+            <span style={{fontSize:'11.5px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.08em',color:'#a9cde6'}}>{featured.cat}</span>
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'12px',color:'#cdddea'}}>{featured.read} · {featured.date}</span>
+          </div>
+          <div style={{flex:'2.4 1 300px',padding:'28px'}}>
+            <div style={{fontSize:'11px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.08em',color:'var(--acc)'}}>Featured</div>
+            <h2 style={{fontSize:'23px',fontWeight:'700',letterSpacing:'-.02em',lineHeight:'1.2',marginTop:'10px'}}>{featured.title}</h2>
+            <p style={{fontSize:'14.5px',color:'var(--mut)',lineHeight:'1.6',marginTop:'11px'}}>{featured.excerpt}</p>
+            <div style={{marginTop:'16px',fontSize:'13.5px',fontWeight:'600',color:'var(--accInk)'}}>Read article →</div>
+          </div>
+        </div>
+        {/* list */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:'16px',marginTop:'18px'}}>
+          {rest.map(p => (
+            <div key={p.id} onClick={() => setState(s=>({...s,blogPost:p.id}))} style={{border:'1px solid var(--line)',borderRadius:'14px',background:'var(--sf)',padding:'20px',cursor:'pointer',display:'flex',flexDirection:'column'}}>
+              <span style={{fontSize:'11px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.07em',color:'var(--acc)'}}>{p.cat}</span>
+              <h3 style={{fontSize:'16.5px',fontWeight:'700',letterSpacing:'-.015em',lineHeight:'1.25',marginTop:'10px'}}>{p.title}</h3>
+              <p style={{fontSize:'13.5px',color:'var(--mut)',lineHeight:'1.55',marginTop:'9px',flex:1}}>{p.excerpt}</p>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11.5px',color:'var(--dim)',marginTop:'14px'}}>{p.read} · {p.date}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const p = POSTS.find(x=>x.id===blogPost) || POSTS[0];
+  return (
+    <div style={{maxWidth:'680px',margin:'0 auto',padding:'30px 28px 72px'}}>
+      <button onClick={() => setState(s=>({...s,blogPost:null}))} style={{border:'none',background:'transparent',fontFamily:'inherit',fontSize:'13.5px',fontWeight:'600',color:'var(--mut)',cursor:'pointer',padding:0,marginBottom:'24px'}}>← All articles</button>
+      <div style={{fontSize:'11.5px',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.08em',color:'var(--acc)'}}>{p.cat}</div>
+      <h1 style={{fontSize:'32px',fontWeight:'800',letterSpacing:'-.03em',lineHeight:'1.1',marginTop:'12px'}}>{p.title}</h1>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',color:'var(--mut)',marginTop:'14px',paddingBottom:'24px',borderBottom:'1px solid var(--line)'}}>{p.read} · {p.date}</div>
+      <div style={{marginTop:'8px'}}>
+        {(p.body||[]).map((b,i) => (
+          <div key={i}>
+            {b.kind==='p' && <p style={{fontSize:'17px',lineHeight:'1.7',color:'#34465a',marginTop:'20px'}}>{b.text}</p>}
+            {b.kind==='h' && <h2 style={{fontSize:'20px',fontWeight:'700',letterSpacing:'-.015em',color:'var(--ink)',marginTop:'32px'}}>{b.text}</h2>}
+            {b.kind==='quote' && <blockquote style={{marginTop:'24px',padding:'4px 0 4px 22px',borderLeft:'3px solid var(--acc)',fontSize:'19px',lineHeight:'1.5',fontWeight:'500',color:'var(--brand)'}}>{b.text}</blockquote>}
+            {b.kind==='list' && (
+              <div style={{marginTop:'18px',display:'flex',flexDirection:'column',gap:'11px'}}>
+                {b.items.map((t,j) => (
+                  <div key={j} style={{display:'flex',gap:'13px',alignItems:'baseline'}}>
+                    <span style={{width:'6px',height:'6px',borderRadius:'50%',background:'var(--acc)',flexShrink:0,marginTop:'8px',display:'block'}}></span>
+                    <span style={{fontSize:'16.5px',lineHeight:'1.6',color:'#34465a'}}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── App root ───────────────────────────────────────────────────────────────
+function App() {
+  const [state, setState] = useState({
+    type:'se', regime:'8pct', view:'feed', page:'calendar',
+    gross:480000, expenses:180000, cwt:0,
+    formQuery:'', formCat:'all', openForm:'1701Q',
+    penDue:50000, penDays:60, penEopt:true,
+    whComp:50000, ytdGross:240000, ytdMonths:6,
+    blogPost:null,
+  });
+
+  const { page } = state;
+
+  const pages = [
+    ['calendar','Calendar'],
+    ['calculator','Calculator'],
+    ['forms','Forms'],
+    ['tools','Tools'],
+    ['blog','Blog'],
+  ];
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)',color:'var(--ink)',fontSize:'14px'}}>
+      {/* header */}
+      <header style={{position:'sticky',top:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',flexWrap:'nowrap',padding:'14px 28px',background:'rgba(255,255,255,.86)',backdropFilter:'blur(10px)',borderBottom:'1px solid var(--line)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'16px',flex:'1 1 auto',minWidth:0}}>
+          <div style={{display:'flex',alignItems:'center',gap:'11px',flexShrink:0}}>
+            <div style={{width:'30px',height:'30px',borderRadius:'50%',background:'var(--brand)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'700',fontSize:'15px'}}>₱</div>
+            <span style={{fontWeight:'700',fontSize:'16.5px',letterSpacing:'-.02em',color:'var(--ink)',whiteSpace:'nowrap'}}>Present Value</span>
+          </div>
+          <nav style={{display:'flex',gap:'2px',flex:'0 1 auto',overflowX:'auto',minWidth:0}}>
+            {pages.map(([k,l]) => (
+              <button key={k} style={navStyle(page===k)} onClick={() => setState(s=>({...s,page:k}))}>{l}</button>
+            ))}
+          </nav>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'14px',flexShrink:0}}>
+          <div style={{width:'32px',height:'32px',borderRadius:'50%',background:'var(--accSoft)',color:'var(--accInk)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'700',fontSize:'13px'}}>M</div>
+        </div>
+      </header>
+
+      {/* pages */}
+      {page==='calendar'   && <CalendarPage   state={state} setState={setState} />}
+      {page==='calculator' && <CalculatorPage state={state} setState={setState} />}
+      {page==='forms'      && <FormsPage      state={state} setState={setState} />}
+      {page==='tools'      && <ToolsPage      state={state} setState={setState} />}
+      {page==='blog'       && <BlogPage       state={state} setState={setState} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
