@@ -63,10 +63,10 @@ export function Switch({ on, onChange, title, desc }) {
 }
 
 // Statutory-estimate disclaimer required under every computed figure.
-export function Disclaimer({ children }) {
+export function Disclaimer({ children, lead }) {
   return (
     <div className="disclaimer" role="note">
-      <b>This is an estimate, not tax or legal advice.</b>{' '}
+      <b>{lead || 'This is an estimate, not tax or legal advice.'}</b>{' '}
       {children || 'Figures are computed from published rates and schedules and do not account for your complete facts. Have a CPA review your numbers before filing or paying.'}
     </div>
   )

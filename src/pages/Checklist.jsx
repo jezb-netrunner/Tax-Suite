@@ -67,7 +67,7 @@ export default function Checklist() {
         )
       })}
 
-      <Disclaimer>
+      <Disclaimer lead="This is a general guide, not tax or legal advice.">
         This checklist covers the recurring obligations most taxpayers of this type meet; industry-specific
         requirements (secondary licenses, special registrations) may add more. Confirm the complete set with
         your CPA.
