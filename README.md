@@ -1,40 +1,82 @@
 # Present Value — Philippine Tax Suite
 
-A standalone, single-file web app that helps self-employed Filipino freelancers and professionals
-see and compute their taxes under current Philippine tax law.
+A multi-tenant SaaS web app from **The Present Value** that gives Philippine taxpayers —
+MSME owners, freelancers/professionals, employers, corporations, and the bookkeepers who
+serve them — three integrated tools:
 
-**Open `index.html` in any browser — no build step, no server required.**
-(It loads React and Babel from a CDN, so it needs an internet connection on first load.)
+1. **Deadline tracker** — a personalized compliance calendar of every BIR filing/payment
+   date (plus LGU, SSS, PhilHealth, Pag-IBIG, SEC, DTI, DOLE obligations) that applies to a
+   specific taxpayer profile, weekend/holiday-shifted by rule.
+2. **Tax estimator** — regime-aware liability estimates with the full math shown line by
+   line: 8% vs graduated (OSD/itemized) for individuals, mixed-income aggregation,
+   employee annualization and take-home, corporate RCIT vs MCIT, payroll withholding.
+3. **Compliance checklist** — the recurring, no-fixed-date obligations (invoicing, books,
+   registration upkeep, GIS timing) tied to that profile.
 
-## What's inside
+Accounts hold **multiple taxpayer profiles** — a bookkeeper can manage every client from
+one login. Without a configured backend the app runs in local mode (profiles stored
+in-browser).
 
-| Page | What it does |
+## Stack
+
+- React 18 + Vite, plain CSS design system (`src/styles/app.css`)
+- Supabase (auth + Postgres with row-level security) — optional; local mode otherwise
+- Vitest for the tax-engine test suite (`tests/engine/`)
+
+```bash
+npm install
+npm run dev        # local dev
+npm test           # engine tests (hand-worked tax examples)
+npm run build      # production build → dist/ (static, deploy anywhere)
+```
+
+## Where the tax rules live — and how to update them
+
+**All rates, thresholds, deadlines, forms, and holidays are data, not code**, in
+[`src/data/rules/`](src/data/rules/):
+
+| File | Contents |
 |---|---|
-| **Calendar** | Regime-aware BIR deadlines for Self-Employed, Mixed Income, Corporation and Employee taxpayers, with a live countdown to the next deadline, Feed / Timeline / Table views, and a computed filing-progress rail. |
-| **Calculator** | Live three-way comparison — 8% flat tax vs graduated + 40% OSD vs graduated + itemized — with the full math, CWT crediting (including overpayment / carry-over), the ₱3M VAT-threshold guard, and a filled BIR form preview. |
-| **Forms** | Plain-language reference for 14 BIR forms (1701Q, 1701A, 1701, 1702Q, 1702-RT, 2551Q, 2550Q, 2307, 2316, 1601-C, 0619-E, 0605, 1901, 1905). |
-| **Tools** | Late-filing penalty estimator (EOPT-aware), monthly compensation-withholding calculator, and a year-to-date income/tax projector. |
-| **Blog** | Plain-language guides on the 8%-vs-graduated decision, first-year registration, 2307s, and key deadlines. |
+| `income-tax.json` | Graduated brackets, 8% option, OSD, 13th-month cap |
+| `withholding-compensation.json` | The four 2023+ withholding tables, annualization |
+| `business-tax.json` | VAT rate/threshold, percentage tax |
+| `corporate.json` | RCIT 25%/20%, MCIT, fiscal-year rules |
+| `ewt-rates.json` | Common expanded-withholding rates |
+| `penalties.json` | Surcharge/interest/compromise + EOPT classification |
+| `contributions.json` | SSS / PhilHealth / Pag-IBIG schedules |
+| `obligations.json` | Every deadline rule: who, what form, what schedule |
+| `holidays.json` | Non-working days used for deadline shifting |
+| `meta.json` | Verification date stamp |
 
-## Tax rules implemented (TY 2026)
+Every entry carries `legalBasis` (the RA/RR/RMC it comes from), `confidence`
+(`verified` or `needs_review`), and notes. The in-app **References** page is generated
+from these same files, so the audit trail can't drift from behavior. When the law changes:
+edit the value, cite the issuance, bump `meta.json` — no code changes.
 
-- **Graduated income tax** — TRAIN (RA 10963) rates effective 2023 onward, Sec 24(A).
-- **8% flat option** — 8% on gross receipts above the ₱250,000 allowance, in lieu of graduated
-  rates *and* the 3% percentage tax; unavailable above the ₱3,000,000 VAT threshold.
-- **Percentage tax** — 3% of gross (post-CREATE reversion, from July 1, 2023).
-- **OSD** — 40% of gross sales/receipts for individuals.
-- **VAT** — 12% registration required above ₱3M gross.
-- **Withholding on compensation** — revised monthly table effective 2023 (RR 11-2018 as amended).
-- **Penalties** — 25% surcharge + 12%/yr interest + RMO 7-2015 compromise; reduced to
-  10% / 6%/yr for micro & small taxpayers under EOPT (RA 11976).
-- **Deadlines** — TY 2026 BIR schedule with weekend deadlines moved to the next business day
-  (e.g. 2551Q Q2: Jul 25 is a Saturday → due Mon Jul 27, 2026).
+Entries marked `needs_review` could not be fully confirmed against a primary source at the
+last verification pass and are labeled **"needs CPA review"** in the UI.
 
-> **Disclaimer:** This is a reference tool, not tax advice. Always verify dates and rates with
-> the BIR before filing.
+## Backend (multi-tenant accounts)
+
+Set env vars (see `.env.example`) to enable accounts + cloud-synced profiles:
+
+```
+VITE_SUPABASE_URL=…
+VITE_SUPABASE_ANON_KEY=…
+```
+
+Schema: [`supabase/migrations/0001_taxpayer_profiles.sql`](supabase/migrations/0001_taxpayer_profiles.sql)
+— one table, JSONB profile data, RLS restricting every row to its owner.
 
 ## Repository layout
 
-- `index.html` — the entire app (React 18 via CDN, single file).
-- `project/`, `chats/` — the original Claude Design handoff bundle (prototypes and design
-  transcripts) that this app was built from. Kept for reference; not used at runtime.
+- `src/engine/` — pure tax logic: deadline generator (`deadlines.js`), estimators, date math
+- `src/data/` — the rulebook (above), form reference content, blog posts
+- `src/pages/`, `src/components/`, `src/state/` — UI
+- `tests/engine/` — hand-worked examples with known-correct answers
+- `legacy/index.html` — the previous single-file app, kept for reference
+- `project/`, `chats/` — original design-handoff bundle, kept for reference
+
+> **Disclaimer:** Present Value provides estimates and reminders, not tax or legal advice,
+> and does not replace review by a CPA. Verify dates and amounts with the agency before
+> filing or paying.

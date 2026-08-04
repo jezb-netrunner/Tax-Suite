@@ -55,7 +55,17 @@ export default function Dashboard() {
   const hero = heroPool[0] || deadlines[0] || null
   const rest = deadlines.filter(d => d !== hero)
   const monthItems = rest.filter(d => d.date <= eom)
-  const laterItems = rest.filter(d => d.date > eom).slice(0, 30)
+  // Beyond this month, show each obligation once — its NEXT occurrence — so
+  // monthly remittances don't flood the feed. Full expansion lives in the
+  // timeline and table views.
+  const seen = new Set(monthItems.map(d => d.obligation.id).concat(hero ? [hero.obligation.id] : []))
+  const laterItems = []
+  for (const d of rest) {
+    if (d.date <= eom) continue
+    if (seen.has(d.obligation.id)) continue
+    seen.add(d.obligation.id)
+    laterItems.push(d)
+  }
 
   const isEmployee = p.type === 'employee'
   const summary = isEmployee
@@ -162,10 +172,10 @@ export default function Dashboard() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '28px 0 12px' }}>
                       <h3 className="sec-h">Coming up</h3>
-                      <span style={{ fontSize: '13px', color: 'var(--mut)' }}>next 13 months</span>
+                      <span style={{ fontSize: '13px', color: 'var(--mut)' }}>next due date per obligation — recurring ones repeat</span>
                     </div>
                     <div className="list-card">
-                      {laterItems.map(d => <DeadlineRow key={d.id} d={d} />)}
+                      {laterItems.map(d => <DeadlineRow key={d.id} d={d} showFreq />)}
                     </div>
                   </div>
                 )}
@@ -294,7 +304,12 @@ export default function Dashboard() {
   )
 }
 
-function DeadlineRow({ d }) {
+const FREQ_LABEL = {
+  monthly: 'Monthly', quarterly_fixed: 'Quarterly', quarterly_offset: 'Quarterly',
+  annual_fixed: 'Annual', annual_fy: 'Annual', once: 'One-time',
+}
+
+function DeadlineRow({ d, showFreq }) {
   return (
     <div className="frow">
       <div style={{ textAlign: 'center', flexShrink: 0, width: '44px' }}>
@@ -308,6 +323,7 @@ function DeadlineRow({ d }) {
           {d.shifted && <span style={{ color: 'var(--dim)' }}> · moved from {fmtDate(d.rawDate)}</span>}
         </div>
       </div>
+      {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}
       <AgencyTag agency={d.obligation.agency} />
       {d.obligation.form && d.obligation.form !== '—' && <span className="boxcode">{d.obligation.form}</span>}
     </div>
