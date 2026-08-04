@@ -11,7 +11,7 @@
     ],
     "legalBasis": ["NIRC Sec 24(A)(2)(a), as amended by RA 10963 (TRAIN) — rates effective Jan 1, 2023 onward"],
     "confidence": "verified",
-    "notes": "Base is the tax on the bracket floor; rate applies to the excess over the floor."
+    "notes": "Base is the tax on the bracket floor; rate applies to the excess over the floor. Watch: pending 2026 bills (House package: ₱350k zero bracket; SB 1685: ₱500k) would change this table from TY2027 if enacted — re-verify before the 2027 tax year."
   },
   "eightPercent": {
     "value": {
@@ -20,9 +20,9 @@
       "allowanceForMixedIncome": 0,
       "grossCeiling": 3000000
     },
-    "legalBasis": ["NIRC Sec 24(A)(2)(b), as amended by RA 10963", "RR 8-2018 Sec 3"],
+    "legalBasis": ["NIRC Sec 24(A)(2)(b), as amended by RA 10963", "RR 8-2018 Sec 3", "RMO 23-2018", "RMC 50-2018"],
     "confidence": "verified",
-    "notes": "In lieu of both graduated income tax and the Sec 116 percentage tax. Unavailable to VAT-registered taxpayers, those over the ₱3M threshold, those subject to other percentage taxes, and GPP partners. Mixed-income earners get no extra ₱250,000 reduction on the business side — it is embedded in the graduated computation of their compensation income."
+    "notes": "In lieu of both graduated income tax and the Sec 116 percentage tax. Unavailable to VAT-registered taxpayers, those over the ₱3M threshold, those subject to other percentage taxes (Secs 117-127), and GPP partners. Mixed-income earners get no extra ₱250,000 reduction on the business side — it is embedded in the graduated computation of their compensation income. Elected each year on or before the first quarterly filing (1701Q, or 2551Q if earlier) or via Form 1905; irrevocable for the year. Breaching ₱3M mid-year puts the ENTIRE year back on graduated rates (8% payments become credits) plus percentage tax until VAT registration."
   },
   "osd": {
     "value": { "rate": 0.40, "basis": "gross sales/receipts" },
@@ -44,8 +44,8 @@
   },
   "afsRequiredAboveGross": {
     "value": 3000000,
-    "legalBasis": ["NIRC Sec 232, as amended by RA 11976 (EOPT)"],
+    "legalBasis": ["NIRC Sec 232, as amended by RA 11976 (EOPT)", "RR 8-2018 (8% filers keep books but need no audited FS)"],
     "confidence": "verified",
-    "notes": "Books audited by an independent CPA required when gross annual sales exceed ₱3,000,000 (EOPT raised the old ₱150,000/quarterly threshold)."
+    "notes": "Books audited by an independent CPA required when gross annual sales exceed ₱3,000,000 (EOPT raised the old ₱150,000/quarterly threshold). Individuals validly on the 8% option or claiming the OSD are not required to submit audited FS — confirm applicability with your CPA."
   }
 }

@@ -9,10 +9,24 @@
       { "atc": "WI158/WC158", "payee": "Purchases of goods by Top Withholding Agents", "rate": "1%" },
       { "atc": "WI160/WC160", "payee": "Purchases of services by Top Withholding Agents", "rate": "2%" },
       { "atc": "WI515/WC515", "payee": "Commissions of brokers/agents (non-employees)", "rate": "10% (individual) / 15% (corporation) tiered like professional fees" },
-      { "atc": "WI640/WC640", "payee": "Income payments to partners of GPPs", "rate": "10% if annual ≤ ₱720,000; 15% otherwise" }
+      { "atc": "WI640/WC640", "payee": "Income payments to partners of GPPs", "rate": "10% if annual ≤ ₱720,000; 15% otherwise" },
+      { "atc": "—", "payee": "TWA purchases of specified goods (fuel, pharma, vehicles) direct from manufacturers/importers", "rate": "0.5% — preferential rate under RR 24-2025, effective Oct 10, 2025" },
+      { "atc": "—", "payee": "E-marketplace / digital platform remittances to online sellers", "rate": "1% of one-half of gross remittances (effective 0.5%); exempt if annual gross remittances ≤ ₱500,000 with sworn declaration, or BMBE-registered — RR 16-2023" }
     ],
-    "legalBasis": ["RR 2-98 Sec 2.57.2, as amended by RR 11-2018"],
+    "legalBasis": ["RR 2-98 Sec 2.57.2, as amended by RR 11-2018", "RR 31-2020 (TWA criteria)", "RR 24-2025", "RR 16-2023"],
     "confidence": "needs_review",
-    "notes": "The full ATC schedule is longer; these are the rates MSMEs meet most. Top Withholding Agents are designated by BIR list (criteria in RR 31-2020)."
+    "notes": "The full ATC schedule is longer; these are the rates MSMEs meet most. Top Withholding Agents: designated by published BIR list — criteria per RR 31-2020 (gross sales/receipts or purchases ≥ ₱12M for Groups A/B, ≥ ₱5M for C/D/E); obligation starts the month after list publication. Individual 5% professional-fee rate requires the payee's sworn declaration (gross ≤ ₱3M, non-VAT); without it, withhold 10%. Lone-payor payees with annual income ≤ ₱250,000 may be exempted by sworn declaration."
+  },
+  "sec34kRepealed": {
+    "value": "For taxable years from 2024, an expense is deductible even if the related withholding tax was not withheld or remitted — EOPT repealed NIRC Sec 34(K). The withholding agent remains liable for the unremitted tax, surcharge, and interest.",
+    "legalBasis": ["RA 11976 (EOPT), repealing NIRC Sec 34(K)", "NIRC Sec 251 (withholding agent liability)"],
+    "confidence": "needs_review",
+    "notes": "Major change from the pre-2024 deduction-disallowance regime; verify application with your CPA on first use."
+  },
+  "fringeBenefitsTax": {
+    "value": { "rate": 0.35, "grossUpDivisor": 0.65, "form": "1603Q", "deadline": "last day of the month following each calendar quarter" },
+    "legalBasis": ["NIRC Sec 33, as amended by RA 10963", "RR 11-2018"],
+    "confidence": "needs_review",
+    "notes": "Applies only to fringe benefits given to managerial/supervisory employees (rank-and-file benefits run through compensation instead). Out of the estimator's scope; surfaced on the employer checklist."
   }
 }

@@ -29,7 +29,7 @@
       "schedule": { "kind": "annual_fixed", "month": 4, "day": 15 },
       "legalBasis": ["NIRC Sec 51(C), as amended", "RMC 17-2019 (Form 1701A availability)"],
       "confidence": "verified",
-      "notes": "Income tax due may be paid in two equal installments: at filing, and on or before October 15 (NIRC Sec 56(A)(2), as amended by TRAIN)."
+      "notes": "Income tax due above ₱2,000 may be paid in two equal installments: at filing, and on or before October 15 (NIRC Sec 56(A)(2), as amended by TRAIN). E-filed attachments (SAWT/2307s, statements) go to eAFS within 15 days of the deadline."
     },
     {
       "id": "bir-1701-annual",
@@ -42,7 +42,7 @@
       "schedule": { "kind": "annual_fixed", "month": 4, "day": 15 },
       "legalBasis": ["NIRC Sec 51(C), as amended"],
       "confidence": "verified",
-      "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed."
+      "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed; audited FS if gross sales exceed ₱3M on itemized deductions. E-filed attachments go to eAFS within 15 days of the deadline."
     },
     {
       "id": "bir-1700-annual",
@@ -120,7 +120,33 @@
       "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3, 4], "daysAfterEnd": 25 },
       "legalBasis": ["NIRC Sec 114(A), as amended by RA 10963 (TRAIN) & RA 11976 (EOPT)", "RR 3-2024"],
       "confidence": "verified",
-      "notes": "Quarterly filing only — the monthly 2550M has not been required since January 2023."
+      "notes": "Quarterly filing only — the monthly 2550M has not been required since January 2023. Since April 27, 2024 the VAT base for services is gross SALES (billed/accrual), with an output-VAT credit for receivables that stay uncollected past the agreed period (Sec 110(D))."
+    },
+    {
+      "id": "bir-slsp",
+      "title": "Submit the Summary List of Sales & Purchases (SLSP)",
+      "desc": "Quarterly electronic list of sales, purchases, and importations — required of all VAT-registered taxpayers, filed via eSubmission alongside the 2550Q.",
+      "form": "SLSP",
+      "agency": "BIR",
+      "category": "business",
+      "appliesTo": { "allOf": ["business", "vat"] },
+      "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3, 4], "daysAfterEnd": 25 },
+      "legalBasis": ["NIRC Sec 114(C)", "RR 1-2012 (all VAT taxpayers, no threshold)"],
+      "confidence": "needs_review",
+      "notes": "Requirement confirmed still in force as of Aug 2026 by secondary sources; confirm your RDO's current submission mode (eSubmission .dat)."
+    },
+    {
+      "id": "bir-einvoicing",
+      "title": "Be ready for mandatory e-invoicing",
+      "desc": "Taxpayers in e-commerce (except micro), large taxpayers, and users of computerized accounting systems must issue structured electronic invoices by the compliance deadline.",
+      "form": "EIS",
+      "agency": "BIR",
+      "category": "admin",
+      "appliesTo": { "anyOf": ["books:cas", "crm-pos"] },
+      "schedule": { "kind": "once", "date": "2026-12-31" },
+      "legalBasis": ["NIRC Sec 237-A, as amended by CREATE MORE (RA 12066)", "RR 11-2025"],
+      "confidence": "needs_review",
+      "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). Confirm whether this taxpayer is covered and the current compliance date — the deadline has moved before (extended to Dec 31, 2026)."
     },
     {
       "id": "bir-1601c",
@@ -146,7 +172,7 @@
       "schedule": { "kind": "annual_fixed", "month": 1, "day": 31, "calendarBasis": true },
       "legalBasis": ["NIRC Sec 83, as amended", "RR 11-2018"],
       "confidence": "verified",
-      "notes": "Alphalist submitted electronically via the BIR Alphalist Data Entry / eSubmission facility."
+      "notes": "Alphalist submitted electronically via the BIR Alphalist Data Entry & Validation Module (v7.4 per RMC 15-2025 — check for newer releases each January) through eSubmission."
     },
     {
       "id": "bir-2316-issue",
@@ -170,9 +196,9 @@
       "category": "withholding",
       "appliesTo": { "allOf": ["employer"] },
       "schedule": { "kind": "annual_fixed", "month": 2, "day": 28, "calendarBasis": true },
-      "legalBasis": ["RR 11-2013", "RR 2-2015 as amended by RR 16-2021 (scanned copies/eAFS)"],
-      "confidence": "needs_review",
-      "notes": "Commonly administered as 'on or before February 28'. Confirm the current year's exact date and mode (eAFS) — in leap years the last day of February is the 29th."
+      "legalBasis": ["RR 11-2013", "RR 2-2015 as amended by RR 16-2021 (scanned copies/eAFS/USB)"],
+      "confidence": "verified",
+      "notes": "Not later than February 28 following the close of the calendar year, for substituted-filing employees, signed by both employer and employee. Accepted modes: eAFS scanned PDFs, DVD-R, or USB, one mode per period."
     },
     {
       "id": "bir-0619e",
@@ -476,7 +502,7 @@
     {
       "id": "bir-8pct-election",
       "title": "Elect the 8% option for the new year",
-      "desc": "The 8% income tax election is made annually — on the first quarterly return (1701Q Q1, due May 15) or upon registration/update. Miss it and you default to graduated rates for the whole year.",
+      "desc": "The 8% income tax election is made annually — on the year's first quarterly filing (1701Q due May 15, or 2551Q due Apr 25 if that comes first) or via Form 1905. Miss it and you default to graduated rates for the whole year.",
       "form": "1701Q / 1905",
       "agency": "BIR",
       "category": "admin",
@@ -563,6 +589,19 @@
       "legalBasis": ["NIRC Sec 236, as amended by RA 11976 (EOPT)"],
       "confidence": "verified",
       "notes": "Under EOPT, transfers and updates can be filed at any RDO — no more transfer-first requirement."
+    },
+    {
+      "id": "bir-fbt-note",
+      "title": "Fringe benefits tax — only if you grant managerial perks",
+      "desc": "Benefits given to managerial or supervisory employees (car plans, housing, certain allowances) attract a 35% final fringe benefits tax on the grossed-up value, filed quarterly on Form 1603Q by the last day of the month after each quarter.",
+      "form": "1603Q",
+      "agency": "BIR",
+      "category": "admin",
+      "appliesTo": { "allOf": ["employer"] },
+      "schedule": { "kind": "info" },
+      "legalBasis": ["NIRC Sec 33, as amended by RA 10963", "RR 11-2018"],
+      "confidence": "needs_review",
+      "notes": "Rank-and-file benefits are taxed through compensation withholding instead. If you grant such benefits, add the 1603Q dates to your calendar with your CPA."
     },
     {
       "id": "emp-substituted",
