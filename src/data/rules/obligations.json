@@ -143,7 +143,7 @@
       "agency": "BIR",
       "category": "admin",
       "appliesTo": { "anyOf": ["books:cas", "crm-pos"] },
-      "schedule": { "kind": "once", "date": "2026-12-31" },
+      "schedule": { "kind": "once", "date": "2026-12-31", "noWeekendShift": true },
       "legalBasis": ["NIRC Sec 237-A, as amended by CREATE MORE (RA 12066)", "RR 11-2025"],
       "confidence": "needs_review",
       "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). Confirm whether this taxpayer is covered and the current compliance date — the deadline has moved before (extended to Dec 31, 2026)."
