@@ -43,7 +43,6 @@ export function defaultProfile(type = 'individual') {
     fiscalYearEndMonth: 12,         // 12 = calendar year
     registrationYear: null,         // for the MCIT 4th-year rule
     secRegistered: true,
-    secLastDigit: null,             // last digit of SEC reg. no. → AFS window
     // estimator memory (kept per profile so returning users see their numbers)
     inputs: {},
   }
@@ -80,7 +79,10 @@ export function profileFlags(p) {
       if (regime === 'graduated_itemized') f.add('itemized')
     }
   }
-  if (p.type === 'corporation') f.add('regime:corporate')
+  if (p.type === 'corporation') {
+    f.add('regime:corporate')
+    f.add((p.fiscalYearEndMonth || 12) === 12 ? 'fy:calendar' : 'fy:fiscal')
+  }
 
   if (p.hasEmployees) f.add('employer')
   if (p.withholdsEwt) f.add('ewt')

@@ -300,9 +300,9 @@
       "category": "payroll",
       "appliesTo": { "allOf": ["employer"] },
       "schedule": { "kind": "monthly", "day": "last", "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 11199 (Social Security Act of 2018)", "SSS Circular 2019-013 (unified payment deadline)"],
-      "confidence": "needs_review",
-      "notes": "Employers pay on or before the last day of the month following the applicable month. Confirm the current circular has not reinstated ID-digit staggering."
+      "legalBasis": ["RA 11199 (Social Security Act of 2018)", "SSS unified payment deadline circulars"],
+      "confidence": "verified",
+      "notes": "Employers pay on or before the last day of the month following the applicable month (verified Aug 2026). Generate the PRN in the My.SSS portal before paying."
     },
     {
       "id": "philhealth-employer",
@@ -312,10 +312,10 @@
       "agency": "PhilHealth",
       "category": "payroll",
       "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "monthly", "day": "last", "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 11223 (Universal Health Care Act)", "PhilHealth Circular 2019-0009"],
-      "confidence": "needs_review",
-      "notes": "Remittance is due within the month following the applicable month; PhilHealth has historically staggered dates (11th–15th / 16th–20th) by employer number. Shown at month-end pending verification — confirm your exact window in EPRS."
+      "schedule": { "kind": "monthly", "day": 15, "monthOffset": 1, "calendarBasis": true },
+      "legalBasis": ["RA 11223 (Universal Health Care Act)", "PhilHealth Circular 2019-0009 (staggered windows by PEN)"],
+      "confidence": "verified",
+      "notes": "Staggered by PhilHealth Employer Number: PEN ending 0–4 remit on the 11th–15th, PEN 5–9 on the 16th–20th of the following month. The 15th is shown as the safe-side date — check your exact window in EPRS."
     },
     {
       "id": "pagibig-employer",
@@ -326,9 +326,9 @@
       "category": "payroll",
       "appliesTo": { "allOf": ["employer"] },
       "schedule": { "kind": "monthly", "day": 10, "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 9679 (HDMF Law)", "HDMF Circular 275 (remittance schedule)"],
+      "legalBasis": ["RA 9679 (HDMF Law)", "HDMF remittance schedule circulars"],
       "confidence": "needs_review",
-      "notes": "Pag-IBIG staggers due dates by the first letter of the employer's name (10th–24th of the following month). The 10th is shown as the earliest window — confirm your letter group's exact dates."
+      "notes": "Generally the 10th of the following month; some branch schedules stagger by the first letter of the employer's name. The 10th is shown as the safe-side date — confirm your branch's schedule."
     },
     {
       "id": "sss-self",
@@ -339,9 +339,9 @@
       "category": "payroll",
       "appliesTo": { "allOf": ["self-contributions"] },
       "schedule": { "kind": "monthly", "day": "last", "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 11199", "SSS Circular 2019-013"],
-      "confidence": "needs_review",
-      "notes": "Self-employed and voluntary members may pay monthly or quarterly; quarterly payments are due the last day of the month following the quarter."
+      "legalBasis": ["RA 11199", "SSS payment deadline circulars"],
+      "confidence": "verified",
+      "notes": "Self-employed and voluntary members pay the full 15% themselves, monthly (last day of the following month, shown here) or quarterly (last day of the month following the quarter)."
     },
     {
       "id": "philhealth-self",
@@ -474,17 +474,30 @@
       "notes": "Within 30 days following the close of the taxable year (January 30 for calendar-year taxpayers)."
     },
     {
-      "id": "sec-afs",
+      "id": "sec-afs-calendar",
       "title": "File audited financial statements with the SEC",
-      "desc": "Annual audited FS filed through the SEC's eFAST system.",
+      "desc": "Annual audited FS filed through the SEC's eFAST system — one uniform deadline for calendar-year corporations, set by the year's SEC memorandum circular.",
       "form": "SEC eFAST",
       "agency": "SEC",
       "category": "registration",
-      "appliesTo": { "allOf": ["sec"] },
-      "schedule": { "kind": "annual_fy", "daysAfterEnd": 120 },
-      "legalBasis": ["Revised Corporation Code Sec 177", "SRC Rule 68", "Annual SEC Memorandum Circular on AFS filing schedule"],
+      "appliesTo": { "allOf": ["sec", "fy:calendar"] },
+      "schedule": { "kind": "annual_fixed", "month": 5, "day": 29 },
+      "legalBasis": ["Revised Corporation Code Sec 177", "SRC Rule 68", "SEC MC 9-2026 (FY2025 AFS due May 29, 2026 via eFAST)"],
       "confidence": "needs_review",
-      "notes": "Calendar-year corporations follow a staggered schedule (by last digit of SEC registration number) announced each year — typically late April through July. Fiscal-year corporations file within 120 days of year-end. The date shown is the 120-day general rule; check the current year's SEC MC for your digit's exact window."
+      "notes": "The SEC sets the exact date each year by memorandum circular (the old last-digit staggering is gone; MC 9-2026 set a single May 29, 2026 deadline for FY2025). Later years shown at May 29 provisionally — update when each year's MC issues. PSE-listed/public companies follow the 105-day SEC Form 17-A rule instead."
+    },
+    {
+      "id": "sec-afs-fiscal",
+      "title": "File audited financial statements with the SEC",
+      "desc": "Fiscal-year corporations file audited FS via eFAST within 120 calendar days of fiscal year-end.",
+      "form": "SEC eFAST",
+      "agency": "SEC",
+      "category": "registration",
+      "appliesTo": { "allOf": ["sec", "fy:fiscal"] },
+      "schedule": { "kind": "annual_fy", "daysAfterEnd": 120 },
+      "legalBasis": ["Revised Corporation Code Sec 177", "SRC Rule 68", "SEC MC 9-2026"],
+      "confidence": "verified",
+      "notes": "Within 120 calendar days from the end of a fiscal year other than December 31 (per the annual SEC MC, most recently MC 9-2026)."
     },
     {
       "id": "sec-gis",
@@ -495,9 +508,9 @@
       "category": "registration",
       "appliesTo": { "allOf": ["sec"] },
       "schedule": { "kind": "ongoing" },
-      "legalBasis": ["Revised Corporation Code Sec 177", "SEC MC 15-2019 (GIS requirements)"],
+      "legalBasis": ["Revised Corporation Code Sec 177", "SEC MC 9-2026 (30 calendar days from the actual annual meeting, via eFAST)"],
       "confidence": "verified",
-      "notes": "The due date depends on your annual meeting date (often fixed in the by-laws). Diary it 30 days after the meeting."
+      "notes": "The due date depends on your annual meeting date (often fixed in the by-laws). Diary it 30 days after the meeting; file through eFAST."
     },
     {
       "id": "bir-8pct-election",

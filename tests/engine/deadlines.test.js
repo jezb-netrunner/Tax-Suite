@@ -86,7 +86,7 @@ describe('employer facets', () => {
     const d = datesOf(list, 'bir-1601eq')
     expect(d).toContain('2026-04-30')
     expect(d).toContain('2026-07-31')
-    expect(d).toContain('2026-11-02') // Oct 31 2026 is a Saturday, Nov 1 All Saints → Nov 2
+    expect(d).toContain('2026-11-03') // Oct 31 Sat → Nov 1 All Saints (Sun) → Nov 2 All Souls → Nov 3
     expect(d).toContain('2027-02-01') // Jan 31 2027 is a Sunday → Feb 1
   })
   it('annual information returns: 1604-C Jan 31 (Sun 2027 → Feb 1), 1604-E Mar 1', () => {
@@ -155,7 +155,7 @@ describe('date primitives', () => {
     expect(iso(q[0].start)).toBe('2025-07-01')
   })
   it('holiday shifting hops consecutive non-working days', () => {
-    // Sat Oct 31 2026 → Sun → Nov 1 (All Saints) → Mon Nov 2
-    expect(iso(shiftToBusinessDay(fromISO('2026-10-31'), HOLIDAYS))).toBe('2026-11-02')
+    // Sat Oct 31 → Sun Nov 1 (All Saints) → Mon Nov 2 (All Souls, Proc. 1006) → Tue Nov 3
+    expect(iso(shiftToBusinessDay(fromISO('2026-10-31'), HOLIDAYS))).toBe('2026-11-03')
   })
 })

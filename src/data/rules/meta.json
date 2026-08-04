@@ -1,7 +1,8 @@
 {
-  "$comment": "Rulebook metadata. verifiedDate is stamped when the rule files were last reconciled against primary sources.",
-  "verifiedDate": "pending verification",
+  "$comment": "Rulebook metadata. verifiedDate is stamped when the rule files were last reconciled against sources.",
+  "verifiedDate": "August 4, 2026",
+  "verificationMethod": "Each rule was checked against multiple independent sources (official issuance digests, government announcements, and top-tier tax firm alerts) by a multi-agent research pass on August 4, 2026. Direct fetches of some government sites were unavailable from the build environment, so values that could not be corroborated by at least one official source remain flagged needs_review and are labeled 'needs CPA review' in the app.",
   "taxYearDefault": 2026,
   "maintainer": "The Present Value",
-  "howToUpdate": "All rates, thresholds, deadlines, and holidays live in src/data/rules/*.json. Change the value, update legalBasis/notes, set confidence, and bump verifiedDate here. No code changes needed."
+  "howToUpdate": "All rates, thresholds, deadlines, and holidays live in src/data/rules/*.json. Change the value, update legalBasis/notes, set confidence, and bump verifiedDate here. No code changes needed. Known future checkpoints: 2027 holiday proclamation (due ~Oct 2026); each year's SEC MC for the calendar-year AFS date; EOPT 3-year CPI adjustment of the ₱3M VAT threshold; pending bills on the graduated table and 13th-month cap (TY2027 earliest)."
 }

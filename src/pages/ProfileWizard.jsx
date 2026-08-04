@@ -148,11 +148,7 @@ export default function ProfileWizard() {
                       const y = new Date().getFullYear() - i
                       return [String(y), String(y)]
                     })]} />
-                  <SelectField label="SEC reg. no. — last digit" value={p.secLastDigit == null ? '' : String(p.secLastDigit)}
-                    onChange={v => set('secLastDigit', v === '' ? null : Number(v))}
-                    options={[['', 'Not sure'], ...Array.from({ length: 10 }, (_, i) => [String(i), String(i)])]} />
                 </div>
-                <p className="cite" style={{ marginTop: '10px' }}>The last digit sets your window in the SEC's staggered audited-FS filing schedule.</p>
                 <p className="cite" style={{ marginTop: '10px' }}>The start year drives the 2% minimum corporate income tax (MCIT), which begins in the fourth taxable year after operations commence.</p>
               </>
             )}

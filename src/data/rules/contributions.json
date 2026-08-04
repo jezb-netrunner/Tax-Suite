@@ -15,9 +15,9 @@
       ],
       "selfEmployedRate": 0.15
     },
-    "legalBasis": ["RA 11199 (Social Security Act of 2018) Sec 4 — contribution schedule final step effective 2025", "SSS Circular 2024-006 (2025 schedule)"],
-    "confidence": "needs_review",
-    "notes": "15% of the monthly salary credit (MSC), employer 10% / employee 5%. MSC ₱5,000–₱35,000; the portion above ₱20,000 goes to the mandatory provident fund (WISP). EC premium is employer-paid. Self-employed members pay the full 15% of their declared MSC. Confirm the current year's circular."
+    "legalBasis": ["RA 11199 (Social Security Act of 2018) Sec 4 — 15% is the final scheduled step, in force since 2025", "SSS Circular 2024-006 lineage (2025 schedule)"],
+    "confidence": "verified",
+    "notes": "Verified for 2026 (Aug 4, 2026): 15% of the monthly salary credit — employer 10% / employee 5%; MSC ₱5,000–₱35,000; the portion above ₱20,000 funds the mandatory provident fund (WISP/MPF). Self-employed, voluntary, and OFW members pay the full 15% themselves. The small employer-paid EC premium (₱10 below ₱15,000 MSC, ₱30 at or above) follows the EC program schedule — confirm exact EC pesos against the current SSS table."
   },
   "philhealth": {
     "value": {
@@ -27,9 +27,9 @@
       "employerShare": 0.5,
       "employeeShare": 0.5
     },
-    "legalBasis": ["RA 11223 (Universal Health Care Act) Sec 10 — premium schedule final step 5% in 2024-2025", "PhilHealth Circular 2019-0009"],
-    "confidence": "needs_review",
-    "notes": "5% of the monthly basic salary, floor ₱10,000 / ceiling ₱100,000, split equally between employer and employee. Self-employed direct contributors pay the full 5% of declared income. Confirm the ceiling/rate for the current year."
+    "legalBasis": ["RA 11223 (Universal Health Care Act) Sec 10 — 5% final scheduled rate", "PhilHealth announcement of the CY2026 rate (via Philippine Information Agency)"],
+    "confidence": "verified",
+    "notes": "Verified for CY2026 (Aug 4, 2026): 5% of monthly basic salary, floor ₱10,000 / ceiling ₱100,000 (premium ₱500–₱5,000), split equally between employer and employee. Self-employed direct contributors pay the full 5% of declared income."
   },
   "pagibig": {
     "value": {
@@ -39,8 +39,8 @@
       "employerRate": 0.02,
       "maxFundSalary": 10000
     },
-    "legalBasis": ["RA 9679 (HDMF Law)", "HDMF Circular 460 — fund salary ceiling ₱10,000 effective Feb 2024"],
-    "confidence": "needs_review",
-    "notes": "Employees earning ≤₱1,500/month contribute 1%, otherwise 2%; employers always 2%; both computed on a fund salary capped at ₱10,000 (max ₱200 + ₱200). Self-employed members contribute on the same schedule based on declared income, shouldering both shares. Confirm current circular."
+    "legalBasis": ["RA 9679 (HDMF Law)", "HDMF Circular 460 — maximum fund salary ₱10,000 effective Feb 2024"],
+    "confidence": "verified",
+    "notes": "Verified for 2026 (Aug 4, 2026): employees earning ≤₱1,500/month contribute 1%, otherwise 2%; employers always 2%; both computed on a fund salary capped at ₱10,000 (max ₱200 + ₱200 = ₱400). Self-employed members contribute on the same schedule based on declared income, shouldering both shares."
   }
 }
