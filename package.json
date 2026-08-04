@@ -1,0 +1,25 @@
+{
+  "name": "present-value-tax-suite",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Present Value — Philippine tax compliance suite: deadline tracker, tax estimator, and compliance checklist for MSMEs, freelancers, employers, and their accountants.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}

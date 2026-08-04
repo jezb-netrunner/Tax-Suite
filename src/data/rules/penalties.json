@@ -1,0 +1,42 @@
+{
+  "$comment": "Civil penalties for late filing/payment + EOPT taxpayer classification. Draft pending research reconciliation.",
+  "surcharge": {
+    "value": { "standard": 0.25, "willfulNeglect": 0.50, "microSmall": 0.10 },
+    "legalBasis": ["NIRC Sec 248", "RA 11976 (EOPT) Sec 45 — reduced 10% surcharge for micro & small taxpayers", "RR 6-2024"],
+    "confidence": "verified",
+    "notes": "EOPT also removed the 25% surcharge for filing at the wrong venue."
+  },
+  "interest": {
+    "value": { "standardAnnualRate": 0.12, "microSmallAnnualRate": 0.06, "convention": "simple interest, actual days / 365" },
+    "legalBasis": ["NIRC Sec 249, as amended by RA 10963 (double the BSP legal rate of 6%)", "RR 21-2018", "RA 11976 (EOPT) — 50% of the rate for micro & small taxpayers"],
+    "confidence": "needs_review",
+    "notes": "12% assumes the BSP legal interest rate remains 6% — confirm current rate."
+  },
+  "compromiseTiers": {
+    "value": [
+      { "taxDueUpTo": 5000, "amount": 1000 },
+      { "taxDueUpTo": 10000, "amount": 3000 },
+      { "taxDueUpTo": 20000, "amount": 5000 },
+      { "taxDueUpTo": 50000, "amount": 10000 },
+      { "taxDueUpTo": 100000, "amount": 15000 },
+      { "taxDueUpTo": 500000, "amount": 20000 },
+      { "taxDueUpTo": 1000000, "amount": 30000 },
+      { "taxDueUpTo": 5000000, "amount": 40000 },
+      { "taxDueUpTo": null, "amount": 50000 }
+    ],
+    "legalBasis": ["RMO 7-2015 Annex A (failure to file/pay)", "RA 11976 (EOPT) — 50% reduction for micro & small taxpayers"],
+    "confidence": "needs_review",
+    "notes": "Compromise penalties are settlements in lieu of criminal prosecution and are technically negotiable; the schedule is the BIR's standard ask. Confirm the current RMO tiers."
+  },
+  "classification": {
+    "value": {
+      "micro": { "grossSalesBelow": 3000000 },
+      "small": { "grossSalesFrom": 3000000, "grossSalesBelow": 20000000 },
+      "medium": { "grossSalesFrom": 20000000, "grossSalesBelow": 1000000000 },
+      "large": { "grossSalesFrom": 1000000000 }
+    },
+    "legalBasis": ["RA 11976 (EOPT)", "RR 8-2024"],
+    "confidence": "verified",
+    "notes": "Classification is by gross sales; micro & small taxpayers get the reduced surcharge/interest, a ₱500 cap on Sec 250 information-return penalties, and 50% off compromise penalties."
+  }
+}

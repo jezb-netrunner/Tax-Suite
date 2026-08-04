@@ -1,0 +1,7 @@
+{
+  "$comment": "Rulebook metadata. verifiedDate is stamped when the rule files were last reconciled against primary sources.",
+  "verifiedDate": "pending verification",
+  "taxYearDefault": 2026,
+  "maintainer": "The Present Value",
+  "howToUpdate": "All rates, thresholds, deadlines, and holidays live in src/data/rules/*.json. Change the value, update legalBasis/notes, set confidence, and bump verifiedDate here. No code changes needed."
+}

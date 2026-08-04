@@ -1,0 +1,32 @@
+{
+  "$comment": "Philippine non-working days used for deadline shifting. DRAFT — statutory fixed holidays only; to be replaced with the proclaimed lists (incl. movable and special dates) from the research pass.",
+  "shiftRule": {
+    "value": "A filing/payment deadline falling on a Saturday, Sunday, or holiday moves to the next working day",
+    "legalBasis": ["BIR practice per annual tax deadline advisories; see also NIRC Sec 245 rule-making"],
+    "confidence": "needs_review",
+    "notes": "Applied to BIR deadlines. Agency practice for SSS/PhilHealth/Pag-IBIG/LGU/SEC is verified separately."
+  },
+  "confidence": "needs_review",
+  "holidays": [
+    { "date": "2026-01-01", "name": "New Year's Day", "type": "regular" },
+    { "date": "2026-04-02", "name": "Maundy Thursday", "type": "regular" },
+    { "date": "2026-04-03", "name": "Good Friday", "type": "regular" },
+    { "date": "2026-04-09", "name": "Araw ng Kagitingan", "type": "regular" },
+    { "date": "2026-05-01", "name": "Labor Day", "type": "regular" },
+    { "date": "2026-06-12", "name": "Independence Day", "type": "regular" },
+    { "date": "2026-08-21", "name": "Ninoy Aquino Day", "type": "special_non_working" },
+    { "date": "2026-08-31", "name": "National Heroes Day", "type": "regular" },
+    { "date": "2026-11-01", "name": "All Saints' Day", "type": "special_non_working" },
+    { "date": "2026-11-30", "name": "Bonifacio Day", "type": "regular" },
+    { "date": "2026-12-08", "name": "Feast of the Immaculate Conception", "type": "special_non_working" },
+    { "date": "2026-12-25", "name": "Christmas Day", "type": "regular" },
+    { "date": "2026-12-30", "name": "Rizal Day", "type": "regular" },
+    { "date": "2027-01-01", "name": "New Year's Day", "type": "regular" },
+    { "date": "2027-04-09", "name": "Araw ng Kagitingan", "type": "regular" },
+    { "date": "2027-05-01", "name": "Labor Day", "type": "regular" },
+    { "date": "2027-06-12", "name": "Independence Day", "type": "regular" },
+    { "date": "2027-11-30", "name": "Bonifacio Day", "type": "regular" },
+    { "date": "2027-12-25", "name": "Christmas Day", "type": "regular" },
+    { "date": "2027-12-30", "name": "Rizal Day", "type": "regular" }
+  ]
+}

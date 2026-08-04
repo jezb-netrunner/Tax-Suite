@@ -1,0 +1,54 @@
+{
+  "$comment": "Withholding tax on compensation tables effective Jan 1, 2023 (RR 11-2018 as amended; BIR revised withholding tax tables). Each bracket: floor (compensation exceeds), base tax, rate on excess over floor. Draft pending research reconciliation.",
+  "tables": {
+    "value": {
+      "daily": [
+        { "over": 0, "base": 0, "rate": 0 },
+        { "over": 685, "base": 0, "rate": 0.15 },
+        { "over": 1095, "base": 61.65, "rate": 0.20 },
+        { "over": 2191, "base": 280.85, "rate": 0.25 },
+        { "over": 5478, "base": 1102.60, "rate": 0.30 },
+        { "over": 21917, "base": 6034.30, "rate": 0.35 }
+      ],
+      "weekly": [
+        { "over": 0, "base": 0, "rate": 0 },
+        { "over": 4808, "base": 0, "rate": 0.15 },
+        { "over": 7691, "base": 432.60, "rate": 0.20 },
+        { "over": 15384, "base": 1971.20, "rate": 0.25 },
+        { "over": 38461, "base": 7740.45, "rate": 0.30 },
+        { "over": 153845, "base": 42355.65, "rate": 0.35 }
+      ],
+      "semiMonthly": [
+        { "over": 0, "base": 0, "rate": 0 },
+        { "over": 10417, "base": 0, "rate": 0.15 },
+        { "over": 16666, "base": 937.50, "rate": 0.20 },
+        { "over": 33332, "base": 4270.70, "rate": 0.25 },
+        { "over": 83332, "base": 16770.70, "rate": 0.30 },
+        { "over": 333332, "base": 91770.70, "rate": 0.35 }
+      ],
+      "monthly": [
+        { "over": 0, "base": 0, "rate": 0 },
+        { "over": 20833, "base": 0, "rate": 0.15 },
+        { "over": 33333, "base": 1875.00, "rate": 0.20 },
+        { "over": 66667, "base": 8541.80, "rate": 0.25 },
+        { "over": 166667, "base": 33541.80, "rate": 0.30 },
+        { "over": 666667, "base": 183541.80, "rate": 0.35 }
+      ]
+    },
+    "legalBasis": ["RR 2-98 Sec 2.79, as amended by RR 11-2018", "BIR Revised Withholding Tax Table effective Jan 1, 2023"],
+    "confidence": "needs_review",
+    "notes": "Bracket boundaries follow the BIR's published table (annual brackets ÷ pay periods, rounded). Withholding applies to taxable compensation after mandatory SSS/PhilHealth/Pag-IBIG employee shares and non-taxable benefits."
+  },
+  "annualization": {
+    "value": { "method": "graduated table on annualized taxable compensation; December adjustment trues up the year" },
+    "legalBasis": ["NIRC Sec 79(H)", "RR 2-98 Sec 2.79(B)(5)(b), as amended"],
+    "confidence": "verified",
+    "notes": "On the last payroll of the year (or on termination), the employer computes tax on the full year's taxable compensation using the annual graduated table and withholds or refunds the difference, so total withheld equals the annual tax due."
+  },
+  "mweExempt": {
+    "value": true,
+    "legalBasis": ["NIRC Sec 24(A)(2), as amended by RA 9504", "RR 10-2008"],
+    "confidence": "verified",
+    "notes": "Statutory minimum wage earners are exempt from income tax on their SMW, plus holiday pay, overtime, night differential, and hazard pay — no withholding applies."
+  }
+}

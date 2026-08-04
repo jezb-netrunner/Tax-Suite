@@ -1,0 +1,51 @@
+{
+  "$comment": "Individual income tax parameters. Draft values pending reconciliation against the research pass — see confidence flags.",
+  "graduatedBrackets": {
+    "value": [
+      { "over": 0, "notOver": 250000, "base": 0, "rate": 0 },
+      { "over": 250000, "notOver": 400000, "base": 0, "rate": 0.15 },
+      { "over": 400000, "notOver": 800000, "base": 22500, "rate": 0.20 },
+      { "over": 800000, "notOver": 2000000, "base": 102500, "rate": 0.25 },
+      { "over": 2000000, "notOver": 8000000, "base": 402500, "rate": 0.30 },
+      { "over": 8000000, "notOver": null, "base": 2202500, "rate": 0.35 }
+    ],
+    "legalBasis": ["NIRC Sec 24(A)(2)(a), as amended by RA 10963 (TRAIN) — rates effective Jan 1, 2023 onward"],
+    "confidence": "verified",
+    "notes": "Base is the tax on the bracket floor; rate applies to the excess over the floor."
+  },
+  "eightPercent": {
+    "value": {
+      "rate": 0.08,
+      "allowanceForPureSelfEmployed": 250000,
+      "allowanceForMixedIncome": 0,
+      "grossCeiling": 3000000
+    },
+    "legalBasis": ["NIRC Sec 24(A)(2)(b), as amended by RA 10963", "RR 8-2018 Sec 3"],
+    "confidence": "verified",
+    "notes": "In lieu of both graduated income tax and the Sec 116 percentage tax. Unavailable to VAT-registered taxpayers, those over the ₱3M threshold, those subject to other percentage taxes, and GPP partners. Mixed-income earners get no extra ₱250,000 reduction on the business side — it is embedded in the graduated computation of their compensation income."
+  },
+  "osd": {
+    "value": { "rate": 0.40, "basis": "gross sales/receipts" },
+    "legalBasis": ["NIRC Sec 34(L), as amended by RA 9504"],
+    "confidence": "verified",
+    "notes": "For individuals, OSD is 40% of gross sales/receipts (corporations compute it on gross income instead). Election is irrevocable for the taxable year."
+  },
+  "thirteenthMonthExclusionCap": {
+    "value": 90000,
+    "legalBasis": ["NIRC Sec 32(B)(7)(e), as amended by RA 10963"],
+    "confidence": "verified",
+    "notes": "13th month pay and other benefits excluded from gross income up to ₱90,000 per year."
+  },
+  "annualITRInstallment": {
+    "value": { "secondInstallmentDue": "October 15" },
+    "legalBasis": ["NIRC Sec 56(A)(2), as amended by RA 10963"],
+    "confidence": "verified",
+    "notes": "When annual income tax due exceeds ₱2,000, individuals may pay in two equal installments — at filing, and on or before October 15."
+  },
+  "afsRequiredAboveGross": {
+    "value": 3000000,
+    "legalBasis": ["NIRC Sec 232, as amended by RA 11976 (EOPT)"],
+    "confidence": "verified",
+    "notes": "Books audited by an independent CPA required when gross annual sales exceed ₱3,000,000 (EOPT raised the old ₱150,000/quarterly threshold)."
+  }
+}
