@@ -1,0 +1,46 @@
+{
+  "$comment": "SSS / PhilHealth / Pag-IBIG contribution parameters. These change on statutory schedules — every block must be reconciled against the current circulars (see confidence flags).",
+  "sss": {
+    "value": {
+      "totalRate": 0.15,
+      "employerRate": 0.10,
+      "employeeRate": 0.05,
+      "mscFloor": 5000,
+      "mscCeiling": 35000,
+      "mscStep": 500,
+      "wispThreshold": 20000,
+      "ec": [
+        { "mscBelow": 15000, "amount": 10 },
+        { "mscBelow": null, "amount": 30 }
+      ],
+      "selfEmployedRate": 0.15
+    },
+    "legalBasis": ["RA 11199 (Social Security Act of 2018) Sec 4 — 15% is the final scheduled step, in force since 2025", "SSS Circular 2024-006 lineage (2025 schedule)"],
+    "confidence": "verified",
+    "notes": "Verified for 2026 (Aug 4, 2026): 15% of the monthly salary credit — employer 10% / employee 5%; MSC ₱5,000–₱35,000; the portion above ₱20,000 funds the mandatory provident fund (WISP/MPF). Self-employed, voluntary, and OFW members pay the full 15% themselves. The small employer-paid EC premium (₱10 below ₱15,000 MSC, ₱30 at or above) follows the EC program schedule — confirm exact EC pesos against the current SSS table."
+  },
+  "philhealth": {
+    "value": {
+      "rate": 0.05,
+      "incomeFloor": 10000,
+      "incomeCeiling": 100000,
+      "employerShare": 0.5,
+      "employeeShare": 0.5
+    },
+    "legalBasis": ["RA 11223 (Universal Health Care Act) Sec 10 — 5% final scheduled rate", "PhilHealth announcement of the CY2026 rate (via Philippine Information Agency)"],
+    "confidence": "verified",
+    "notes": "Verified for CY2026 (Aug 4, 2026): 5% of monthly basic salary, floor ₱10,000 / ceiling ₱100,000 (premium ₱500–₱5,000), split equally between employer and employee. Self-employed direct contributors pay the full 5% of declared income."
+  },
+  "pagibig": {
+    "value": {
+      "employeeRateLow": 0.01,
+      "employeeRateLowThreshold": 1500,
+      "employeeRate": 0.02,
+      "employerRate": 0.02,
+      "maxFundSalary": 10000
+    },
+    "legalBasis": ["RA 9679 (HDMF Law)", "HDMF Circular 460 — maximum fund salary ₱10,000 effective Feb 2024"],
+    "confidence": "verified",
+    "notes": "Verified for 2026 (Aug 4, 2026): employees earning ≤₱1,500/month contribute 1%, otherwise 2%; employers always 2%; both computed on a fund salary capped at ₱10,000 (max ₱200 + ₱200 = ₱400). Self-employed members contribute on the same schedule based on declared income, shouldering both shares."
+  }
+}

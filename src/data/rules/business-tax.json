@@ -1,0 +1,33 @@
+{
+  "$comment": "VAT and percentage tax parameters. Draft pending research reconciliation.",
+  "vatRate": {
+    "value": 0.12,
+    "legalBasis": ["NIRC Sec 106/108, as amended"],
+    "confidence": "verified",
+    "notes": ""
+  },
+  "vatThreshold": {
+    "value": 3000000,
+    "legalBasis": ["NIRC Sec 109(CC) & 236(G), as amended by RA 10963 (TRAIN)", "RA 11976 (EOPT) — subject to 3-year CPI adjustment"],
+    "confidence": "needs_review",
+    "notes": "₱3,000,000 gross annual sales (post-EOPT: 'gross sales', accrual). Two independent research passes on Aug 4, 2026 found NO adjustment issuance — the amount stands — but because EOPT mandates a CPI adjustment every three years, re-check this figure periodically; the 8% ceiling and percentage-tax boundary ride on it."
+  },
+  "percentageTaxRate": {
+    "value": 0.03,
+    "legalBasis": ["NIRC Sec 116, as amended by RA 11534 (CREATE) — 1% from Jul 1 2020 to Jun 30 2023, 3% thereafter"],
+    "confidence": "verified",
+    "notes": "3% of gross quarterly sales/receipts for non-VAT taxpayers under the threshold, unless the 8% option is elected."
+  },
+  "vatRegistrationDeadline": {
+    "value": "Register as VAT taxpayer before the end of the month following the month the ₱3M threshold was exceeded",
+    "legalBasis": ["NIRC Sec 236(G)(1)"],
+    "confidence": "needs_review",
+    "notes": "Once past the threshold you are liable for output VAT whether or not you register on time."
+  },
+  "servicesAccrualBasis": {
+    "value": "Since EOPT, VAT and percentage tax on services are computed on gross SALES (billed/accrued), no longer on collections",
+    "legalBasis": ["RA 11976 (EOPT)", "RR 3-2024"],
+    "confidence": "verified",
+    "notes": "Output VAT on uncollected receivables may be credited back under conditions in Sec 110(D)."
+  }
+}

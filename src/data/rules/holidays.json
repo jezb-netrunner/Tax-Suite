@@ -1,0 +1,49 @@
+{
+  "$comment": "Philippine non-working days used for deadline shifting. 2026: per Proclamation No. 1006 (verified Aug 4, 2026, incl. the separately proclaimed Eid dates). 2027: statutory/computable holidays only — the 2027 proclamation is normally issued late 2026; movable and special dates are provisional until then. Special WORKING days (e.g. EDSA anniversary) are excluded — offices are open. Eid'l Fitr / Eid'l Adha 2027 are omitted until proclaimed.",
+  "shiftRule": {
+    "value": "A filing/payment deadline falling on a Saturday, Sunday, or non-working holiday moves to the next working day",
+    "legalBasis": ["Consistent BIR administration in annual tax calendars and deadline advisories; see also Civil Code Art 13 computation rules"],
+    "confidence": "verified",
+    "notes": "Applied to BIR deadlines and, as the safe default, to SSS/PhilHealth/Pag-IBIG/LGU/SEC dates. The 13th-month-pay deadline is an exception — it must be met on or before Dec 24."
+  },
+  "confidence": "verified",
+  "holidays": [
+    { "date": "2026-01-01", "name": "New Year's Day", "type": "regular" },
+    { "date": "2026-02-17", "name": "Chinese New Year", "type": "special_non_working" },
+    { "date": "2026-03-20", "name": "Eid'l Fitr", "type": "regular" },
+    { "date": "2026-04-02", "name": "Maundy Thursday", "type": "regular" },
+    { "date": "2026-04-03", "name": "Good Friday", "type": "regular" },
+    { "date": "2026-04-04", "name": "Black Saturday", "type": "special_non_working" },
+    { "date": "2026-04-09", "name": "Araw ng Kagitingan", "type": "regular" },
+    { "date": "2026-05-01", "name": "Labor Day", "type": "regular" },
+    { "date": "2026-05-27", "name": "Eid'l Adha", "type": "regular" },
+    { "date": "2026-06-12", "name": "Independence Day", "type": "regular" },
+    { "date": "2026-08-21", "name": "Ninoy Aquino Day", "type": "special_non_working" },
+    { "date": "2026-08-31", "name": "National Heroes Day", "type": "regular" },
+    { "date": "2026-11-01", "name": "All Saints' Day", "type": "special_non_working" },
+    { "date": "2026-11-02", "name": "All Souls' Day", "type": "special_non_working" },
+    { "date": "2026-11-30", "name": "Bonifacio Day", "type": "regular" },
+    { "date": "2026-12-08", "name": "Feast of the Immaculate Conception", "type": "special_non_working" },
+    { "date": "2026-12-24", "name": "Christmas Eve", "type": "special_non_working" },
+    { "date": "2026-12-25", "name": "Christmas Day", "type": "regular" },
+    { "date": "2026-12-30", "name": "Rizal Day", "type": "regular" },
+    { "date": "2026-12-31", "name": "Last Day of the Year", "type": "special_non_working" },
+    { "date": "2027-01-01", "name": "New Year's Day", "type": "regular" },
+    { "date": "2027-03-25", "name": "Maundy Thursday (provisional — pending proclamation)", "type": "regular" },
+    { "date": "2027-03-26", "name": "Good Friday (provisional — pending proclamation)", "type": "regular" },
+    { "date": "2027-04-09", "name": "Araw ng Kagitingan", "type": "regular" },
+    { "date": "2027-05-01", "name": "Labor Day", "type": "regular" },
+    { "date": "2027-06-12", "name": "Independence Day", "type": "regular" },
+    { "date": "2027-08-21", "name": "Ninoy Aquino Day (provisional — pending proclamation)", "type": "special_non_working" },
+    { "date": "2027-08-30", "name": "National Heroes Day (last Monday of August)", "type": "regular" },
+    { "date": "2027-11-01", "name": "All Saints' Day (provisional — pending proclamation)", "type": "special_non_working" },
+    { "date": "2027-11-30", "name": "Bonifacio Day", "type": "regular" },
+    { "date": "2027-12-08", "name": "Feast of the Immaculate Conception (provisional)", "type": "special_non_working" },
+    { "date": "2027-12-25", "name": "Christmas Day", "type": "regular" },
+    { "date": "2027-12-30", "name": "Rizal Day", "type": "regular" }
+  ],
+  "notes2027": {
+    "confidence": "needs_review",
+    "notes": "2027 rows marked provisional (and the 2027 Eid dates, omitted here) must be updated when the 2027 holiday proclamation issues, typically October–November 2026."
+  }
+}

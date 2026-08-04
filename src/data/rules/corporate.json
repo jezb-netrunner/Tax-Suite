@@ -1,0 +1,42 @@
+{
+  "$comment": "Domestic corporation income tax parameters (CREATE / CREATE MORE era). Draft pending research reconciliation.",
+  "rcit": {
+    "value": {
+      "standardRate": 0.25,
+      "smallCorpRate": 0.20,
+      "smallCorpTaxableIncomeCeiling": 5000000,
+      "smallCorpAssetCeiling": 100000000
+    },
+    "legalBasis": ["NIRC Sec 27(A), as amended by RA 11534 (CREATE)"],
+    "confidence": "verified",
+    "notes": "20% applies when net taxable income ≤ ₱5M AND total assets ≤ ₱100M (excluding the land where the business sits). CREATE MORE (RA 12066) also gives 20% to registered business enterprises under the enhanced-deduction regime."
+  },
+  "mcit": {
+    "value": {
+      "rate": 0.02,
+      "startsInTaxableYear": "4th taxable year immediately following the year operations began",
+      "excessCarryForwardYears": 3
+    },
+    "legalBasis": ["NIRC Sec 27(E), as amended", "RA 11534 (CREATE) — 1% Jul 1 2020–Jun 30 2023, 2% thereafter"],
+    "confidence": "verified",
+    "notes": "Pay the higher of RCIT and MCIT (2% of gross income) from the fourth taxable year after the registration year. Excess MCIT over RCIT credits against RCIT for the next three years."
+  },
+  "fiscalYear": {
+    "value": "Corporations may adopt a fiscal year; individuals must use the calendar year",
+    "legalBasis": ["NIRC Secs 43 & 52(C)"],
+    "confidence": "verified",
+    "notes": "Quarterly returns fall 60 days after each fiscal quarter; the annual return falls on the 15th day of the 4th month after fiscal year-end."
+  },
+  "osdCorporate": {
+    "value": { "rate": 0.40, "basis": "gross income" },
+    "legalBasis": ["NIRC Sec 34(L), as amended"],
+    "confidence": "verified",
+    "notes": "Corporations compute OSD on gross income (after cost of sales), unlike individuals who use gross sales/receipts."
+  },
+  "improperlyAccumulatedEarningsTax": {
+    "value": "Repealed",
+    "legalBasis": ["RA 11534 (CREATE) Sec 6, repealing NIRC Sec 29"],
+    "confidence": "verified",
+    "notes": ""
+  }
+}

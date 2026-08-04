@@ -1,0 +1,80 @@
+{
+  "$comment": "Withholding tax on compensation tables effective Jan 1, 2023 (RR 11-2018 as amended; BIR revised withholding tax tables). Each bracket: floor (compensation exceeds), base tax, rate on excess over floor. Draft pending research reconciliation.",
+  "tables": {
+    "value": {
+      "daily": [
+        { "over": 0, "base": 0, "rate": 0 },
+        { "over": 685, "base": 0, "rate": 0.15 },
+        { "over": 1095, "base": 61.65, "rate": 0.20 },
+        { "over": 2191, "base": 280.85, "rate": 0.25 },
+        { "over": 5478, "base": 1102.60, "rate": 0.30 },
+        { "over": 21917, "base": 6034.30, "rate": 0.35 }
+      ],
+      "weekly": [
+        { "over": 0, "base": 0, "rate": 0 },
+        { "over": 4808, "base": 0, "rate": 0.15 },
+        { "over": 7691, "base": 432.60, "rate": 0.20 },
+        { "over": 15384, "base": 1971.20, "rate": 0.25 },
+        { "over": 38461, "base": 7740.45, "rate": 0.30 },
+        { "over": 153845, "base": 42355.65, "rate": 0.35 }
+      ],
+      "semiMonthly": [
+        { "over": 0, "base": 0, "rate": 0 },
+        { "over": 10417, "base": 0, "rate": 0.15 },
+        { "over": 16666, "base": 937.50, "rate": 0.20 },
+        { "over": 33332, "base": 4270.70, "rate": 0.25 },
+        { "over": 83332, "base": 16770.70, "rate": 0.30 },
+        { "over": 333332, "base": 91770.70, "rate": 0.35 }
+      ],
+      "monthly": [
+        { "over": 0, "base": 0, "rate": 0 },
+        { "over": 20833, "base": 0, "rate": 0.15 },
+        { "over": 33333, "base": 1875.00, "rate": 0.20 },
+        { "over": 66667, "base": 8541.80, "rate": 0.25 },
+        { "over": 166667, "base": 33541.80, "rate": 0.30 },
+        { "over": 666667, "base": 183541.80, "rate": 0.35 }
+      ]
+    },
+    "legalBasis": ["RR 11-2018 Annex E (Revised Withholding Tax Table effective Jan 1, 2023)", "NIRC Sec 24(A)(2)(a) & Sec 79, as amended by RA 10963"],
+    "confidence": "verified",
+    "notes": "Confirmed unchanged through Aug 2026 (no 2024-2026 issuance revised Annex E) and matched against multiple independent sources, including a worked example (₱50,000/mo → ₱1,875 + 20% × ₱16,667 = ₱5,208.40). Withholding applies to taxable compensation after mandatory SSS/PhilHealth/Pag-IBIG employee shares and non-taxable benefits. Pending House/Senate bracket bills would change these tables if enacted (TY2027 earliest)."
+  },
+  "deMinimis": {
+    "value": {
+      "effectiveFrom": "2026-01-06",
+      "items": [
+        { "benefit": "Monetized unused vacation leave (private sector)", "ceiling": "12 days per year" },
+        { "benefit": "Medical cash allowance to dependents", "ceiling": "₱2,000 per semester (₱333/month)" },
+        { "benefit": "Rice subsidy", "ceiling": "₱2,500 per month (or one 50kg sack)" },
+        { "benefit": "Uniform & clothing allowance", "ceiling": "₱8,000 per year" },
+        { "benefit": "Actual medical assistance", "ceiling": "₱12,000 per year" },
+        { "benefit": "Laundry allowance", "ceiling": "₱400 per month" },
+        { "benefit": "Employee achievement awards (cash/GC allowed since RR 4-2025)", "ceiling": "₱12,000 per year" },
+        { "benefit": "Christmas / anniversary gifts", "ceiling": "₱6,000 per year" },
+        { "benefit": "OT / night-shift meal allowance", "ceiling": "30% of regional basic minimum wage per day" },
+        { "benefit": "CBA & productivity incentives (combined)", "ceiling": "₱12,000 per year" }
+      ]
+    },
+    "legalBasis": ["RR 29-2025 (effective Jan 6, 2026), amending RR 2-98 Sec 2.78.1(A)(3)", "RR 11-2018 (prior ceilings, applicable through Jan 5, 2026)"],
+    "confidence": "needs_review",
+    "notes": "RR 29-2025 RAISED several ceilings effective Jan 6, 2026 (rice ₱2,000→₱2,500, uniforms ₱6,000→₱8,000, medical ₱10,000→₱12,000, gifts ₱5,000→₱6,000, laundry ₱300→₱400, awards ₱10,000→₱12,000). Amounts within ceilings are tax-free; the excess counts toward the ₱90,000 other-benefits cap. Verify the exact RR text before payroll use."
+  },
+  "minimumWageReference": {
+    "value": { "region": "NCR", "dailyNonAgriculture": 755, "effective": "2026-07-25", "nextTranche": { "dailyNonAgriculture": 780, "effective": "2027-01-20" } },
+    "legalBasis": ["Wage Order NCR-27 (first tranche July 25, 2026)"],
+    "confidence": "needs_review",
+    "notes": "Region-specific — every region has its own wage order and rates. Shown only as an NCR reference for the minimum-wage-earner exemption; check your RTWPB's current order."
+  },
+  "annualization": {
+    "value": { "method": "graduated table on annualized taxable compensation; December adjustment trues up the year" },
+    "legalBasis": ["NIRC Sec 79(H)", "RR 2-98 Sec 2.79(B)(5)(b), as amended by RR 11-2018"],
+    "confidence": "verified",
+    "notes": "On the last payroll of the year (or on termination), the employer computes tax on the full year's taxable compensation — including pay from a previous employer within the year — using the annual graduated table, and withholds or refunds the difference so total withheld equals annual tax due. Refunds of over-withholding are due to employees not later than January 25 of the following year."
+  },
+  "mweExempt": {
+    "value": true,
+    "legalBasis": ["NIRC Sec 24(A)(2), as amended by RA 9504", "RR 10-2008"],
+    "confidence": "verified",
+    "notes": "Statutory minimum wage earners are exempt from income tax on their SMW, plus holiday pay, overtime, night differential, and hazard pay — no withholding applies."
+  }
+}
