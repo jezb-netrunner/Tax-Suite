@@ -33,14 +33,19 @@ npm run audit:calendar   # print every taxpayer type's generated calendar
 
 ### Opening the app
 
-The `index.html` in the project root is the **build entry, not a runnable page** —
-opening it directly shows a "couldn't load the application" notice. Use one of:
+**Just open `index.html`.** It is the whole app in a single self-contained file —
+double-click it, email it, or serve it; no build step or web server needed.
 
 | I want to… | Use |
 |---|---|
-| Work on the code | `npm run dev`, open the localhost URL |
-| Just look at it / send it to someone | `dist/standalone.html` — the whole app in one file; double-click it, no server |
-| Host it | Upload `dist/` to any static host. Asset paths are relative, so a project subpath (e.g. `example.com/tax-suite/`) works, and routing uses hash URLs so no rewrite rules are needed |
+| Look at the app / send it to someone | `index.html` (or the identical `dist/standalone.html`) |
+| Work on the code | `npm run dev` — serves the source entry `app.html` with hot reload |
+| Host it properly | Upload `dist/`. Asset paths are relative, so a project subpath (e.g. `example.com/tax-suite/`) works, and routing uses hash URLs so no server rewrite rules are needed |
+
+**File layout note:** `app.html` is the Vite *source* entry — the one `npm run dev`
+serves and `npm run build` compiles. The root `index.html` is *generated* by the
+build (see [`scripts/standalone-plugin.js`](scripts/standalone-plugin.js)) and is
+committed so the repo is directly openable. Edit `app.html`, never `index.html`.
 
 Pushing to `main` publishes the site via GitHub Actions
 ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) — enable it once
