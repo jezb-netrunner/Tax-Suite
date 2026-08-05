@@ -43,7 +43,8 @@ function labelize(key) {
 export default function References() {
   const rules = RULE_FILES.flatMap(([f, label]) => ruleEntries(f, label))
   const obs = obligations.obligations
-  const reviewCount = rules.filter(r => r.confidence !== 'verified').length +
+  const reviewCount = (holidays.confidence !== 'verified' ? 1 : 0) +
+    rules.filter(r => r.confidence !== 'verified').length +
     obs.filter(o => o.confidence !== 'verified').length
 
   return (
@@ -103,7 +104,7 @@ export default function References() {
       <h3 className="sec-h" style={{ margin: '26px 0 12px' }}>Holiday calendar used for date shifting</h3>
       <div className="card pad">
         <div className="cite" style={{ marginBottom: '10px' }}>
-          {holidays.shiftRule.value}. {holidays.confidence !== 'verified' && 'Holiday list pending verification against the official proclamations.'}
+          {holidays.shiftRule.value}. {holidays.confidenceNote || (holidays.confidence !== 'verified' && 'Holiday list pending verification against the official proclamations.')}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: '7px' }}>
           {holidays.holidays.map(h => (

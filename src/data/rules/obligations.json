@@ -8,13 +8,34 @@
       "form": "1701Q",
       "agency": "BIR",
       "category": "income",
-      "appliesTo": { "allOf": ["individual-business"] },
-      "schedule": { "kind": "quarterly_fixed", "entries": [
-        { "label": "Q1", "month": 5, "day": 15 },
-        { "label": "Q2", "month": 8, "day": 15 },
-        { "label": "Q3", "month": 11, "day": 15 }
-      ] },
-      "legalBasis": ["NIRC Sec 74(A), as amended by RA 10963 (TRAIN)"],
+      "appliesTo": {
+        "allOf": [
+          "individual-business"
+        ]
+      },
+      "schedule": {
+        "kind": "quarterly_fixed",
+        "entries": [
+          {
+            "label": "Q1",
+            "month": 5,
+            "day": 15
+          },
+          {
+            "label": "Q2",
+            "month": 8,
+            "day": 15
+          },
+          {
+            "label": "Q3",
+            "month": 11,
+            "day": 15
+          }
+        ]
+      },
+      "legalBasis": [
+        "NIRC Sec 74(A), as amended by RA 10963 (TRAIN)"
+      ],
       "confidence": "verified",
       "notes": "No Q4 return — the fourth quarter is reconciled on the annual return. The Q1 filing is also where the 8% election is made each year."
     },
@@ -25,9 +46,23 @@
       "form": "1701A",
       "agency": "BIR",
       "category": "income",
-      "appliesTo": { "allOf": ["type:individual"], "noneOf": ["itemized"] },
-      "schedule": { "kind": "annual_fixed", "month": 4, "day": 15 },
-      "legalBasis": ["NIRC Sec 51(C), as amended", "RMC 17-2019 (Form 1701A availability)"],
+      "appliesTo": {
+        "allOf": [
+          "type:individual"
+        ],
+        "noneOf": [
+          "itemized"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 4,
+        "day": 15
+      },
+      "legalBasis": [
+        "NIRC Sec 51(C), as amended",
+        "RMC 17-2019 (Form 1701A availability)"
+      ],
       "confidence": "verified",
       "notes": "Income tax due above ₱2,000 may be paid in two equal installments: at filing, and on or before October 15 (NIRC Sec 56(A)(2), as amended by TRAIN). E-filed attachments (SAWT/2307s, statements) go to eAFS within 15 days of the deadline."
     },
@@ -38,9 +73,23 @@
       "form": "1701",
       "agency": "BIR",
       "category": "income",
-      "appliesTo": { "allOf": ["individual-business"], "anyOf": ["itemized", "type:mixed"] },
-      "schedule": { "kind": "annual_fixed", "month": 4, "day": 15 },
-      "legalBasis": ["NIRC Sec 51(C), as amended"],
+      "appliesTo": {
+        "allOf": [
+          "individual-business"
+        ],
+        "anyOf": [
+          "itemized",
+          "type:mixed"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 4,
+        "day": 15
+      },
+      "legalBasis": [
+        "NIRC Sec 51(C), as amended"
+      ],
       "confidence": "verified",
       "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed; audited FS if gross sales exceed ₱3M on itemized deductions. E-filed attachments go to eAFS within 15 days of the deadline."
     },
@@ -51,9 +100,20 @@
       "form": "1700",
       "agency": "BIR",
       "category": "income",
-      "appliesTo": { "allOf": ["files-1700"] },
-      "schedule": { "kind": "annual_fixed", "month": 4, "day": 15 },
-      "legalBasis": ["NIRC Sec 51(A)(2), as amended", "RR 8-2018"],
+      "appliesTo": {
+        "allOf": [
+          "files-1700"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 4,
+        "day": 15
+      },
+      "legalBasis": [
+        "NIRC Sec 51(A)(2), as amended",
+        "RR 8-2018"
+      ],
       "confidence": "verified",
       "notes": ""
     },
@@ -64,9 +124,20 @@
       "form": "2316",
       "agency": "BIR",
       "category": "income",
-      "appliesTo": { "allOf": ["type:employee"] },
-      "schedule": { "kind": "annual_fixed", "month": 1, "day": 31 },
-      "legalBasis": ["NIRC Sec 83, as amended", "RR 2-98 Sec 2.83.1, as amended by RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "type:employee"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 1,
+        "day": 31
+      },
+      "legalBasis": [
+        "NIRC Sec 83, as amended",
+        "RR 2-98 Sec 2.83.1, as amended by RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": "Employers must issue the certificate on or before January 31 of the following year, or on the day of last payment for terminated employment."
     },
@@ -77,9 +148,23 @@
       "form": "1702Q",
       "agency": "BIR",
       "category": "income",
-      "appliesTo": { "allOf": ["type:corporation"] },
-      "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3], "daysAfterEnd": 60 },
-      "legalBasis": ["NIRC Sec 75 & 77(B), as amended"],
+      "appliesTo": {
+        "allOf": [
+          "type:corporation"
+        ]
+      },
+      "schedule": {
+        "kind": "quarterly_offset",
+        "quarters": [
+          1,
+          2,
+          3
+        ],
+        "daysAfterEnd": 60
+      },
+      "legalBasis": [
+        "NIRC Sec 75 & 77(B), as amended"
+      ],
       "confidence": "verified",
       "notes": "Due within 60 days following the close of each of the first three quarters of the taxable year — calendar or fiscal."
     },
@@ -90,9 +175,19 @@
       "form": "1702-RT",
       "agency": "BIR",
       "category": "income",
-      "appliesTo": { "allOf": ["type:corporation"] },
-      "schedule": { "kind": "annual_fy", "monthsAfterEnd": 4, "day": 15 },
-      "legalBasis": ["NIRC Sec 77(B), as amended"],
+      "appliesTo": {
+        "allOf": [
+          "type:corporation"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fy",
+        "monthsAfterEnd": 4,
+        "day": 15
+      },
+      "legalBasis": [
+        "NIRC Sec 77(B), as amended"
+      ],
       "confidence": "verified",
       "notes": "Due the 15th day of the fourth month following the close of the taxable year (April 15 for calendar-year corporations). Variants: 1702-EX (exempt), 1702-MX (mixed/special-rate regimes). Attach audited FS, SAWT/2307s."
     },
@@ -103,9 +198,28 @@
       "form": "2551Q",
       "agency": "BIR",
       "category": "business",
-      "appliesTo": { "allOf": ["business", "nonvat"], "noneOf": ["regime:8pct"] },
-      "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3, 4], "daysAfterEnd": 25 },
-      "legalBasis": ["NIRC Sec 116 & 128(A)(1), as amended by RA 11534 (CREATE)"],
+      "appliesTo": {
+        "allOf": [
+          "business",
+          "nonvat"
+        ],
+        "noneOf": [
+          "regime:8pct"
+        ]
+      },
+      "schedule": {
+        "kind": "quarterly_offset",
+        "quarters": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "daysAfterEnd": 25
+      },
+      "legalBasis": [
+        "NIRC Sec 116 & 128(A)(1), as amended by RA 11534 (CREATE)"
+      ],
       "confidence": "verified",
       "notes": "Within 25 days after the close of each taxable quarter. Electing the 8% option removes this filing entirely for the year."
     },
@@ -116,9 +230,26 @@
       "form": "2550Q",
       "agency": "BIR",
       "category": "business",
-      "appliesTo": { "allOf": ["business", "vat"] },
-      "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3, 4], "daysAfterEnd": 25 },
-      "legalBasis": ["NIRC Sec 114(A), as amended by RA 10963 (TRAIN) & RA 11976 (EOPT)", "RR 3-2024"],
+      "appliesTo": {
+        "allOf": [
+          "business",
+          "vat"
+        ]
+      },
+      "schedule": {
+        "kind": "quarterly_offset",
+        "quarters": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "daysAfterEnd": 25
+      },
+      "legalBasis": [
+        "NIRC Sec 114(A), as amended by RA 10963 (TRAIN) & RA 11976 (EOPT)",
+        "RR 3-2024"
+      ],
       "confidence": "verified",
       "notes": "Quarterly filing only — the monthly 2550M has not been required since January 2023. Since April 27, 2024 the VAT base for services is gross SALES (billed/accrual), with an output-VAT credit for receivables that stay uncollected past the agreed period (Sec 110(D))."
     },
@@ -129,9 +260,26 @@
       "form": "SLSP",
       "agency": "BIR",
       "category": "business",
-      "appliesTo": { "allOf": ["business", "vat"] },
-      "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3, 4], "daysAfterEnd": 25 },
-      "legalBasis": ["NIRC Sec 114(C)", "RR 1-2012 (all VAT taxpayers, no threshold)"],
+      "appliesTo": {
+        "allOf": [
+          "business",
+          "vat"
+        ]
+      },
+      "schedule": {
+        "kind": "quarterly_offset",
+        "quarters": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "daysAfterEnd": 25
+      },
+      "legalBasis": [
+        "NIRC Sec 114(C)",
+        "RR 1-2012 (all VAT taxpayers, no threshold)"
+      ],
       "confidence": "needs_review",
       "notes": "Requirement confirmed still in force as of Aug 2026 by secondary sources; confirm your RDO's current submission mode (eSubmission .dat)."
     },
@@ -142,9 +290,21 @@
       "form": "EIS",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "anyOf": ["books:cas", "crm-pos"] },
-      "schedule": { "kind": "once", "date": "2026-12-31", "noWeekendShift": true },
-      "legalBasis": ["NIRC Sec 237-A, as amended by CREATE MORE (RA 12066)", "RR 11-2025"],
+      "appliesTo": {
+        "anyOf": [
+          "books:cas",
+          "crm-pos"
+        ]
+      },
+      "schedule": {
+        "kind": "once",
+        "date": "2026-12-31",
+        "noWeekendShift": true
+      },
+      "legalBasis": [
+        "NIRC Sec 237-A, as amended by CREATE MORE (RA 12066)",
+        "RR 11-2025"
+      ],
       "confidence": "needs_review",
       "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). Confirm whether this taxpayer is covered and the current compliance date — the deadline has moved before (extended to Dec 31, 2026)."
     },
@@ -155,9 +315,24 @@
       "form": "1601-C",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "monthly", "day": 10, "monthOffset": 1, "monthDayOverrides": { "12": 15 }, "calendarBasis": true },
-      "legalBasis": ["NIRC Sec 81, as amended", "RR 2-98 Sec 2.81, as amended by RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": 10,
+        "monthOffset": 1,
+        "monthDayOverrides": {
+          "12": 15
+        },
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "NIRC Sec 81, as amended",
+        "RR 2-98 Sec 2.81, as amended by RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": "Due the 10th day of the month following the month withheld — except December's, due January 15. eFPS filers follow slightly later staggered dates (RR 26-2002); the dates shown are the earlier non-eFPS deadlines."
     },
@@ -168,9 +343,21 @@
       "form": "1604-C",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "annual_fixed", "month": 1, "day": 31, "calendarBasis": true },
-      "legalBasis": ["NIRC Sec 83, as amended", "RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 1,
+        "day": 31,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "NIRC Sec 83, as amended",
+        "RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": "Alphalist submitted electronically via the BIR Alphalist Data Entry & Validation Module (v7.4 per RMC 15-2025 — check for newer releases each January) through eSubmission."
     },
@@ -181,9 +368,20 @@
       "form": "2316",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "annual_fixed", "month": 1, "day": 31, "calendarBasis": true },
-      "legalBasis": ["RR 2-98 Sec 2.83.1, as amended by RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 1,
+        "day": 31,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RR 2-98 Sec 2.83.1, as amended by RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": ""
     },
@@ -194,9 +392,21 @@
       "form": "2316",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "annual_fixed", "month": 2, "day": 28, "calendarBasis": true },
-      "legalBasis": ["RR 11-2013", "RR 2-2015 as amended by RR 16-2021 (scanned copies/eAFS/USB)"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 2,
+        "day": 28,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RR 11-2013",
+        "RR 2-2015 as amended by RR 16-2021 (scanned copies/eAFS/USB)"
+      ],
       "confidence": "verified",
       "notes": "Not later than February 28 following the close of the calendar year, for substituted-filing employees, signed by both employer and employee. Accepted modes: eAFS scanned PDFs, DVD-R, or USB, one mode per period."
     },
@@ -207,9 +417,24 @@
       "form": "0619-E",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["ewt"] },
-      "schedule": { "kind": "monthly", "day": 10, "monthOffset": 1, "skipQuarterMonths": [3], "calendarBasis": true },
-      "legalBasis": ["NIRC Sec 58(A), as amended by RA 10963", "RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "ewt"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": 10,
+        "monthOffset": 1,
+        "skipQuarterMonths": [
+          3
+        ],
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "NIRC Sec 58(A), as amended by RA 10963",
+        "RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": "Only months 1 and 2 of each calendar quarter — the third month is picked up by the quarterly 1601-EQ. eFPS filers have staggered dates (RR 26-2002); shown are non-eFPS deadlines."
     },
@@ -220,9 +445,27 @@
       "form": "1601-EQ",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["ewt"] },
-      "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3, 4], "monthAfterEnd": 1, "day": "last", "calendarBasis": true },
-      "legalBasis": ["NIRC Sec 58(A), as amended by RA 10963", "RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "ewt"
+        ]
+      },
+      "schedule": {
+        "kind": "quarterly_offset",
+        "quarters": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "monthAfterEnd": 1,
+        "day": "last",
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "NIRC Sec 58(A), as amended by RA 10963",
+        "RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": "Due the last day of the month following the close of the calendar quarter. QAP filed via eSubmission by the same date."
     },
@@ -233,9 +476,21 @@
       "form": "1604-E",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["ewt"] },
-      "schedule": { "kind": "annual_fixed", "month": 3, "day": 1, "calendarBasis": true },
-      "legalBasis": ["RR 2-98 Sec 2.83.2, as amended", "RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "ewt"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 3,
+        "day": 1,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RR 2-98 Sec 2.83.2, as amended",
+        "RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": ""
     },
@@ -246,9 +501,25 @@
       "form": "2307",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["ewt"] },
-      "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3, 4], "daysAfterEnd": 20, "calendarBasis": true },
-      "legalBasis": ["RR 2-98 Sec 2.58(B), as amended by RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "ewt"
+        ]
+      },
+      "schedule": {
+        "kind": "quarterly_offset",
+        "quarters": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "daysAfterEnd": 20,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RR 2-98 Sec 2.58(B), as amended by RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": "Within 20 days from the close of the quarter, or upon the payee's request together with the income payment."
     },
@@ -259,9 +530,24 @@
       "form": "0619-F",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["fwt"] },
-      "schedule": { "kind": "monthly", "day": 10, "monthOffset": 1, "skipQuarterMonths": [3], "calendarBasis": true },
-      "legalBasis": ["NIRC Sec 58(A), as amended by RA 10963", "RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "fwt"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": 10,
+        "monthOffset": 1,
+        "skipQuarterMonths": [
+          3
+        ],
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "NIRC Sec 58(A), as amended by RA 10963",
+        "RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": "Only months 1 and 2 of each quarter; the third month is picked up by the quarterly 1601-FQ."
     },
@@ -272,9 +558,27 @@
       "form": "1601-FQ",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["fwt"] },
-      "schedule": { "kind": "quarterly_offset", "quarters": [1, 2, 3, 4], "monthAfterEnd": 1, "day": "last", "calendarBasis": true },
-      "legalBasis": ["NIRC Sec 58(A), as amended by RA 10963", "RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "fwt"
+        ]
+      },
+      "schedule": {
+        "kind": "quarterly_offset",
+        "quarters": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "monthAfterEnd": 1,
+        "day": "last",
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "NIRC Sec 58(A), as amended by RA 10963",
+        "RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": ""
     },
@@ -285,9 +589,21 @@
       "form": "1604-F",
       "agency": "BIR",
       "category": "withholding",
-      "appliesTo": { "allOf": ["fwt"] },
-      "schedule": { "kind": "annual_fixed", "month": 1, "day": 31, "calendarBasis": true },
-      "legalBasis": ["RR 11-2018", "RMC 73-2019 (1604-F introduction)"],
+      "appliesTo": {
+        "allOf": [
+          "fwt"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 1,
+        "day": 31,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RR 11-2018",
+        "RMC 73-2019 (1604-F introduction)"
+      ],
       "confidence": "verified",
       "notes": ""
     },
@@ -298,9 +614,21 @@
       "form": "SSS R-5/PRN",
       "agency": "SSS",
       "category": "payroll",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "monthly", "day": "last", "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 11199 (Social Security Act of 2018)", "SSS unified payment deadline circulars"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": "last",
+        "monthOffset": 1,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RA 11199 (Social Security Act of 2018)",
+        "SSS unified payment deadline circulars"
+      ],
       "confidence": "verified",
       "notes": "Employers pay on or before the last day of the month following the applicable month (verified Aug 2026). Generate the PRN in the My.SSS portal before paying."
     },
@@ -311,9 +639,21 @@
       "form": "PhilHealth SPA/EPRS",
       "agency": "PhilHealth",
       "category": "payroll",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "monthly", "day": 15, "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 11223 (Universal Health Care Act)", "PhilHealth Circular 2019-0009 (staggered windows by PEN)"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": 15,
+        "monthOffset": 1,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RA 11223 (Universal Health Care Act)",
+        "PhilHealth Circular 2019-0009 (staggered windows by PEN)"
+      ],
       "confidence": "verified",
       "notes": "Staggered by PhilHealth Employer Number: PEN ending 0–4 remit on the 11th–15th, PEN 5–9 on the 16th–20th of the following month. The 15th is shown as the safe-side date — check your exact window in EPRS."
     },
@@ -324,9 +664,21 @@
       "form": "Pag-IBIG MCRF",
       "agency": "Pag-IBIG",
       "category": "payroll",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "monthly", "day": 10, "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 9679 (HDMF Law)", "HDMF remittance schedule circulars"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": 10,
+        "monthOffset": 1,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RA 9679 (HDMF Law)",
+        "HDMF remittance schedule circulars"
+      ],
       "confidence": "needs_review",
       "notes": "Generally the 10th of the following month; some branch schedules stagger by the first letter of the employer's name. The 10th is shown as the safe-side date — confirm your branch's schedule."
     },
@@ -337,9 +689,21 @@
       "form": "SSS PRN",
       "agency": "SSS",
       "category": "payroll",
-      "appliesTo": { "allOf": ["self-contributions"] },
-      "schedule": { "kind": "monthly", "day": "last", "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 11199", "SSS payment deadline circulars"],
+      "appliesTo": {
+        "allOf": [
+          "self-contributions"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": "last",
+        "monthOffset": 1,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RA 11199",
+        "SSS payment deadline circulars"
+      ],
       "confidence": "verified",
       "notes": "Self-employed and voluntary members pay the full 15% themselves, monthly (last day of the following month, shown here) or quarterly (last day of the month following the quarter)."
     },
@@ -350,9 +714,21 @@
       "form": "PhilHealth SPA",
       "agency": "PhilHealth",
       "category": "payroll",
-      "appliesTo": { "allOf": ["self-contributions"] },
-      "schedule": { "kind": "monthly", "day": "last", "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 11223", "PhilHealth Circular 2020-0014"],
+      "appliesTo": {
+        "allOf": [
+          "self-contributions"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": "last",
+        "monthOffset": 1,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RA 11223",
+        "PhilHealth Circular 2020-0014"
+      ],
       "confidence": "needs_review",
       "notes": "Quarterly, semi-annual, and annual payment options are also available."
     },
@@ -363,9 +739,20 @@
       "form": "Pag-IBIG MP2/RTPO",
       "agency": "Pag-IBIG",
       "category": "payroll",
-      "appliesTo": { "allOf": ["self-contributions"] },
-      "schedule": { "kind": "monthly", "day": 10, "monthOffset": 1, "calendarBasis": true },
-      "legalBasis": ["RA 9679"],
+      "appliesTo": {
+        "allOf": [
+          "self-contributions"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": 10,
+        "monthOffset": 1,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RA 9679"
+      ],
       "confidence": "needs_review",
       "notes": ""
     },
@@ -376,9 +763,23 @@
       "form": "—",
       "agency": "DOLE",
       "category": "payroll",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "annual_fixed", "month": 12, "day": 24, "calendarBasis": true, "noWeekendShift": true },
-      "legalBasis": ["PD 851", "DOLE Labor Advisory (annual)"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 12,
+        "day": 24,
+        "calendarBasis": true,
+        "noWeekendShift": true,
+        "periodBasis": "current_year"
+      },
+      "legalBasis": [
+        "PD 851",
+        "DOLE Labor Advisory (annual)"
+      ],
       "confidence": "verified",
       "notes": "Due on or before December 24 — this deadline does NOT move later for weekends; pay earlier instead."
     },
@@ -389,9 +790,21 @@
       "form": "DOLE online report",
       "agency": "DOLE",
       "category": "payroll",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "annual_fixed", "month": 1, "day": 15, "calendarBasis": true },
-      "legalBasis": ["PD 851 IRR", "DOLE Labor Advisory (annual)"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 1,
+        "day": 15,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "PD 851 IRR",
+        "DOLE Labor Advisory (annual)"
+      ],
       "confidence": "needs_review",
       "notes": "Confirm the current year's labor advisory — the reporting window is announced annually."
     },
@@ -402,9 +815,20 @@
       "form": "LGU",
       "agency": "LGU",
       "category": "registration",
-      "appliesTo": { "allOf": ["lgu"] },
-      "schedule": { "kind": "annual_fixed", "month": 1, "day": 20 },
-      "legalBasis": ["Local Government Code (RA 7160) Sec 167"],
+      "appliesTo": {
+        "allOf": [
+          "lgu"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 1,
+        "day": 20,
+        "periodBasis": "current_year"
+      },
+      "legalBasis": [
+        "Local Government Code (RA 7160) Sec 167"
+      ],
       "confidence": "verified",
       "notes": "Local business taxes accrue January 1 and are payable within the first 20 days of January. Many LGUs allow quarterly installments (within the first 20 days of each quarter). Barangay clearance is secured first."
     },
@@ -415,9 +839,20 @@
       "form": "CTC",
       "agency": "LGU",
       "category": "registration",
-      "appliesTo": { "allOf": ["business"] },
-      "schedule": { "kind": "annual_fixed", "month": 2, "day": "last" },
-      "legalBasis": ["Local Government Code (RA 7160) Secs 156-164"],
+      "appliesTo": {
+        "allOf": [
+          "business"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 2,
+        "day": "last",
+        "periodBasis": "current_year"
+      },
+      "legalBasis": [
+        "Local Government Code (RA 7160) Secs 156-164"
+      ],
       "confidence": "verified",
       "notes": "Accrues January 1; payable without interest until the last day of February."
     },
@@ -428,9 +863,20 @@
       "form": "PTR",
       "agency": "LGU",
       "category": "registration",
-      "appliesTo": { "allOf": ["ptr"] },
-      "schedule": { "kind": "annual_fixed", "month": 1, "day": 31 },
-      "legalBasis": ["Local Government Code (RA 7160) Sec 139"],
+      "appliesTo": {
+        "allOf": [
+          "ptr"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 1,
+        "day": 31,
+        "periodBasis": "current_year"
+      },
+      "legalBasis": [
+        "Local Government Code (RA 7160) Sec 139"
+      ],
       "confidence": "verified",
       "notes": "Payable on or before January 31 to the province/city where the professional practices."
     },
@@ -441,9 +887,19 @@
       "form": "via ORUS",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["books:looseleaf"] },
-      "schedule": { "kind": "annual_fy", "daysAfterEnd": 15 },
-      "legalBasis": ["RMC 68-2017", "RMC 3-2023"],
+      "appliesTo": {
+        "allOf": [
+          "books:looseleaf"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fy",
+        "daysAfterEnd": 15
+      },
+      "legalBasis": [
+        "RMC 68-2017",
+        "RMC 3-2023"
+      ],
       "confidence": "verified",
       "notes": "Within 15 days after the end of the taxable year (January 15 for calendar-year taxpayers)."
     },
@@ -454,9 +910,19 @@
       "form": "via ORUS",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["books:cas"] },
-      "schedule": { "kind": "annual_fy", "daysAfterEnd": 30 },
-      "legalBasis": ["RMC 5-2021", "RMC 3-2023"],
+      "appliesTo": {
+        "allOf": [
+          "books:cas"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fy",
+        "daysAfterEnd": 30
+      },
+      "legalBasis": [
+        "RMC 5-2021",
+        "RMC 3-2023"
+      ],
       "confidence": "verified",
       "notes": "Within 30 days from the close of the taxable year (January 30 for calendar-year taxpayers)."
     },
@@ -467,9 +933,18 @@
       "form": "via eSubmission/RDO",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["inventory"] },
-      "schedule": { "kind": "annual_fy", "daysAfterEnd": 30 },
-      "legalBasis": ["RMC 57-2015"],
+      "appliesTo": {
+        "allOf": [
+          "inventory"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fy",
+        "daysAfterEnd": 30
+      },
+      "legalBasis": [
+        "RMC 57-2015"
+      ],
       "confidence": "verified",
       "notes": "Within 30 days following the close of the taxable year (January 30 for calendar-year taxpayers)."
     },
@@ -480,9 +955,22 @@
       "form": "SEC eFAST",
       "agency": "SEC",
       "category": "registration",
-      "appliesTo": { "allOf": ["sec", "fy:calendar"] },
-      "schedule": { "kind": "annual_fixed", "month": 5, "day": 29 },
-      "legalBasis": ["Revised Corporation Code Sec 177", "SRC Rule 68", "SEC MC 9-2026 (FY2025 AFS due May 29, 2026 via eFAST)"],
+      "appliesTo": {
+        "allOf": [
+          "sec",
+          "fy:calendar"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 5,
+        "day": 29
+      },
+      "legalBasis": [
+        "Revised Corporation Code Sec 177",
+        "SRC Rule 68",
+        "SEC MC 9-2026 (FY2025 AFS due May 29, 2026 via eFAST)"
+      ],
       "confidence": "needs_review",
       "notes": "The SEC sets the exact date each year by memorandum circular (the old last-digit staggering is gone; MC 9-2026 set a single May 29, 2026 deadline for FY2025). Later years shown at May 29 provisionally — update when each year's MC issues. PSE-listed/public companies follow the 105-day SEC Form 17-A rule instead."
     },
@@ -493,9 +981,21 @@
       "form": "SEC eFAST",
       "agency": "SEC",
       "category": "registration",
-      "appliesTo": { "allOf": ["sec", "fy:fiscal"] },
-      "schedule": { "kind": "annual_fy", "daysAfterEnd": 120 },
-      "legalBasis": ["Revised Corporation Code Sec 177", "SRC Rule 68", "SEC MC 9-2026"],
+      "appliesTo": {
+        "allOf": [
+          "sec",
+          "fy:fiscal"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fy",
+        "daysAfterEnd": 120
+      },
+      "legalBasis": [
+        "Revised Corporation Code Sec 177",
+        "SRC Rule 68",
+        "SEC MC 9-2026"
+      ],
       "confidence": "verified",
       "notes": "Within 120 calendar days from the end of a fiscal year other than December 31 (per the annual SEC MC, most recently MC 9-2026)."
     },
@@ -506,9 +1006,18 @@
       "form": "SEC GIS",
       "agency": "SEC",
       "category": "registration",
-      "appliesTo": { "allOf": ["sec"] },
-      "schedule": { "kind": "ongoing" },
-      "legalBasis": ["Revised Corporation Code Sec 177", "SEC MC 9-2026 (30 calendar days from the actual annual meeting, via eFAST)"],
+      "appliesTo": {
+        "allOf": [
+          "sec"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "Revised Corporation Code Sec 177",
+        "SEC MC 9-2026 (30 calendar days from the actual annual meeting, via eFAST)"
+      ],
       "confidence": "verified",
       "notes": "The due date depends on your annual meeting date (often fixed in the by-laws). Diary it 30 days after the meeting; file through eFAST."
     },
@@ -519,9 +1028,19 @@
       "form": "1701Q / 1905",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["individual-business", "regime:8pct"] },
-      "schedule": { "kind": "ongoing" },
-      "legalBasis": ["RR 8-2018 Sec 3", "RMC 32-2018"],
+      "appliesTo": {
+        "allOf": [
+          "individual-business",
+          "regime:8pct"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "RR 8-2018 Sec 3",
+        "RMC 32-2018"
+      ],
       "confidence": "verified",
       "notes": "The election is irrevocable for the taxable year once made."
     },
@@ -532,9 +1051,18 @@
       "form": "—",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["business"] },
-      "schedule": { "kind": "ongoing" },
-      "legalBasis": ["NIRC Sec 237, as amended by RA 11976 (EOPT)", "RR 7-2024, as amended by RR 11-2024"],
+      "appliesTo": {
+        "allOf": [
+          "business"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "NIRC Sec 237, as amended by RA 11976 (EOPT)",
+        "RR 7-2024, as amended by RR 11-2024"
+      ],
       "confidence": "verified",
       "notes": "Mandatory issuance applies to sales of ₱500 or more (per transaction, adjustable every 3 years); issue one anyway when the buyer asks."
     },
@@ -545,9 +1073,17 @@
       "form": "—",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["business"] },
-      "schedule": { "kind": "ongoing" },
-      "legalBasis": ["NIRC Secs 232-235, as amended by RA 11976 (EOPT)"],
+      "appliesTo": {
+        "allOf": [
+          "business"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "NIRC Secs 232-235, as amended by RA 11976 (EOPT)"
+      ],
       "confidence": "verified",
       "notes": "EOPT cut the retention period to five (5) years and raised the audited-FS requirement to gross annual sales above ₱3,000,000."
     },
@@ -558,9 +1094,18 @@
       "form": "—",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["business"] },
-      "schedule": { "kind": "info" },
-      "legalBasis": ["RA 11976 (EOPT), repealing NIRC Sec 236(B)", "RMC 15-2024"],
+      "appliesTo": {
+        "allOf": [
+          "business"
+        ]
+      },
+      "schedule": {
+        "kind": "info"
+      },
+      "legalBasis": [
+        "RA 11976 (EOPT), repealing NIRC Sec 236(B)",
+        "RMC 15-2024"
+      ],
       "confidence": "verified",
       "notes": "Effective January 22, 2024."
     },
@@ -571,9 +1116,18 @@
       "form": "DTI BNRS",
       "agency": "DTI",
       "category": "registration",
-      "appliesTo": { "allOf": ["dti"] },
-      "schedule": { "kind": "ongoing" },
-      "legalBasis": ["RA 3883 (Business Name Law), as amended", "DTI BNRS rules"],
+      "appliesTo": {
+        "allOf": [
+          "dti"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "RA 3883 (Business Name Law), as amended",
+        "DTI BNRS rules"
+      ],
       "confidence": "needs_review",
       "notes": "Renewal window: from 180 days before expiry up to 90 days after (with surcharge after expiry) — verify current DTI rules and diary your own five-year date."
     },
@@ -584,9 +1138,18 @@
       "form": "—",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["crm-pos"] },
-      "schedule": { "kind": "ongoing" },
-      "legalBasis": ["RR 11-2004", "RMC 30-2015"],
+      "appliesTo": {
+        "allOf": [
+          "crm-pos"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "RR 11-2004",
+        "RMC 30-2015"
+      ],
       "confidence": "needs_review",
       "notes": "Requirements vary with machine type and accreditation — confirm your unit's reporting duties with your RDO."
     },
@@ -597,9 +1160,18 @@
       "form": "1905",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "anyOf": ["business", "type:employee"] },
-      "schedule": { "kind": "ongoing" },
-      "legalBasis": ["NIRC Sec 236, as amended by RA 11976 (EOPT)"],
+      "appliesTo": {
+        "anyOf": [
+          "business",
+          "type:employee"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "NIRC Sec 236, as amended by RA 11976 (EOPT)"
+      ],
       "confidence": "verified",
       "notes": "Under EOPT, transfers and updates can be filed at any RDO — no more transfer-first requirement."
     },
@@ -610,9 +1182,18 @@
       "form": "1603Q",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["employer"] },
-      "schedule": { "kind": "info" },
-      "legalBasis": ["NIRC Sec 33, as amended by RA 10963", "RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "employer"
+        ]
+      },
+      "schedule": {
+        "kind": "info"
+      },
+      "legalBasis": [
+        "NIRC Sec 33, as amended by RA 10963",
+        "RR 11-2018"
+      ],
       "confidence": "needs_review",
       "notes": "Rank-and-file benefits are taxed through compensation withholding instead. If you grant such benefits, add the 1603Q dates to your calendar with your CPA."
     },
@@ -623,9 +1204,18 @@
       "form": "—",
       "agency": "BIR",
       "category": "admin",
-      "appliesTo": { "allOf": ["substituted-filing"] },
-      "schedule": { "kind": "info" },
-      "legalBasis": ["RR 3-2002, as amended", "RR 11-2018"],
+      "appliesTo": {
+        "allOf": [
+          "substituted-filing"
+        ]
+      },
+      "schedule": {
+        "kind": "info"
+      },
+      "legalBasis": [
+        "RR 3-2002, as amended",
+        "RR 11-2018"
+      ],
       "confidence": "verified",
       "notes": "You fall out of substituted filing if you had two or more employers during the year, your withholding was short, or you have other income to report."
     }

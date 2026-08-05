@@ -21,7 +21,16 @@ function localLoad() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
 }
 function localSave(profiles) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(profiles)) } catch { /* storage full/blocked */ }
+  // Let the failure surface. Swallowing it told the user their client was
+  // saved when private-mode or a full quota had discarded it.
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(profiles))
+  } catch (e) {
+    throw new Error(
+      'This browser refused to save the profile (storage may be full or blocked in private browsing). ' +
+      'Your changes were not kept.'
+    )
+  }
 }
 
 function newId() {

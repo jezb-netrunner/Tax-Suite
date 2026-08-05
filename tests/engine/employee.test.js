@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { estimateEmployee } from '../../src/engine/estimators/employee.js'
 import { employeeMandatoryDeductions, sssEmployee, philhealthMonthly, pagibigMonthly } from '../../src/engine/estimators/contributions.js'
+import wcomp from '../../src/data/rules/withholding-compensation.json'
 
 // Hand-worked: ₱30,000/month employee, 13th month ₱30,000 (fully excluded, < ₱90k cap)
 //   SSS EE:        MSC 30,000 × 5%  = 1,500
@@ -36,6 +37,21 @@ describe('employee estimator — ₱30k/month hand-worked', () => {
     const r3 = estimateEmployee({ monthlyBasic: 15000 })
     expect(r3.monthlyWithholding).toBe(0)
   })
+})
+
+// Each bracket's base must equal the tax accumulated at its own floor, or the
+// table is internally inconsistent and withholding is wrong near the boundary.
+describe('withholding tables are continuous at every bracket boundary', () => {
+  const { tables } = wcomp
+  for (const [period, rows] of Object.entries(tables.value)) {
+    it(`${period} table`, () => {
+      for (let i = 1; i < rows.length; i++) {
+        const prev = rows[i - 1], cur = rows[i]
+        const implied = prev.base + prev.rate * (cur.over - prev.over)
+        expect(implied, `${period} bracket over ${cur.over}`).toBeCloseTo(cur.base, 2)
+      }
+    })
+  }
 })
 
 describe('contribution primitives', () => {

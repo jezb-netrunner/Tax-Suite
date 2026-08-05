@@ -21,8 +21,15 @@ function ProfileMenu() {
 
   useEffect(() => {
     function onDoc(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
+    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
+    // pointerdown covers mouse and touch; iOS Safari doesn't emit compatibility
+    // mouse events for taps on plain background elements.
+    document.addEventListener('pointerdown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [])
 
   const initial = app.active ? (app.active.name || '?').trim().charAt(0).toUpperCase() : '+'
@@ -31,7 +38,8 @@ function ProfileMenu() {
     <div className="menu-anchor" ref={ref}>
       <button className="avatar" aria-haspopup="menu" aria-expanded={open}
         title={app.active ? app.active.name : 'Profiles'}
-        onClick={() => setOpen(o => !o)}>{initial}</button>
+        aria-label={app.active ? `Profiles — ${app.active.name} selected` : 'Profiles'}
+        onClick={() => setOpen(o => !o)}><span aria-hidden="true">{initial}</span></button>
       {open && (
         <div className="menu-pop" role="menu">
           <div className="menu-head">Taxpayer profiles</div>

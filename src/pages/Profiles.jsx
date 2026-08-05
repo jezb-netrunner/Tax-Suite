@@ -18,8 +18,15 @@ export default function ProfilesPage() {
         <button className="btn" onClick={() => nav('/profiles/new')}>+ New profile</button>
       </div>
 
+      {app.loadError && (
+        <div className="form-err" role="alert" style={{ marginTop: '18px' }}>
+          Couldn’t load your saved profiles — this is a loading problem, not lost data.{' '}
+          <button className="linkbtn" style={{ color: 'inherit', textDecoration: 'underline' }} onClick={() => app.retryLoad()}>Try again</button>
+        </div>
+      )}
+
       <div className="list-card" style={{ marginTop: '22px' }}>
-        {app.profiles.length === 0 && (
+        {app.profiles.length === 0 && !app.loadError && (
           <div className="empty-note">No profiles yet. Create one to get a personalized calendar, estimates, and checklist.</div>
         )}
         {app.profiles.map(p => (
