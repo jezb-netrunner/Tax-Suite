@@ -5,26 +5,26 @@
       "daily": [
         { "over": 0, "base": 0, "rate": 0 },
         { "over": 685, "base": 0, "rate": 0.15 },
-        { "over": 1095, "base": 61.65, "rate": 0.20 },
-        { "over": 2191, "base": 280.85, "rate": 0.25 },
-        { "over": 5478, "base": 1102.60, "rate": 0.30 },
-        { "over": 21917, "base": 6034.30, "rate": 0.35 }
+        { "over": 1096, "base": 61.65, "rate": 0.20 },
+        { "over": 2192, "base": 280.85, "rate": 0.25 },
+        { "over": 5479, "base": 1102.60, "rate": 0.30 },
+        { "over": 21918, "base": 6034.30, "rate": 0.35 }
       ],
       "weekly": [
         { "over": 0, "base": 0, "rate": 0 },
         { "over": 4808, "base": 0, "rate": 0.15 },
-        { "over": 7691, "base": 432.60, "rate": 0.20 },
-        { "over": 15384, "base": 1971.20, "rate": 0.25 },
-        { "over": 38461, "base": 7740.45, "rate": 0.30 },
-        { "over": 153845, "base": 42355.65, "rate": 0.35 }
+        { "over": 7692, "base": 432.60, "rate": 0.20 },
+        { "over": 15385, "base": 1971.20, "rate": 0.25 },
+        { "over": 38462, "base": 7740.45, "rate": 0.30 },
+        { "over": 153846, "base": 42355.65, "rate": 0.35 }
       ],
       "semiMonthly": [
         { "over": 0, "base": 0, "rate": 0 },
         { "over": 10417, "base": 0, "rate": 0.15 },
-        { "over": 16666, "base": 937.50, "rate": 0.20 },
-        { "over": 33332, "base": 4270.70, "rate": 0.25 },
-        { "over": 83332, "base": 16770.70, "rate": 0.30 },
-        { "over": 333332, "base": 91770.70, "rate": 0.35 }
+        { "over": 16667, "base": 937.50, "rate": 0.20 },
+        { "over": 33333, "base": 4270.70, "rate": 0.25 },
+        { "over": 83333, "base": 16770.70, "rate": 0.30 },
+        { "over": 333333, "base": 91770.70, "rate": 0.35 }
       ],
       "monthly": [
         { "over": 0, "base": 0, "rate": 0 },

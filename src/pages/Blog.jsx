@@ -42,7 +42,20 @@ export default function BlogPage() {
     )
   }
 
-  const p = POSTS.find(x => x.id === postId) || POSTS[0]
+  const p = POSTS.find(x => x.id === postId)
+  if (!p) {
+    // Showing an unrelated article under the requested URL is worse than saying
+    // the link is stale.
+    return (
+      <div className="page wrap" style={{ paddingTop: '40px', paddingBottom: '64px', maxWidth: '620px' }}>
+        <div className="card pad" style={{ textAlign: 'center' }}>
+          <h1 className="pg-h1">That article isn’t here</h1>
+          <p className="pg-sub">The link may be out of date or mistyped.</p>
+          <button className="btn" style={{ marginTop: '16px' }} onClick={() => nav('/blog')}>Browse all articles</button>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="page" style={{ maxWidth: '680px', margin: '0 auto', padding: '30px 28px 72px' }}>
       <button className="linkbtn" style={{ fontSize: '13.5px', color: 'var(--mut)', marginBottom: '24px' }} onClick={() => nav('/blog')}>← All articles</button>

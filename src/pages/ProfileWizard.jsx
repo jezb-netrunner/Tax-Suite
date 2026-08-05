@@ -8,23 +8,47 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 export default function ProfileWizard() {
   const app = useApp()
-  const nav = useNavigate()
   const { profileId } = useParams()
   const editing = useMemo(
     () => (profileId ? app.profiles.find(p => p.id === profileId) : null),
     [profileId, app.profiles]
   )
 
-  const [step, setStep] = useState(editing ? 1 : 0)
+  // Profiles load asynchronously. Mounting the editor before they arrive seeded
+  // a blank form and saved it as a NEW profile instead of editing the intended
+  // one, so wait, then remount cleanly against the resolved profile.
+  if (profileId && !app.profilesReady) return null
+  return <WizardForm key={profileId || 'new'} app={app} editing={editing} />
+}
+
+function WizardForm({ app, editing }) {
+  const nav = useNavigate()
+  const [step, setStep] = useState(0)
   const [p, setP] = useState(() => (editing ? { ...editing } : defaultProfile()))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
 
   function set(k, v) { setP(prev => ({ ...prev, [k]: v })) }
 
+  // The 8% option is unavailable to VAT-registered taxpayers, so turning VAT on
+  // must move the stored regime too — otherwise the profile keeps regime:'8pct'
+  // while the UI shows (and the engine applies) graduated rates.
+  function setVatRegistered(v) {
+    setP(prev => ({
+      ...prev,
+      vatRegistered: v,
+      regime: v && prev.regime === '8pct' ? 'graduated_osd' : prev.regime,
+    }))
+  }
+
+  // Switching type resets the type-specific facets (an employee has no VAT
+  // registration), but must carry the identity across — dropping the id would
+  // save a duplicate instead of updating the profile being edited.
   function pickType(type) {
     const fresh = defaultProfile(type)
+    fresh.id = p.id
     fresh.name = p.name
+    fresh.inputs = p.inputs || {}
     setP(fresh)
   }
 
@@ -91,7 +115,7 @@ export default function ProfileWizard() {
             {isBiz && (
               <>
                 <div style={{ marginTop: '14px' }}>
-                  <Switch on={p.vatRegistered} onChange={v => set('vatRegistered', v)}
+                  <Switch on={p.vatRegistered} onChange={v => setVatRegistered(v)}
                     title="VAT-registered"
                     desc="Required once gross sales pass the ₱3,000,000 threshold; optional below it. VAT registration removes the 8% option and the percentage tax." />
                 </div>
@@ -225,8 +249,8 @@ export default function ProfileWizard() {
         {err && <div className="form-err" role="alert">{err}</div>}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '24px' }}>
-          <button className="btn ghost" type="button" onClick={() => (step === 0 || (editing && step === 1) ? nav(-1) : setStep(s => s - 1))}>
-            {step === 0 || (editing && step === 1) ? 'Cancel' : 'Back'}
+          <button className="btn ghost" type="button" onClick={() => (step === 0 ? nav(-1) : setStep(s => s - 1))}>
+            {step === 0 ? 'Cancel' : 'Back'}
           </button>
           {step < steps - 1 ? (
             <button className="btn" type="button" disabled={step === 0 && !p.name.trim()} onClick={() => setStep(s => s + 1)}>Continue</button>

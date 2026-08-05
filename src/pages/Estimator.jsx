@@ -37,20 +37,43 @@ function BasisNote({ refs }) {
 
 // Per-profile input memory so returning users see their numbers.
 // Persists 900ms after the last keystroke to avoid write storms.
+//
+// Three things this has to get right, because one account holds many clients:
+//  - Seed from the profile these inputs belong to. The estimator subtree is
+//    keyed by profile id (see Estimator below), so switching clients remounts
+//    and re-seeds rather than showing the previous client's figures.
+//  - Merge into the LATEST profile at flush time, not the copy captured on the
+//    keystroke, so a debounced write can't revert edits made meanwhile.
+//  - Flush a pending write on unmount instead of dropping it.
 function useInputs(app, key, defaults) {
+  const profileId = app.active?.id ?? null
   const saved = app.active?.inputs?.[key]
   const [vals, setVals] = useState({ ...defaults, ...(saved || {}) })
   const timer = React.useRef(null)
+  const pending = React.useRef(null)
+
+  // Always read the newest profile when the timer fires.
+  const activeRef = React.useRef(app.active)
+  activeRef.current = app.active
+
+  const flush = React.useCallback(() => {
+    const inputs = pending.current
+    pending.current = null
+    const current = activeRef.current
+    if (!inputs || !current || current.id !== profileId) return
+    app.save({ ...current, inputs: { ...(current.inputs || {}), [key]: inputs } }).catch(() => {})
+  }, [app, key, profileId])
+
   function update(k, v) {
     const next = { ...vals, [k]: v }
     setVals(next)
-    if (app.active) {
-      clearTimeout(timer.current)
-      const snapshot = { ...app.active, inputs: { ...(app.active.inputs || {}), [key]: next } }
-      timer.current = setTimeout(() => { app.save(snapshot).catch(() => {}) }, 900)
-    }
+    if (!app.active) return
+    pending.current = next
+    clearTimeout(timer.current)
+    timer.current = setTimeout(flush, 900)
   }
-  React.useEffect(() => () => clearTimeout(timer.current), [])
+
+  React.useEffect(() => () => { clearTimeout(timer.current); flush() }, [flush])
   return [vals, update]
 }
 
@@ -333,11 +356,15 @@ export default function Estimator() {
         )}
       </div>
 
-      {active === 'individual' && <IndividualEstimator app={app} mixed={false} />}
-      {active === 'mixed' && <IndividualEstimator app={app} mixed={true} />}
-      {active === 'employee' && <EmployeeEstimator app={app} />}
-      {active === 'corporation' && <CorporationEstimator app={app} />}
-      {active === 'payroll' && <PayrollEstimator app={app} />}
+      {/* Keyed by profile and tab so switching either remounts the inputs —
+          otherwise one client's saved figures would linger under another's. */}
+      <React.Fragment key={`${p.id || 'local'}:${active}`}>
+        {active === 'individual' && <IndividualEstimator app={app} mixed={false} />}
+        {active === 'mixed' && <IndividualEstimator app={app} mixed={true} />}
+        {active === 'employee' && <EmployeeEstimator app={app} />}
+        {active === 'corporation' && <CorporationEstimator app={app} />}
+        {active === 'payroll' && <PayrollEstimator app={app} />}
+      </React.Fragment>
 
       <Disclaimer>
         These figures are estimates computed from published rates and schedules; they don't account for your

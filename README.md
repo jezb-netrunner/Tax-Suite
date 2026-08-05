@@ -27,8 +27,26 @@ in-browser).
 npm install
 npm run dev        # local dev
 npm test           # engine tests (hand-worked tax examples)
-npm run build      # production build → dist/ (static, deploy anywhere)
+npm run build      # production build → dist/
+npm run audit:calendar   # print every taxpayer type's generated calendar
 ```
+
+### Opening the app
+
+The `index.html` in the project root is the **build entry, not a runnable page** —
+opening it directly shows a "couldn't load the application" notice. Use one of:
+
+| I want to… | Use |
+|---|---|
+| Work on the code | `npm run dev`, open the localhost URL |
+| Just look at it / send it to someone | `dist/standalone.html` — the whole app in one file; double-click it, no server |
+| Host it | Upload `dist/` to any static host. Asset paths are relative, so a project subpath (e.g. `example.com/tax-suite/`) works, and routing uses hash URLs so no rewrite rules are needed |
+
+Pushing to `main` publishes the site via GitHub Actions
+([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) — enable it once
+under **Settings → Pages → Source: GitHub Actions**. To publish with cloud
+accounts enabled, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as
+repository secrets; without them the published site runs in local-device mode.
 
 ## Where the tax rules live — and how to update them
 

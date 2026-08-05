@@ -13,6 +13,30 @@
 </head>
 <body>
 <div id="root"></div>
-<script type="module" src="/src/main.jsx"></script>
+<script type="module" src="./src/main.jsx"></script>
+<!-- This file is the build entry: the script above is source, not a runnable
+     bundle, so opening THIS file directly shows nothing. Rather than leave a
+     blank page, say so. On a real load React fills #root synchronously when the
+     bundle executes, so an empty #root after this delay means it never ran. -->
+<script>
+window.addEventListener('load', function () {
+  setTimeout(function () {
+    var root = document.getElementById('root')
+    if (!root || root.innerHTML.trim() !== '') return
+    root.innerHTML =
+      '<div style="max-width:34rem;margin:14vh auto;padding:0 1.5rem;font:15px/1.65 system-ui,sans-serif;color:#27384a">' +
+      '<div style="width:38px;height:38px;border-radius:50%;background:#2a4d62;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px">&#8369;</div>' +
+      '<h1 style="font-size:20px;letter-spacing:-.02em;margin:16px 0 8px">This page couldn’t load the application.</h1>' +
+      '<p style="color:#76869a;margin:0 0 14px">Present Value is a build-step app, so the source <code>index.html</code> in the project root can’t run on its own. Use one of these instead:</p>' +
+      '<ul style="color:#76869a;margin:0 0 14px;padding-left:1.2rem">' +
+      '<li style="margin-bottom:6px"><b style="color:#27384a">Just want to look at it:</b> run <code>npm install &amp;&amp; npm run build</code>, then open <code>dist/standalone.html</code> — one self-contained file that works straight from disk.</li>' +
+      '<li style="margin-bottom:6px"><b style="color:#27384a">Working on the code:</b> run <code>npm run dev</code> and open the localhost URL it prints.</li>' +
+      '<li style="margin-bottom:6px"><b style="color:#27384a">Hosting it:</b> upload the <code>dist/</code> folder — <code>dist/index.html</code> needs a web server, not a <code>file://</code> path.</li>' +
+      '</ul>' +
+      '<p style="color:#9aabbc;font-size:13px;margin:0">Browsers block loading JavaScript modules from <code>file://</code>, which is why opening the multi-file build directly lands here.</p>' +
+      '</div>'
+  }, 1500)
+})
+</script>
 </body>
 </html>

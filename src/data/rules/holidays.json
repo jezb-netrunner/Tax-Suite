@@ -6,7 +6,12 @@
     "confidence": "verified",
     "notes": "Applied to BIR deadlines and, as the safe default, to SSS/PhilHealth/Pag-IBIG/LGU/SEC dates. The 13th-month-pay deadline is an exception — it must be met on or before Dec 24."
   },
-  "confidence": "verified",
+  "confidence": "needs_review",
+  "confidenceByYear": {
+    "2026": "verified",
+    "2027": "needs_review"
+  },
+  "confidenceNote": "2026 dates are verified against Proclamation No. 1006. The 2027 rows are the statutory/computable holidays only — the 2027 proclamation had not issued as of the verification date, and the movable Eid dates are omitted entirely, so deadlines shifting across a 2027 holiday need confirming.",
   "holidays": [
     { "date": "2026-01-01", "name": "New Year's Day", "type": "regular" },
     { "date": "2026-02-17", "name": "Chinese New Year", "type": "special_non_working" },

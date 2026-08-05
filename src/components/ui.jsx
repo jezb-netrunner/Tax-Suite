@@ -12,30 +12,36 @@ export function Seg({ options, value, onChange, ariaLabel }) {
 }
 
 export function NumField({ label, value, onChange, prefix, lg, hint }) {
+  // Real label/input association, so tapping the label focuses the field and
+  // any hint text is announced with it.
+  const id = React.useId()
+  const hintId = hint ? id + '-hint' : undefined
   return (
     <div>
-      <label className="lbl">{label}</label>
+      <label className="lbl" htmlFor={id}>{label}</label>
       <div className={'input-w' + (lg ? ' lg' : '')}>
-        {prefix && <span className="pre">{prefix}</span>}
+        {prefix && <span className="pre" aria-hidden="true">{prefix}</span>}
         <input
+          id={id}
           type="text"
           inputMode="numeric"
-          aria-label={label}
+          aria-describedby={hintId}
           value={value.toLocaleString('en-US')}
           onChange={e => onChange(parseNum(e.target.value))}
         />
       </div>
-      {hint && <div style={{ fontSize: '11.5px', color: 'var(--dim)', marginTop: '5px' }}>{hint}</div>}
+      {hint && <div id={hintId} style={{ fontSize: '11.5px', color: 'var(--dim)', marginTop: '5px' }}>{hint}</div>}
     </div>
   )
 }
 
 export function SelectField({ label, value, onChange, options }) {
+  const id = React.useId()
   return (
     <div>
-      <label className="lbl">{label}</label>
+      <label className="lbl" htmlFor={id}>{label}</label>
       <div className="input-w">
-        <select aria-label={label} value={value} onChange={e => onChange(e.target.value)}>
+        <select id={id} value={value} onChange={e => onChange(e.target.value)}>
           {options.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
       </div>

@@ -3,7 +3,7 @@
 // In cloud mode (Supabase configured) users sign in and their profiles sync.
 // In local mode there is no sign-in; profiles persist in this browser only.
 
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { hasCloud, supabase, listProfiles, saveProfile, deleteProfile } from '../lib/backend.js'
 
 const Ctx = createContext(null)
@@ -19,6 +19,7 @@ export function AppStateProvider({ children }) {
   const [authReady, setAuthReady] = useState(!hasCloud)
   const [profiles, setProfiles] = useState([])
   const [profilesReady, setProfilesReady] = useState(false)
+  const [loadError, setLoadError] = useState(null)
   const [activeId, setActiveId] = useState(() => {
     try { return localStorage.getItem(ACTIVE_KEY) || null } catch { return null }
   })
@@ -36,16 +37,30 @@ export function AppStateProvider({ children }) {
   const userId = session?.user?.id || null
   const signedIn = hasCloud ? Boolean(userId) : true
 
+  // Every fetch carries a token. A response is applied only if it is still the
+  // newest request AND was issued for the user who is signed in now — otherwise
+  // a slow response from a previous session could paint another account's
+  // profiles over this one's.
+  const reqToken = useRef(0)
+
   const refreshProfiles = useCallback(async () => {
-    if (hasCloud && !userId) { setProfiles([]); setProfilesReady(true); return }
+    const token = ++reqToken.current
+    const forUser = userId
+    setLoadError(null)
+    if (hasCloud && !forUser) { setProfiles([]); setProfilesReady(true); return }
     try {
-      const list = await listProfiles(userId)
+      const list = await listProfiles(forUser)
+      if (token !== reqToken.current) return
       setProfiles(list)
     } catch (e) {
+      if (token !== reqToken.current) return
       console.error('Failed to load profiles', e)
+      // Don't render a failed fetch as "no profiles yet" — that reads as data
+      // loss to someone who has clients saved.
+      setLoadError(e)
       setProfiles([])
     }
-    setProfilesReady(true)
+    if (token === reqToken.current) setProfilesReady(true)
   }, [userId])
 
   useEffect(() => { if (authReady) refreshProfiles() }, [authReady, refreshProfiles])
@@ -62,6 +77,8 @@ export function AppStateProvider({ children }) {
     signedIn,
     profiles,
     profilesReady,
+    loadError,
+    retryLoad: refreshProfiles,
     active,
     setActive(id) {
       setActiveId(id)
@@ -84,7 +101,7 @@ export function AppStateProvider({ children }) {
     async signOut() {
       if (hasCloud) await supabase.auth.signOut()
     },
-  }), [session, authReady, signedIn, profiles, profilesReady, active, userId, activeId, refreshProfiles])
+  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

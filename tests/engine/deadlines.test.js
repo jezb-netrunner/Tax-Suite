@@ -147,6 +147,34 @@ describe('employee', () => {
   })
 })
 
+// A deadline must stay visible until its EFFECTIVE (shifted) due date passes.
+// Filtering the window on the raw statutory date used to hide weekend/holiday-
+// shifted deadlines during the very days they were still due.
+describe('shifted deadlines remain visible through their effective due date', () => {
+  const p = { ...defaultProfile('individual'), name: 'T', hasEmployees: true, regime: '8pct' }
+  it('1601-C for Sep 2026 (raw Sat Oct 10 → Mon Oct 12) shows on Oct 11 and Oct 12', () => {
+    for (const day of ['2026-10-10', '2026-10-11', '2026-10-12']) {
+      const list = gen(p, day, '2026-12-31')
+      expect(datesOf(list, 'bir-1601c'), `viewed on ${day}`).toContain('2026-10-12')
+    }
+  })
+  it('disappears only once the effective date has passed', () => {
+    const list = gen(p, '2026-10-13', '2026-12-31')
+    expect(datesOf(list, 'bir-1601c')).not.toContain('2026-10-12')
+  })
+  it('1701Q Q2 (raw Sat Aug 15 → Mon Aug 17) shows on Aug 16 and Aug 17', () => {
+    for (const day of ['2026-08-16', '2026-08-17']) {
+      const list = gen(p, day, '2026-12-31')
+      expect(datesOf(list, 'bir-1701q'), `viewed on ${day}`).toContain('2026-08-17')
+    }
+  })
+  it('does not leak occurrences whose shifted date lands past the window end', () => {
+    // Raw Oct 10 2026 (Sat) shifts to Oct 12; a window ending Oct 11 must exclude it.
+    const list = gen(p, '2026-10-01', '2026-10-11')
+    expect(datesOf(list, 'bir-1601c')).not.toContain('2026-10-12')
+  })
+})
+
 describe('date primitives', () => {
   it('fiscal quarters for FY ending June', () => {
     const q = taxableYearQuarters(2026, 6)

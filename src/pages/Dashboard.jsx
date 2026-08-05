@@ -45,6 +45,17 @@ export default function Dashboard() {
   }, [p, t])
 
   if (!app.profilesReady) return null
+  if (!p && app.loadError) {
+    return (
+      <div className="page wrap" style={{ paddingTop: '40px', paddingBottom: '64px', maxWidth: '620px' }}>
+        <div className="card pad">
+          <h1 className="pg-h1">Couldn’t load your profiles</h1>
+          <p className="pg-sub">This is a connection problem, not lost data — your saved taxpayers are still there.</p>
+          <button className="btn" style={{ marginTop: '16px' }} onClick={() => app.retryLoad()}>Try again</button>
+        </div>
+      </div>
+    )
+  }
   if (!p) return <NoProfile />
 
   const flags = profileFlags(p)

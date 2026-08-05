@@ -66,12 +66,12 @@ function rawOccurrences(ob, profile, from, to) {
     for (const y of years) {
       for (let m = 1; m <= 12; m++) {
         if (sched.skipQuarterMonths) {
-          // month position within the taxable quarter (calendar for non-corp)
-          const qs = taxableYearQuarters(y, fyEnd)
-          const inQ = qs.find(({ start, end }) => {
-            const d = mkDate(y, m, 15)
-            return d >= start && d <= end
-          })
+          // Month position within the taxable quarter. A fiscal year ending in
+          // month F spans two calendar years, so months after F belong to the
+          // taxable year ending next calendar year — look in both.
+          const d = mkDate(y, m, 15)
+          const qs = [...taxableYearQuarters(y, fyEnd), ...(fyEnd === 12 ? [] : taxableYearQuarters(y + 1, fyEnd))]
+          const inQ = qs.find(({ start, end }) => d >= start && d <= end)
           if (inQ) {
             const posInQuarter = ((m - (inQ.start.getMonth() + 1) + 12) % 12) + 1
             if (sched.skipQuarterMonths.includes(posInQuarter)) continue
@@ -89,7 +89,16 @@ function rawOccurrences(ob, profile, from, to) {
       }
     }
   } else if (sched.kind === 'annual_fixed') {
-    for (const y of years) out.push({ date: resolveDay(y, sched.month, sched.day), label: null, period: `TY ${y - 1}` })
+    // Most annual duties report on the year just ended, but some concern the
+    // year they fall in (13th month pay, permit renewals), so the rule says so.
+    for (const y of years) {
+      const forCurrentYear = sched.periodBasis === 'current_year'
+      out.push({
+        date: resolveDay(y, sched.month, sched.day),
+        label: null,
+        period: forCurrentYear ? `${y}` : `TY ${y - 1}`,
+      })
+    }
   } else if (sched.kind === 'annual_fy') {
     for (const y of years) {
       const fyEndDate = lastDayOfMonth(y, fyEnd)
@@ -109,6 +118,12 @@ function rawOccurrences(ob, profile, from, to) {
   return out.filter(o => o.date >= from && o.date <= to)
 }
 
+// A statutory date can shift forward past several non-working days, so raw
+// occurrences are generated from before the requested window and filtered on
+// the SHIFTED date. Without this, a deadline whose statutory date fell on a
+// Saturday would disappear from the calendar on the Monday it is actually due.
+const SHIFT_LOOKBACK_DAYS = 21
+
 /**
  * Generate the personalized deadline list.
  * @param {Array} obligations  rules from obligations.json
@@ -119,12 +134,15 @@ function rawOccurrences(ob, profile, from, to) {
 export function generateDeadlines(obligations, profile, { from, to, holidays, refDate }) {
   const flags = profileFlags(profile)
   const out = []
+  const scanFrom = addDays(from, -SHIFT_LOOKBACK_DAYS)
   for (const ob of obligations) {
     if (!obligationApplies(ob.appliesTo, flags)) continue
     if (ob.schedule.kind === 'ongoing' || ob.schedule.kind === 'info') continue
-    for (const occ of rawOccurrences(ob, profile, from, to)) {
+    for (const occ of rawOccurrences(ob, profile, scanFrom, to)) {
       const noShift = ob.noWeekendShift || ob.schedule.noWeekendShift
       const shiftedDate = noShift ? occ.date : shiftToBusinessDay(occ.date, holidays)
+      // The effective due date decides membership in the window.
+      if (shiftedDate < from || shiftedDate > to) continue
       out.push({
         id: `${ob.id}:${iso(occ.date)}`,
         obligation: ob,
