@@ -20,14 +20,14 @@ export const POSTS = [
     { kind: 'h', text: 'Every quarter — file 1701Q' },
     { kind: 'p', text: 'Three times a year you total your income so far, compute the tax, and pay the difference. The calendar in this app counts down each one for you.' },
     { kind: 'h', text: 'Once a year — the annual return' },
-    { kind: 'p', text: 'By April 15 you file your annual return (1701A or 1701) reconciling all four quarters. Attach any 2307 certificates your clients gave you — that is tax already paid on your behalf.' },
+    { kind: 'p', text: 'By April 15 you file your annual return (1701A or 1701) reconciling all four quarters. Claim any 2307 certificates your clients gave you — that is tax already paid on your behalf — and upload the scans through the BIR\'s eAFS portal within 15 days of filing.' },
     { kind: 'quote', text: 'The whole system rewards small, steady habits. Invoice, set aside, file. Repeat.' },
   ] },
   { id: '2307', cat: 'Withholding', title: 'What to do with every 2307 your clients hand you', excerpt: 'One of the few pieces of BIR paperwork that works in your favour — and the money you lose by ignoring it.', read: '4 min read', date: 'May 2026', body: [
     { kind: 'p', text: 'A 2307 is one of the rare pieces of BIR paperwork that works in your favour. It is proof that a client already paid part of your tax for you.' },
     { kind: 'h', text: 'Why it matters' },
     { kind: 'p', text: 'When a client withholds — commonly 5% or 10% of your fee — they remit it to the BIR and hand you a 2307. That amount is a credit: it directly reduces what you owe on your quarterly and annual returns.' },
-    { kind: 'list', items: ['Collect every 2307 — chase clients who forget.', 'Check the amounts and period match your invoices.', 'Attach them to your 1701Q / 1701A to claim the credit.'] },
+    { kind: 'list', items: ['Collect every 2307 — chase clients who forget.', 'Check the amounts and period match your invoices.', 'Claim them on your 1701Q / 1701A, list them in the SAWT sent via eSubmission, and upload the scans through eAFS.'] },
     { kind: 'quote', text: 'A drawer full of unclaimed 2307s is just tax you paid twice.' },
   ] },
   { id: 'deadlines', cat: 'Calendar', title: 'The five deadlines that actually matter', excerpt: 'The BIR calendar is long. For a low-overhead freelancer, only a handful of dates decide whether you sleep well.', read: '5 min read', date: 'April 2026', body: [
