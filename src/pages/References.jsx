@@ -7,6 +7,7 @@ import wcomp from '../data/rules/withholding-compensation.json'
 import penalties from '../data/rules/penalties.json'
 import contributions from '../data/rules/contributions.json'
 import ewtRates from '../data/rules/ewt-rates.json'
+import attachments from '../data/rules/attachments.json'
 import holidays from '../data/rules/holidays.json'
 import obligations from '../data/rules/obligations.json'
 import { ConfidenceBadge, AgencyTag } from '../components/ui.jsx'
@@ -34,6 +35,7 @@ const RULE_FILES = [
   [penalties, 'Penalties & classification'],
   [contributions, 'SSS · PhilHealth · Pag-IBIG'],
   [ewtRates, 'Expanded withholding rates'],
+  [attachments, 'Attachments & eAFS'],
 ]
 
 function labelize(key) {

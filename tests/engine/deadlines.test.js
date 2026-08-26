@@ -175,6 +175,32 @@ describe('shifted deadlines remain visible through their effective due date', ()
   })
 })
 
+describe('eAFS annual ITR attachment deadlines', () => {
+  it('individual in business: attachments due Apr 30 (15 days after Apr 15)', () => {
+    const p = { ...defaultProfile('individual'), name: 'T', regime: '8pct' }
+    const list = gen(p, '2026-01-01', '2027-04-30')
+    const d = datesOf(list, 'bir-eafs-itr-attachments-individual')
+    expect(d).toContain('2026-04-30')
+    expect(d).toContain('2027-04-30')
+  })
+  it('employee under substituted filing sees no attachment deadline; a 1700 filer does', () => {
+    const sub = { ...defaultProfile('employee'), name: 'E' }
+    expect(datesOf(gen(sub, '2026-01-01', '2027-04-30'), 'bir-eafs-itr-attachments-individual')).toEqual([])
+    const multi = { ...sub, multipleEmployers: true }
+    expect(datesOf(gen(multi, '2026-01-01', '2027-04-30'), 'bir-eafs-itr-attachments-individual')).toContain('2027-04-30')
+  })
+  it('calendar-year corporation: attachments due Apr 30 following year-end', () => {
+    const p = { ...defaultProfile('corporation'), name: 'C' }
+    const d = datesOf(gen(p, '2026-01-01', '2027-04-30'), 'bir-eafs-itr-attachments-corp')
+    expect(d).toContain('2027-04-30')
+  })
+  it('fiscal-year corporation (FY ends Jun 30): attachments due Oct 30 (15 days after Oct 15)', () => {
+    const p = { ...defaultProfile('corporation'), name: 'C', fiscalYearEndMonth: 6 }
+    const d = datesOf(gen(p, '2026-01-01', '2026-12-31'), 'bir-eafs-itr-attachments-corp')
+    expect(d).toContain('2026-10-30')
+  })
+})
+
 describe('date primitives', () => {
   it('fiscal quarters for FY ending June', () => {
     const q = taxableYearQuarters(2026, 6)

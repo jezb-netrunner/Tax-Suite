@@ -7,9 +7,9 @@
       "smallCorpTaxableIncomeCeiling": 5000000,
       "smallCorpAssetCeiling": 100000000
     },
-    "legalBasis": ["NIRC Sec 27(A), as amended by RA 11534 (CREATE)"],
+    "legalBasis": ["NIRC Sec 27(A), as amended by RA 11534 (CREATE) and RA 12066 (CREATE MORE)", "RR 7-2025 (EDR implementation)"],
     "confidence": "verified",
-    "notes": "20% applies when net taxable income ≤ ₱5M AND total assets ≤ ₱100M (excluding the land where the business sits). CREATE MORE (RA 12066) also gives 20% to registered business enterprises under the enhanced-deduction regime."
+    "notes": "20% applies when net taxable income ≤ ₱5M AND total assets ≤ ₱100M (excluding the land where the business sits) — both conditions must hold. CREATE MORE (RA 12066, effective Nov 28, 2024) also gives 20% to registered business enterprises under the enhanced-deduction regime, but only on income from registered projects/activities; non-registered income stays at the regular rate, and EDR RBEs remain subject to the MCIT comparison."
   },
   "mcit": {
     "value": {
@@ -23,20 +23,20 @@
   },
   "fiscalYear": {
     "value": "Corporations may adopt a fiscal year; individuals must use the calendar year",
-    "legalBasis": ["NIRC Secs 43 & 52(C)"],
+    "legalBasis": ["NIRC Secs 43 & 52(B)", "NIRC Sec 47 (change of period needs prior CIR approval)"],
     "confidence": "verified",
-    "notes": "Quarterly returns fall 60 days after each fiscal quarter; the annual return falls on the 15th day of the 4th month after fiscal year-end."
+    "notes": "Quarterly returns fall 60 days after each of the first three quarters of the taxable year (no fourth quarterly return); the annual return falls on the 15th day of the 4th month after fiscal year-end."
   },
   "osdCorporate": {
     "value": { "rate": 0.40, "basis": "gross income" },
-    "legalBasis": ["NIRC Sec 34(L), as amended"],
+    "legalBasis": ["NIRC Sec 34(L), as amended by RA 9504", "RR 16-2008"],
     "confidence": "verified",
-    "notes": "Corporations compute OSD on gross income (after cost of sales), unlike individuals who use gross sales/receipts."
+    "notes": "Corporations compute OSD on gross income (after cost of sales), unlike individuals who use gross sales/receipts. The election is signified on the first-quarter return and is irrevocable for the year — and unlike individuals, a corporation on OSD still submits financial statements with the annual return."
   },
   "improperlyAccumulatedEarningsTax": {
     "value": "Repealed",
-    "legalBasis": ["RA 11534 (CREATE) Sec 6, repealing NIRC Sec 29"],
+    "legalBasis": ["RA 11534 (CREATE) Sec 8, repealing NIRC Sec 29", "RR 5-2021", "RMC 62-2021"],
     "confidence": "verified",
-    "notes": ""
+    "notes": "No IAET is due for any taxable year ending after April 11, 2021. The SEC-side restraint survives: RCC Sec 42 still limits retained surplus beyond 100% of paid-in capital."
   }
 }

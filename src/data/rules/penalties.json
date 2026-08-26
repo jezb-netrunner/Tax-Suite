@@ -2,13 +2,13 @@
   "$comment": "Civil penalties for late filing/payment + EOPT taxpayer classification. Draft pending research reconciliation.",
   "surcharge": {
     "value": { "standard": 0.25, "willfulNeglect": 0.50, "microSmall": 0.10 },
-    "legalBasis": ["NIRC Sec 248", "RA 11976 (EOPT) Sec 45 — reduced 10% surcharge for micro & small taxpayers", "RR 6-2024"],
+    "legalBasis": ["NIRC Sec 248", "RA 11976 (EOPT) — reduced 10% surcharge for micro & small taxpayers", "RR 6-2024"],
     "confidence": "verified",
-    "notes": "EOPT also removed the 25% surcharge for filing at the wrong venue."
+    "notes": "EOPT also removed the 25% surcharge for filing at the wrong venue. The 50% surcharge covers willful neglect to file AND willfully false/fraudulent returns — underdeclaring sales by more than 30% or overstating deductions by more than 30% is prima facie fraud — and is NOT reduced for micro/small taxpayers (only the 25% drops to 10%). The 25% also applies to unpaid deficiency assessments and partial payments, not just late returns."
   },
   "interest": {
     "value": { "standardAnnualRate": 0.12, "microSmallAnnualRate": 0.06, "convention": "simple interest, actual days / 365" },
-    "legalBasis": ["NIRC Sec 249, as amended by RA 10963 (double the BSP legal rate of 6%)", "RR 21-2018", "RMC 54-2018 (no simultaneous deficiency + delinquency interest)", "RA 11976 (EOPT) — 50% of the rate for micro & small taxpayers"],
+    "legalBasis": ["NIRC Sec 249, as amended by RA 10963 (double the BSP legal rate of 6%)", "RR 21-2018", "NIRC Sec 249(D) (no simultaneous deficiency + delinquency interest)", "RA 11976 (EOPT) — 50% of the rate for micro & small taxpayers"],
     "confidence": "verified",
     "notes": "12% per annum confirmed current as of Aug 2026 (in force since TRAIN, 2018). Deficiency and delinquency interest never run simultaneously."
   },
@@ -24,9 +24,9 @@
       { "taxDueUpTo": 5000000, "amount": 40000 },
       { "taxDueUpTo": null, "amount": 50000 }
     ],
-    "legalBasis": ["RMO 7-2015 Annex A (failure to file/pay) — confirmed still the operative schedule as of Aug 2026", "RA 11976 (EOPT) — 50% reduction for micro & small taxpayers"],
-    "confidence": "needs_review",
-    "notes": "Compromise penalties are settlements in lieu of criminal prosecution and are consensual/negotiable; the schedule is the BIR's standard ask. RMO 7-2015 remains current, but the exact tier amounts here could not be checked against the Annex A text itself — have a CPA confirm before quoting a client."
+    "legalBasis": ["RMO 7-2015 Annex A (failure to file/pay) — confirmed still the operative schedule as of Aug 2026, superseding RMO 19-2007", "RA 11976 (EOPT) & RR 6-2024 — 50% reduction for micro & small taxpayers"],
+    "confidence": "verified",
+    "notes": "Compromise penalties are settlements in lieu of criminal prosecution and are consensual/negotiable; the schedule is the BIR's standard ask. The endpoint and upper tiers were quote-verified against Annex A reproductions; the ₱3k/₱5k/₱10k middle tiers are corroborated by every secondary source found — still worth a CPA's eye before quoting a client."
   },
   "classification": {
     "value": {
@@ -37,6 +37,17 @@
     },
     "legalBasis": ["RA 11976 (EOPT)", "RR 8-2024"],
     "confidence": "verified",
-    "notes": "Classification is by gross sales; micro & small taxpayers get the reduced surcharge/interest, a ₱500 cap on Sec 250 information-return penalties, and 50% off compromise penalties."
+    "notes": "Classification is by gross sales (business income only); micro & small taxpayers get the reduced surcharge/interest, halved Sec 250 penalties, and 50% off compromise penalties. The classification is independent of Top Withholding Agent designation — a 'small' taxpayer can still be a TWA."
+  },
+  "infoReturnPenalty": {
+    "value": {
+      "standardPerFailure": 1000,
+      "standardAnnualCap": 25000,
+      "microSmallPerFailure": 500,
+      "microSmallAnnualCap": 12500
+    },
+    "legalBasis": ["NIRC Sec 250", "RA 11976 (EOPT) & RR 6-2024 (halved amounts for micro & small taxpayers)"],
+    "confidence": "verified",
+    "notes": "₱1,000 for EACH failure to file an information return, statement, list, or required attachment (SAWT, SLSP, QAP, alphalists, eAFS uploads), capped at ₱25,000 aggregate per calendar year — ₱500 per failure / ₱12,500 cap for micro & small taxpayers. The amounts are per failure, not a flat cap. Late attachments don't make a timely-filed return late; the exposure is this penalty plus credit-disallowance and deemed-not-filed risks."
   }
 }

@@ -37,7 +37,7 @@
         "NIRC Sec 74(A), as amended by RA 10963 (TRAIN)"
       ],
       "confidence": "verified",
-      "notes": "No Q4 return — the fourth quarter is reconciled on the annual return. The Q1 filing is also where the 8% election is made each year."
+      "notes": "No Q4 return — the fourth quarter is reconciled on the annual return. The Q1 filing is also where the 8% election is made each year. Claiming 2307 credits for the quarter? The SAWT goes with the return via eSubmission (RR 2-2006); scanned 2307s may be lodged through eAFS quarterly groups."
     },
     {
       "id": "bir-1701a-annual",
@@ -64,7 +64,7 @@
         "RMC 17-2019 (Form 1701A availability)"
       ],
       "confidence": "verified",
-      "notes": "Income tax due above ₱2,000 may be paid in two equal installments: at filing, and on or before October 15 (NIRC Sec 56(A)(2), as amended by TRAIN). E-filed attachments (SAWT/2307s, statements) go to eAFS within 15 days of the deadline."
+      "notes": "Income tax due above ₱2,000 may be paid in two equal installments: at filing, and on or before October 15 (NIRC Sec 56(A)(2), as amended by TRAIN). Attachments (SAWT confirmation, 2307s) go to eAFS within 15 days of the statutory deadline or the actual e-filing date, whichever comes later — see the attachments deadline on this calendar. No FS attach on the 8% option or OSD."
     },
     {
       "id": "bir-1701-annual",
@@ -91,7 +91,7 @@
         "NIRC Sec 51(C), as amended"
       ],
       "confidence": "verified",
-      "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed; audited FS if gross sales exceed ₱3M on itemized deductions. E-filed attachments go to eAFS within 15 days of the deadline."
+      "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed (the SAWT itself is filed via eSubmission with the return); audited FS + Statement of Management Responsibility if gross sales exceed ₱3M on itemized deductions. Attachments go to eAFS within 15 days of the statutory deadline or actual e-filing, whichever comes later — a separately dated item on this calendar."
     },
     {
       "id": "bir-1700-annual",
@@ -166,7 +166,7 @@
         "NIRC Sec 75 & 77(B), as amended"
       ],
       "confidence": "verified",
-      "notes": "Due within 60 days following the close of each of the first three quarters of the taxable year — calendar or fiscal."
+      "notes": "Due within 60 days following the close of each of the first three quarters of the taxable year — calendar or fiscal. SAWT via eSubmission when 2307 credits are claimed; scanned 2307s may go through eAFS quarterly groups (RMC 82-2020)."
     },
     {
       "id": "bir-1702-annual",
@@ -189,7 +189,58 @@
         "NIRC Sec 77(B), as amended"
       ],
       "confidence": "verified",
-      "notes": "Due the 15th day of the fourth month following the close of the taxable year (April 15 for calendar-year corporations). Variants: 1702-EX (exempt), 1702-MX (mixed/special-rate regimes). Attach audited FS, SAWT/2307s."
+      "notes": "Due the 15th day of the fourth month following the close of the taxable year (April 15 for calendar-year corporations). Variants: 1702-EX (exempt), 1702-MX (mixed/special-rate regimes — RBEs attach the CETI). Attachments — audited FS + SMR, SAWT/2307s, Form 1709 for covered related-party taxpayers — go to eAFS within 15 days of the deadline or actual e-filing, whichever comes later (fiscal-year naming per RMC 82-2020); a separately dated item on this calendar. E-filing is mandatory for all corporations (RMC 20-2026)."
+    },
+    {
+      "id": "bir-eafs-itr-attachments-individual",
+      "title": "Submit annual ITR attachments via eAFS",
+      "desc": "Scanned attachments to the annual return — SAWT eSubmission confirmation, 2307s, 2316 (mixed income / 1700 filers), audited FS where required — uploaded to eAFS in the prescribed PDF file groups.",
+      "form": "via eAFS",
+      "agency": "BIR",
+      "category": "income",
+      "appliesTo": {
+        "anyOf": [
+          "individual-business",
+          "files-1700"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 4,
+        "day": 30
+      },
+      "legalBasis": [
+        "RMC 44-2021 (15 days from the statutory deadline or actual e-filing, whichever is later)",
+        "RMC 49-2020 & RMC 82-2020 (eAFS file groups & naming)",
+        "RMC 20-2026 (CY2025 guidelines — eAFS as the default channel)"
+      ],
+      "confidence": "verified",
+      "notes": "April 30 is the date for returns filed by April 15 — file the return late and the 15-day window runs from the actual e-filing date instead. Only 'if applicable': nothing to upload means nothing due. Skipping it costs ₱1,000 per document (₱500 for micro/small taxpayers) and puts claimed 2307 credits at risk; season RMCs occasionally move the date (May 15, 2026 for CY2025 per RMC 30-2026/39-2026)."
+    },
+    {
+      "id": "bir-eafs-itr-attachments-corp",
+      "title": "Submit annual ITR attachments via eAFS",
+      "desc": "Corporate annual-return attachments — audited FS with auditor's report and SMR, SAWT confirmation and 2307s, Form 1709 and CETI where applicable — uploaded to eAFS in the prescribed PDF file groups.",
+      "form": "via eAFS",
+      "agency": "BIR",
+      "category": "income",
+      "appliesTo": {
+        "allOf": [
+          "type:corporation"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fy",
+        "monthsAfterEnd": 4,
+        "day": 30
+      },
+      "legalBasis": [
+        "RMC 44-2021 (15 days from the statutory deadline or actual e-filing, whichever is later)",
+        "RMC 82-2020 (fiscal-year eAFS naming)",
+        "RMC 43-2021 (RPT & tax-credit file groups)"
+      ],
+      "confidence": "verified",
+      "notes": "15 days after the annual return's due date (April 30 for calendar-year corporations filing by April 15); a late-filed return runs the window from actual e-filing instead. The eAFS Transaction Reference Number doubles as the BIR-received proof the SEC accepts with the AFS."
     },
     {
       "id": "bir-2551q",
@@ -251,7 +302,7 @@
         "RR 3-2024"
       ],
       "confidence": "verified",
-      "notes": "Quarterly filing only — the monthly 2550M has not been required since January 2023. Since April 27, 2024 the VAT base for services is gross SALES (billed/accrual), with an output-VAT credit for receivables that stay uncollected past the agreed period (Sec 110(D))."
+      "notes": "Quarterly filing only — the monthly 2550M has not been required since January 2023, though RMC 52-2023 still allows optional monthly filing for the first two months of a quarter. Since April 27, 2024 the VAT base for services is gross SALES (billed/accrual), with an output-VAT credit for receivables that stay uncollected past the agreed period (Sec 110(D), RMC 65-2024)."
     },
     {
       "id": "bir-slsp",
@@ -278,10 +329,10 @@
       },
       "legalBasis": [
         "NIRC Sec 114(C)",
-        "RR 1-2012 (all VAT taxpayers, no threshold)"
+        "RR 16-2005 Sec 4.114-3, as amended by RR 1-2012 (all VAT taxpayers, no threshold)"
       ],
-      "confidence": "needs_review",
-      "notes": "Requirement confirmed still in force as of Aug 2026 by secondary sources; confirm your RDO's current submission mode (eSubmission .dat)."
+      "confidence": "verified",
+      "notes": "Confirmed still required as of Aug 2026 — no e-invoicing issuance has retired it (the first RR 11-2025 group only becomes mandatory Dec 31, 2026). RELIEF .dat files via eSubmission, due the 25th after the quarter (30th for eFPS/LTS filers); submit zero lists for quiet quarters. Taxpayers already transmitting to the EIS (RR 8-2022) are relieved of the sales list only. ₱1,000 per unfiled list, capped ₱25,000/year."
     },
     {
       "id": "bir-einvoicing",
@@ -306,7 +357,7 @@
         "RR 11-2025"
       ],
       "confidence": "needs_review",
-      "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). Confirm whether this taxpayer is covered and the current compliance date — the deadline has moved before (extended to Dec 31, 2026)."
+      "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). The Dec 31, 2026 date for the first covered group was reconfirmed Aug 2026, but confirm whether this taxpayer is covered — and until then SLSP/eSubmission duties continue unchanged."
     },
     {
       "id": "bir-1601c",
@@ -359,7 +410,7 @@
         "RR 11-2018"
       ],
       "confidence": "verified",
-      "notes": "Alphalist submitted electronically via the BIR Alphalist Data Entry & Validation Module (v7.4 per RMC 15-2025 — check for newer releases each January) through eSubmission."
+      "notes": "Alphalist submitted electronically via the BIR Alphalist Data Entry & Validation Module (v7.4 per RMC 15-2025, patched Nov 2025 and Jan 2026 — re-validate after each patch) through eSubmission. The alphalist is an integral part of the return: one that fails validation is deemed not received and the return treated as not validly filed."
     },
     {
       "id": "bir-2316-issue",
@@ -388,7 +439,7 @@
     {
       "id": "bir-2316-submit",
       "title": "Submit employees' 2316 copies to the BIR",
-      "desc": "Duplicate originals (or scanned copies via eAFS) of substituted-filing employees' 2316s, with a certified list.",
+      "desc": "Scanned copies of substituted-filing employees' signed 2316s, with the notarized sworn declaration (Annex C, RR 2-2015) and the certified list of employees qualified for substituted filing (Annex F, RR 11-2018).",
       "form": "2316",
       "agency": "BIR",
       "category": "withholding",
@@ -405,10 +456,12 @@
       },
       "legalBasis": [
         "RR 11-2013",
-        "RR 2-2015 as amended by RR 16-2021 (scanned copies/eAFS/USB)"
+        "RR 2-2015 as amended by RR 16-2021 (scanned copies/eAFS/USB)",
+        "RMC 117-2021 (one mode per period)",
+        "RMC 29-2024 (only the two annexes may be required; both signatures mandatory)"
       ],
       "confidence": "verified",
-      "notes": "Not later than February 28 following the close of the calendar year, for substituted-filing employees, signed by both employer and employee. Accepted modes: eAFS scanned PDFs, DVD-R, or USB, one mode per period."
+      "notes": "Not later than February 28 following the close of the calendar year, for substituted-filing employees. Scans must bear BOTH employer and employee signatures (e-signatures valid per RMC 29-2021; unsigned employee copies no longer accepted per RMC 29-2024). Accepted modes: eAFS scanned PDFs, DVD-R, or USB — one mode per period; files named Surname_TIN_TaxablePeriod, alphabetical."
     },
     {
       "id": "bir-0619e",
@@ -467,7 +520,7 @@
         "RR 11-2018"
       ],
       "confidence": "verified",
-      "notes": "Due the last day of the month following the close of the calendar quarter. QAP filed via eSubmission by the same date."
+      "notes": "Due the last day of the month following the close of the calendar quarter. QAP filed via eSubmission by the same date — it is an integral part of the return; a QAP that fails validation is deemed not received, exposing the related deductions."
     },
     {
       "id": "bir-1604e",
@@ -627,10 +680,10 @@
       },
       "legalBasis": [
         "RA 11199 (Social Security Act of 2018)",
-        "SSS unified payment deadline circulars"
+        "SSS Circular 2019-012 (unified payment deadlines under the PRN regime)"
       ],
       "confidence": "verified",
-      "notes": "Employers pay on or before the last day of the month following the applicable month (verified Aug 2026). Generate the PRN in the My.SSS portal before paying."
+      "notes": "Employers pay on or before the last day of the month following the applicable month (re-verified Aug 26, 2026). Generate the PRN in the My.SSS portal before paying."
     },
     {
       "id": "philhealth-employer",
@@ -652,10 +705,10 @@
       },
       "legalBasis": [
         "RA 11223 (Universal Health Care Act)",
-        "PhilHealth Circular 2019-0009 (staggered windows by PEN)"
+        "PhilHealth Circular No. 0001, s. 2014 (staggered windows by PEN)"
       ],
       "confidence": "verified",
-      "notes": "Staggered by PhilHealth Employer Number: PEN ending 0–4 remit on the 11th–15th, PEN 5–9 on the 16th–20th of the following month. The 15th is shown as the safe-side date — check your exact window in EPRS."
+      "notes": "Staggered by PhilHealth Employer Number: PEN ending 0–4 remit on the 11th–15th, PEN 5–9 on the 16th–20th of the following month (re-verified Aug 26, 2026). The 15th is shown as the safe-side date — check your exact window in EPRS."
     },
     {
       "id": "pagibig-employer",
@@ -677,10 +730,10 @@
       },
       "legalBasis": [
         "RA 9679 (HDMF Law)",
-        "HDMF remittance schedule circulars"
+        "HDMF Circular 275 (remittance staggered by first letter of the employer's registered name)"
       ],
-      "confidence": "needs_review",
-      "notes": "Generally the 10th of the following month; some branch schedules stagger by the first letter of the employer's name. The 10th is shown as the safe-side date — confirm your branch's schedule."
+      "confidence": "verified",
+      "notes": "Staggered by the first letter of the employer's REGISTERED name, in the month after the period: A–D the 10th–14th, E–L 15th–19th, M–Q 20th–24th, R–Z and numerals 25th–month-end. The 10th is shown as the safe-side date covering every window — check your own letter's window."
     },
     {
       "id": "sss-self",
@@ -702,10 +755,10 @@
       },
       "legalBasis": [
         "RA 11199",
-        "SSS payment deadline circulars"
+        "SSS Circular 2019-012 (payment deadlines)"
       ],
       "confidence": "verified",
-      "notes": "Self-employed and voluntary members pay the full 15% themselves, monthly (last day of the following month, shown here) or quarterly (last day of the month following the quarter)."
+      "notes": "Self-employed and voluntary members pay the full 15% themselves, monthly (last day of the following month, shown here) or quarterly (last day of the month following the quarter). OFW members get longer windows (Jan–Sep payable to Dec 31; Oct–Dec to Jan 31)."
     },
     {
       "id": "philhealth-self",
@@ -803,10 +856,10 @@
       },
       "legalBasis": [
         "PD 851 IRR",
-        "DOLE Labor Advisory (annual)"
+        "DOLE Labor Advisory No. 16-2025 (report via reports.dole.gov.ph by Jan 15, 2026 — reiterated annually)"
       ],
-      "confidence": "needs_review",
-      "notes": "Confirm the current year's labor advisory — the reporting window is announced annually."
+      "confidence": "verified",
+      "notes": "January 15 of the following year has held across recent annual advisories; the report goes through the DOLE Establishment Report System (reports.dole.gov.ph). Watch each December's advisory for the odd change."
     },
     {
       "id": "lgu-business-permit",
@@ -898,10 +951,11 @@
       },
       "legalBasis": [
         "RMC 68-2017",
-        "RMC 3-2023"
+        "RMC 3-2023 (ORUS registration, QR stamp)",
+        "RMC 4-2026 (one-off extension of the Jan 2026 deadline to Jan 31)"
       ],
       "confidence": "verified",
-      "notes": "Within 15 days after the end of the taxable year (January 15 for calendar-year taxpayers)."
+      "notes": "Within 15 days after the end of the taxable year (January 15 for calendar-year taxpayers; the Jan 2026 round was extended one-off to Jan 31 for ORUS outages). Registration runs through ORUS — the QR 'stamp' goes on the first page of the bound volume; the bound books themselves go to your RDO with the sworn statement."
     },
     {
       "id": "bir-cas-books",
@@ -969,10 +1023,10 @@
       "legalBasis": [
         "Revised Corporation Code Sec 177",
         "SRC Rule 68",
-        "SEC MC 9-2026 (FY2025 AFS due May 29, 2026 via eFAST)"
+        "SEC MC 9-2026 (Feb 11, 2026 — single uniform date via eFAST; FY2025's May 29 was revised to June 15, 2026 after the BIR's AITR extension)"
       ],
       "confidence": "needs_review",
-      "notes": "The SEC sets the exact date each year by memorandum circular (the old last-digit staggering is gone; MC 9-2026 set a single May 29, 2026 deadline for FY2025). Later years shown at May 29 provisionally — update when each year's MC issues. PSE-listed/public companies follow the 105-day SEC Form 17-A rule instead."
+      "notes": "The SEC sets the exact date each year by memorandum circular — the old last-digit staggering is gone, but the date can move mid-year (FY2025: May 29 → June 15, 2026). Later years shown at May 29 provisionally — update when each year's MC issues. Attach the BIR eAFS Transaction Reference Number in lieu of a BIR-stamped AFS. PSE-listed/public companies follow the 105-day SEC Form 17-A rule instead."
     },
     {
       "id": "sec-afs-fiscal",
@@ -1085,7 +1139,7 @@
         "NIRC Secs 232-235, as amended by RA 11976 (EOPT)"
       ],
       "confidence": "verified",
-      "notes": "EOPT cut the retention period to five (5) years and raised the audited-FS requirement to gross annual sales above ₱3,000,000."
+      "notes": "EOPT cut the retention period to five (5) years. Books audited by an independent CPA are required when gross annual sales exceed ₱3,000,000 (a threshold set by TRAIN in Sec 232)."
     },
     {
       "id": "bir-arf-abolished",
@@ -1110,6 +1164,27 @@
       "notes": "Effective January 22, 2024."
     },
     {
+      "id": "bir-micro-abatement-2026",
+      "title": "One-time penalty abatement for micro taxpayers — avail by Dec 31, 2026",
+      "desc": "Micro taxpayers (gross sales ≤ ₱3M) can wipe out delinquencies, assessments, and open stop-filer cases as of Dec 31, 2025 — where basic tax and/or penalties are ≤ ₱80,000 per taxable year — for a one-time ₱5,000 abatement fee.",
+      "form": "per RR 4-2026",
+      "agency": "BIR",
+      "category": "admin",
+      "appliesTo": {
+        "allOf": [
+          "business"
+        ]
+      },
+      "schedule": {
+        "kind": "info"
+      },
+      "legalBasis": [
+        "RR 4-2026 (published July 22, 2026)"
+      ],
+      "confidence": "verified",
+      "notes": "Time-boxed: availment runs until December 31, 2026 (extendable by the DOF Secretary). If you have old open 2550Q/2551Q cases or small assessments, ask your CPA whether this clears them before the window closes."
+    },
+    {
       "id": "dti-bn-renewal",
       "title": "Renew your DTI business name every five years",
       "desc": "Sole proprietors' business-name registration is valid for five years from registration.",
@@ -1126,10 +1201,10 @@
       },
       "legalBasis": [
         "RA 3883 (Business Name Law), as amended",
-        "DTI BNRS rules"
+        "DTI BNRS rules (DAO 18-07 lineage)"
       ],
-      "confidence": "needs_review",
-      "notes": "Renewal window: from 180 days before expiry up to 90 days after (with surcharge after expiry) — verify current DTI rules and diary your own five-year date."
+      "confidence": "verified",
+      "notes": "Renewal window: from 180 days BEFORE expiry, then 90 days after expiry penalty-free, then 90 more days (days 91–180) with a 50% surcharge on the registration fee. Miss day 180 and the registration is cancelled — the name becomes available to others. Diary your own five-year date."
     },
     {
       "id": "bir-crm-pos",
