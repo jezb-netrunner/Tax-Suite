@@ -58,7 +58,7 @@ export default function FormsPage() {
             </div>
             <p className="cite" style={{ marginTop: '12px', lineHeight: 1.6 }}>
               {groups.conventions}. Quarterly returns use {groups.quarterly[0].name} / {groups.quarterly[1].name}.
-              Skipping a required attachment: {attachments.lateAttachmentPenalties.value.standard.toLowerCase()} — {attachments.lateAttachmentPenalties.value.microSmall.toLowerCase()}.
+              Skipping a required attachment: {attachments.lateAttachmentPenalties.value.standard} — {attachments.lateAttachmentPenalties.value.microSmall}.
             </p>
             <p className="cite" style={{ marginTop: '8px' }}>{attachments.eafsSystem.legalBasis.join(' · ')}</p>
           </div>

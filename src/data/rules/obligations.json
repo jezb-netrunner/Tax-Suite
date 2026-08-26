@@ -1245,10 +1245,11 @@
         "kind": "ongoing"
       },
       "legalBasis": [
-        "NIRC Sec 236, as amended by RA 11976 (EOPT)"
+        "NIRC Sec 236, as amended by RA 11976 (EOPT)",
+        "RMC 91-2024"
       ],
       "confidence": "verified",
-      "notes": "Under EOPT, transfers and updates can be filed at any RDO — no more transfer-first requirement."
+      "notes": "Under EOPT a transfer takes effect upon mere filing (RMC 91-2024): non-business taxpayers file via ORUS or at the new RDO; business taxpayers file Form 1905 with their current RDO, and transfers proceed even with open cases — no more transfer-first requirement."
     },
     {
       "id": "bir-fbt-note",
