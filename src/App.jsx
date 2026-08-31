@@ -38,7 +38,7 @@ function ProfileMenu() {
     <div className="menu-anchor" ref={ref}>
       <button className="avatar" aria-haspopup="menu" aria-expanded={open}
         title={app.active ? app.active.name : 'Profiles'}
-        aria-label={app.active ? `Profiles — ${app.active.name} selected` : 'Profiles'}
+        aria-label={app.active ? `Profiles (${app.active.name} selected)` : 'Profiles'}
         onClick={() => setOpen(o => !o)}><span aria-hidden="true">{initial}</span></button>
       {open && (
         <div className="menu-pop" role="menu">
@@ -64,7 +64,7 @@ function ProfileMenu() {
           )}
           {!app.hasCloud && (
             <div style={{ padding: '8px 12px 4px', fontSize: '11.5px', color: 'var(--dim)', lineHeight: 1.5 }}>
-              Local mode — profiles are saved in this browser only.
+              Local mode: profiles are saved in this browser only.
             </div>
           )}
         </div>

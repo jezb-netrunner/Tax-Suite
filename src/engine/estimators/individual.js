@@ -107,9 +107,9 @@ export function estimateIndividual(in_) {
     if (mixed) {
       r('Taxable compensation (annual)', compensationTaxable)
       if (opt.key === '8pct') {
-        r('Income tax on compensation — graduated', compTax, { strong: true })
+        r('Income tax on compensation (graduated)', compTax, { strong: true })
         r('Business gross sales / receipts', gross)
-        r('Income tax on business @ 8% of gross', tax8, { strong: true, sub: 'Mixed-income earners get no ₱250,000 reduction on the business side — it is built into the compensation computation.' })
+        r('Income tax on business @ 8% of gross', tax8, { strong: true, sub: 'Mixed-income earners get no ₱250,000 reduction on the business side; it is built into the compensation computation.' })
       }
     }
     if (!mixed || opt.key !== '8pct') {
@@ -133,17 +133,17 @@ export function estimateIndividual(in_) {
       r('Graduated income tax', incItem, { strong: true })
     }
     if (opt.businessTax.kind === 'pct') {
-      r(`Percentage tax (3% of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116 — filed quarterly on Form 2551Q.' })
+      r(`Percentage tax (3% of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116, filed quarterly on Form 2551Q.' })
     }
     if (opt.businessTax.kind === 'vat') {
-      r('Value-added tax', null, { sub: 'VAT (12%) is computed separately on sales less creditable input VAT — see the VAT panel.' })
+      r('Value-added tax', null, { sub: 'VAT (12%) is computed separately on sales less creditable input VAT; see the VAT panel.' })
     }
     r('Total annual tax', opt.total, { strong: true, rule: true })
     if (credits > 0) {
       r('Less: creditable tax withheld' + (mixed ? ' (2307s + employer withholding)' : ' (2307s)'), -credits)
       const net = opt.total - credits
       if (net >= 0) r('Tax still payable', net, { strong: true })
-      else r('Overpayment — refund or carry over', -net, { strong: true, sub: 'Excess credits can be refunded or carried forward to next year\'s returns.' })
+      else r('Overpayment: refund or carry over', -net, { strong: true, sub: 'Excess credits can be refunded or carried forward to next year\'s returns.' })
     }
     return rows
   }

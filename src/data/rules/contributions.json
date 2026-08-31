@@ -1,5 +1,5 @@
 {
-  "$comment": "SSS / PhilHealth / Pag-IBIG contribution parameters. These change on statutory schedules — every block must be reconciled against the current circulars (see confidence flags).",
+  "$comment": "SSS / PhilHealth / Pag-IBIG contribution parameters. These change on statutory schedules; reconcile each block against the current circulars when updating.",
   "sss": {
     "value": {
       "totalRate": 0.15,
@@ -15,9 +15,9 @@
       ],
       "selfEmployedRate": 0.15
     },
-    "legalBasis": ["RA 11199 (Social Security Act of 2018) Sec 4 — 15% is the final scheduled step, in force since 2025", "SSS Circular 2024-006 (employers) and companions 2024-007/008/009/010 — the 2025 schedule, still operative for 2026"],
+    "legalBasis": ["RA 11199 (Social Security Act of 2018) Sec 4; 15% is the final scheduled step, in force since 2025", "SSS Circular 2024-006 (employers) and companions 2024-007/008/009/010; the 2025 schedule, still operative for 2026"],
     "confidence": "verified",
-    "notes": "Re-verified Aug 26, 2026 — no 2026 circular supersedes the 2025 schedule and no law suspends the 15%: employer 10% / employee 5%; MSC ₱5,000–₱35,000 in ₱500 steps; the portion above ₱20,000 funds the Mandatory Provident Fund (WISP/MPF). Self-employed, voluntary, and OFW members pay the full 15% themselves (voluntary members have no EC premium). Employer-paid EC: ₱10 below ₱15,000 MSC, ₱30 at or above — confirmed against the 2025 SSS table."
+    "notes": "Re-verified Aug 26, 2026: no 2026 circular supersedes the 2025 schedule and no law suspends the 15%: employer 10% / employee 5%; MSC ₱5,000–₱35,000 in ₱500 steps; the portion above ₱20,000 funds the Mandatory Provident Fund (WISP/MPF). Self-employed, voluntary, and OFW members pay the full 15% themselves (voluntary members have no EC premium). Employer-paid EC: ₱10 below ₱15,000 MSC, ₱30 at or above, confirmed against the 2025 SSS table."
   },
   "philhealth": {
     "value": {
@@ -27,7 +27,7 @@
       "employerShare": 0.5,
       "employeeShare": 0.5
     },
-    "legalBasis": ["RA 11223 (Universal Health Care Act) Sec 10 — 5% final scheduled rate", "PhilHealth Circular 2019-0009 (premium schedule)", "PhilHealth Advisory 2026-0042 (5% for CY2026 direct contributors; the 2025 reduction proposals did not materialize)"],
+    "legalBasis": ["RA 11223 (Universal Health Care Act) Sec 10; 5% final scheduled rate", "PhilHealth Circular 2019-0009 (premium schedule)", "PhilHealth Advisory 2026-0042 (5% for CY2026 direct contributors; the 2025 reduction proposals did not materialize)"],
     "confidence": "verified",
     "notes": "Re-verified Aug 26, 2026: 5% of monthly basic salary for CY2026, floor ₱10,000 / ceiling ₱100,000 (premium ₱500–₱5,000), split equally between employer and employee. Self-employed direct contributors pay the full 5% of declared income."
   },
@@ -39,7 +39,7 @@
       "employerRate": 0.02,
       "maxFundSalary": 10000
     },
-    "legalBasis": ["RA 9679 (HDMF Law)", "HDMF Circular 460 — maximum fund salary ₱10,000 effective Feb 2024, still governing in 2026"],
+    "legalBasis": ["RA 9679 (HDMF Law)", "HDMF Circular 460; maximum fund salary ₱10,000 effective Feb 2024, still governing in 2026"],
     "confidence": "verified",
     "notes": "Re-verified Aug 26, 2026: employees earning ≤₱1,500/month contribute 1%, otherwise 2%; employers always 2%; both computed on a fund salary capped at ₱10,000 (max ₱200 + ₱200 = ₱400). Self-employed members contribute on the same schedule based on declared income, shouldering both shares."
   }

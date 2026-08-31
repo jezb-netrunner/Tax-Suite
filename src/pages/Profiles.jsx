@@ -13,14 +13,14 @@ export default function ProfilesPage() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
         <div>
           <h1 className="pg-h1">Taxpayer profiles</h1>
-          <p className="pg-sub">Every business or person you track — switch between them from the avatar menu.</p>
+          <p className="pg-sub">Every business or person you track. Switch between them from the avatar menu.</p>
         </div>
         <button className="btn" onClick={() => nav('/profiles/new')}>+ New profile</button>
       </div>
 
       {app.loadError && (
         <div className="form-err" role="alert" style={{ marginTop: '18px' }}>
-          Couldn’t load your saved profiles — this is a loading problem, not lost data.{' '}
+          Couldn’t load your saved profiles. This is a loading problem, not lost data.{' '}
           <button className="linkbtn" style={{ color: 'inherit', textDecoration: 'underline' }} onClick={() => app.retryLoad()}>Try again</button>
         </div>
       )}
@@ -63,7 +63,7 @@ export default function ProfilesPage() {
 
       {!app.hasCloud && (
         <p className="cite" style={{ marginTop: '14px' }}>
-          Running in local mode — profiles are saved in this browser only. Connect a Supabase project (see .env.example) to enable accounts that sync across devices.
+          Running in local mode: profiles are saved in this browser only. Connect a Supabase project (see .env.example) to enable accounts that sync across devices.
         </p>
       )}
     </div>

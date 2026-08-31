@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS } from '../lib/deadlineData.js'
 import { generateChecklist } from '../engine/deadlines.js'
-import { AgencyTag, ConfidenceBadge, Disclaimer } from '../components/ui.jsx'
+import { AgencyTag, Disclaimer } from '../components/ui.jsx'
 
 // Recurring, no-fixed-date obligations + the dated "upkeep" items grouped by
 // theme — the stuff that keeps a registration healthy between filings.
@@ -36,7 +36,7 @@ export default function Checklist() {
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px', maxWidth: '860px' }}>
       <h1 className="pg-h1">Compliance checklist</h1>
       <p className="pg-sub">
-        The obligations with no countdown clock — recurring habits and registration upkeep for <b>{p.name}</b>.
+        The obligations with no countdown clock: recurring habits and registration upkeep for <b>{p.name}</b>.
         Dated deadlines live on the <button className="linkbtn" style={{ fontSize: '14px' }} onClick={() => nav('/')}>calendar</button>.
       </p>
 
@@ -53,7 +53,6 @@ export default function Checklist() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: '14.5px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       {ob.title}
-                      {ob.confidence !== 'verified' && <ConfidenceBadge confidence={ob.confidence} />}
                     </div>
                     <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '3px', lineHeight: 1.55 }}>{ob.desc}</div>
                     {ob.notes && <div style={{ fontSize: '12.5px', color: 'var(--dim)', marginTop: '5px', lineHeight: 1.5 }}>{ob.notes}</div>}

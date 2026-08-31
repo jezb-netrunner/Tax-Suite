@@ -52,19 +52,19 @@ export function estimateCorporation(in_) {
   r(`Regular corporate income tax @ ${Math.round(rcitRate * 100)}%`, rcit, {
     strong: !usesMcit,
     sub: smallCorp
-      ? '20% rate — net taxable income ≤ ₱5M and total assets ≤ ₱100M excluding land (NIRC Sec 27(A), CREATE).'
+      ? '20% rate: net taxable income ≤ ₱5M and total assets ≤ ₱100M excluding land (NIRC Sec 27(A), CREATE).'
       : 'Standard 25% rate (NIRC Sec 27(A), CREATE).',
   })
   if (mcitApplies) {
     r('Minimum corporate income tax @ 2% of gross income', mcit, {
       strong: usesMcit,
       sub: usesMcit
-        ? 'MCIT exceeds RCIT this year — you pay the MCIT; the excess credits against RCIT for the next 3 years (NIRC Sec 27(E)).'
+        ? 'MCIT exceeds RCIT this year, so you pay the MCIT; the excess credits against RCIT for the next 3 years (NIRC Sec 27(E)).'
         : 'RCIT is higher, so the regular tax applies (NIRC Sec 27(E)).',
     })
   } else if (registrationYear != null) {
     r('Minimum corporate income tax', null, {
-      sub: `Not yet applicable — MCIT starts in TY ${registrationYear + 4}, the 4th taxable year after operations began.`,
+      sub: `Not yet applicable: MCIT starts in TY ${registrationYear + 4}, the 4th taxable year after operations began.`,
     })
   } else {
     r('Minimum corporate income tax', null, {
@@ -72,13 +72,13 @@ export function estimateCorporation(in_) {
     })
   }
   r('Income tax due', incomeTaxDue, { strong: true, rule: true })
-  if (!vat && pct > 0) r('Percentage tax (3% of gross)', pct, { strong: true, sub: 'Non-VAT corporation under the ₱3M threshold — Form 2551Q.' })
+  if (!vat && pct > 0) r('Percentage tax (3% of gross)', pct, { strong: true, sub: 'Non-VAT corporation under the ₱3M threshold (Form 2551Q).' })
   if (vat) r('Value-added tax', null, { sub: 'VAT (12%) is computed separately on sales less creditable input VAT.' })
   if (cwt > 0) {
     r('Less: creditable tax withheld (2307s)', -cwt)
     const net = incomeTaxDue - cwt
     if (net >= 0) r('Income tax still payable', net, { strong: true })
-    else r('Overpayment — refund or carry over', -net, { strong: true, sub: 'The carry-over election, once made on the annual return, is irrevocable (NIRC Sec 76).' })
+    else r('Overpayment: refund or carry over', -net, { strong: true, sub: 'The carry-over election, once made on the annual return, is irrevocable (NIRC Sec 76).' })
   }
 
   return {

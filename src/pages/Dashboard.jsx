@@ -20,7 +20,7 @@ function NoProfile() {
           Let's build your compliance calendar.
         </h2>
         <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: '#cdddea', marginTop: '11px', maxWidth: '480px' }}>
-          Answer a few questions about the taxpayer — employee, freelancer, sole prop, or corporation — and
+          Answer a few questions about the taxpayer (employee, freelancer, sole prop, or corporation) and
           Present Value lays out every BIR, LGU, SSS, PhilHealth, and Pag-IBIG date that applies, with the
           math and the legal basis behind each one.
         </p>
@@ -50,7 +50,7 @@ export default function Dashboard() {
       <div className="page wrap" style={{ paddingTop: '40px', paddingBottom: '64px', maxWidth: '620px' }}>
         <div className="card pad">
           <h1 className="pg-h1">Couldn’t load your profiles</h1>
-          <p className="pg-sub">This is a connection problem, not lost data — your saved taxpayers are still there.</p>
+          <p className="pg-sub">This is a connection problem, not lost data. Your saved taxpayers are still there.</p>
           <button className="btn" style={{ marginTop: '16px' }} onClick={() => app.retryLoad()}>Try again</button>
         </div>
       </div>
@@ -161,7 +161,7 @@ export default function Dashboard() {
                     </h2>
                     <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: '#cdddea', marginTop: '11px', maxWidth: '520px' }}>
                       {isEmployee
-                        ? 'Your employer withholds tax from every payslip and files on your behalf. Watch for your BIR Form 2316 by January 31 — it\'s your proof of tax paid for the year.'
+                        ? 'Your employer withholds tax from every payslip and files on your behalf. Watch for your BIR Form 2316 by January 31; it\'s your proof of tax paid for the year.'
                         : 'Everything on your calendar is either done or ongoing. Check the Checklist tab for the recurring obligations that keep you compliant.'}
                     </p>
                   </div>
@@ -183,7 +183,7 @@ export default function Dashboard() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '28px 0 12px' }}>
                       <h3 className="sec-h">Coming up</h3>
-                      <span style={{ fontSize: '13px', color: 'var(--mut)' }}>next due date per obligation — recurring ones repeat</span>
+                      <span style={{ fontSize: '13px', color: 'var(--mut)' }}>next due date per obligation; recurring ones repeat</span>
                     </div>
                     <div className="list-card">
                       {laterItems.map(d => <DeadlineRow key={d.id} d={d} showFreq />)}
@@ -273,7 +273,7 @@ export default function Dashboard() {
                   })}
                 </div>
                 <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--dim)', lineHeight: 1.5 }}>
-                  “Passed” means the due date has gone by — confirm the filing was actually made.
+                  “Passed” means the due date has gone by; confirm the filing was actually made.
                 </div>
               </div>
             )}
@@ -282,7 +282,7 @@ export default function Dashboard() {
               <div className="card tight" style={{ marginTop: '16px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '-.01em' }}>How much to set aside?</div>
                 <div style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '8px', lineHeight: 1.55 }}>
-                  Run your numbers through the estimator — it compares every regime open to this profile with the full math and legal basis.
+                  Run your numbers through the estimator. It compares every regime open to this profile with the full math and legal basis.
                 </div>
                 <button className="btn sm" style={{ marginTop: '12px' }} onClick={() => nav('/estimator')}>Open the estimator</button>
               </div>
@@ -292,7 +292,7 @@ export default function Dashboard() {
               <div style={{ border: '1px solid var(--line)', borderRadius: '13px', background: 'var(--accSoft)', padding: '18px', marginTop: isEmployee ? 0 : '16px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '-.01em', color: 'var(--accInk)' }}>You're covered</div>
                 <div style={{ fontSize: '13px', color: 'var(--accInk)', marginTop: '7px', lineHeight: 1.55, opacity: .85 }}>
-                  Your employer handles monthly withholding and your annual return through substituted filing. Keep your signed 2316 each year — it is your proof of filing.
+                  Your employer handles monthly withholding and your annual return through substituted filing. Keep your signed 2316 each year; it is your proof of filing.
                 </div>
               </div>
             )}
@@ -304,7 +304,7 @@ export default function Dashboard() {
               </div>
               <div style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '8px', lineHeight: 1.55 }}>
                 Dates are computed from statutory rules with weekend and holiday shifts, and eFPS filers may have
-                staggered (later) dates for monthly remittances. This is a reminder tool, not tax advice — verify
+                staggered (later) dates for monthly remittances. This is a reminder tool, not tax advice. Verify
                 against BIR issuances before filing. Legal basis for every date is on the <Link to="/references" style={{ color: 'var(--accInk)', fontWeight: 600 }}>References</Link> page.
               </div>
             </div>
@@ -328,7 +328,7 @@ function DeadlineRow({ d, showFreq }) {
         <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--dim)' }}>{fmtMonthShort(d.date)}</div>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{d.obligation.title}{d.label ? ` — ${d.label}` : ''}</div>
+        <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{d.obligation.title}{d.label ? ` · ${d.label}` : ''}</div>
         <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>
           {d.obligation.desc}
           {d.shifted && <span style={{ color: 'var(--dim)' }}> · moved from {fmtDate(d.rawDate)}</span>}
