@@ -793,6 +793,30 @@
       "notes": ""
     },
     {
+      "id": "bir-2306-issue",
+      "title": "Issue 2306 certificates to payees",
+      "desc": "Certificate of final tax withheld for each payee subjected to final withholding during the year.",
+      "form": "2306",
+      "agency": "BIR",
+      "category": "withholding",
+      "appliesTo": {
+        "allOf": [
+          "fwt"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 1,
+        "day": 31,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "RR 2-98 Sec 2.58(B), as amended by RR 11-2018"
+      ],
+      "confidence": "verified",
+      "notes": "On or before January 31 of the year following the year the income payment was made, or upon the payee's request together with the payment. The creditable-withholding counterpart, the 2307, is issued quarterly instead."
+    },
+    {
       "id": "sss-employer",
       "title": "Remit SSS contributions (employer)",
       "desc": "Employer and employee shares of SSS contributions for the prior month, including the employees' compensation (EC) premium.",

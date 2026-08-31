@@ -17,7 +17,7 @@ const profiles = [
   ['SELF-EMPLOYED 8% (freelancer, no LGU premises, receives 2307s)', { ...defaultProfile('individual'), name: 'F', regime: '8pct', hasBusinessEstablishment: false, receives2307: true }],
   ['SOLE PROP graduated non-VAT + employees + EWT + LGU + DTI + inventory', { ...defaultProfile('individual'), name: 'S', regime: 'graduated_osd', hasEmployees: true, withholdsEwt: true, dtiRegistered: true, sellsGoods: true }],
   ['MIXED INCOME 8% on business', { ...defaultProfile('mixed'), name: 'M', regime: '8pct' }],
-  ['CORPORATION calendar-year VAT + employees + EWT + CAS books', { ...defaultProfile('corporation'), name: 'C', vatRegistered: true, hasEmployees: true, withholdsEwt: true, booksType: 'cas', registrationYear: 2021, sellsGoods: true }],
+  ['CORPORATION calendar-year VAT + employees + EWT + FWT + CAS books', { ...defaultProfile('corporation'), name: 'C', vatRegistered: true, hasEmployees: true, withholdsEwt: true, withholdsFwt: true, booksType: 'cas', registrationYear: 2021, sellsGoods: true }],
   ['CORPORATION fiscal year ending June 30, non-VAT, receives 2307s', { ...defaultProfile('corporation'), name: 'CF', fiscalYearEndMonth: 6, vatRegistered: false, receives2307: true }],
 ]
 

@@ -211,6 +211,20 @@ describe('SAWT for taxpayers who receive 2307s', () => {
   })
 })
 
+describe('final-withholding certificates', () => {
+  const p = { ...defaultProfile('individual'), name: 'T', withholdsFwt: true }
+  const list = gen(p, '2026-01-01', '2027-02-28')
+  it('2306 certificates due January 31 following the year, weekend-shifted', () => {
+    const d = datesOf(list, 'bir-2306-issue')
+    expect(d).toContain('2026-02-02') // Jan 31 2026 Sat → Feb 2
+    expect(d).toContain('2027-02-01') // Jan 31 2027 Sun → Feb 1
+  })
+  it('no 2306 duty without the FWT facet', () => {
+    const p2 = { ...defaultProfile('individual'), name: 'T' }
+    expect(datesOf(gen(p2, '2026-01-01', '2027-02-28'), 'bir-2306-issue')).toEqual([])
+  })
+})
+
 describe('QAP rides the quarterly withholding returns', () => {
   it('EWT agent: QAP due with the 1601-EQ, sharing its shifts', () => {
     const p = { ...defaultProfile('individual'), name: 'T', withholdsEwt: true }
