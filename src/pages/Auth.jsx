@@ -16,14 +16,14 @@ export default function AuthPage() {
       if (mode === 'signup') {
         const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
-        if (data.session) setOk('Account created — loading your workspace…')
+        if (data.session) setOk('Account created. Loading your workspace…')
         else setOk('Account created. Check your inbox for a confirmation link, then sign in.')
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
       }
     } catch (ex) {
-      setErr(ex.message || 'Something went wrong — please try again.')
+      setErr(ex.message || 'Something went wrong. Please try again.')
     }
     setBusy(false)
   }
@@ -37,7 +37,7 @@ export default function AuthPage() {
             {mode === 'signin' ? 'Welcome back' : 'Create your account'}
           </h1>
           <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '6px', lineHeight: 1.5 }}>
-            Your tax calendar, estimates, and checklists — saved to your account, for every business you manage.
+            Your tax calendar, estimates, and checklists, saved to your account, for every business you manage.
           </p>
         </div>
         <form className="card pad" onSubmit={submit}>

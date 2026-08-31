@@ -30,7 +30,7 @@ function Rows({ rows }) {
 function BasisNote({ refs }) {
   return (
     <p className="cite" style={{ marginTop: '14px' }}>
-      Legal basis: {Array.from(new Set(refs)).join(' · ')} — details and verification dates on the References page.
+      Legal basis: {Array.from(new Set(refs)).join(' · ')}. Details and verification dates are on the References page.
     </p>
   )
 }
@@ -96,14 +96,14 @@ function IndividualEstimator({ app, mixed }) {
           <NumField label="Business gross sales / receipts · year" value={v.gross} onChange={x => set('gross', x)} prefix="₱" lg />
           <NumField label="Itemized expenses" value={v.expenses} onChange={x => set('expenses', x)} prefix="₱" />
           <NumField label="Tax withheld by clients (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
-          {mixed && <NumField label="Taxable compensation · year" value={v.compensationTaxable} onChange={x => set('compensationTaxable', x)} prefix="₱" hint="After mandatory contributions and non-taxable benefits — see box 21 of your 2316." />}
+          {mixed && <NumField label="Taxable compensation · year" value={v.compensationTaxable} onChange={x => set('compensationTaxable', x)} prefix="₱" hint="After mandatory contributions and non-taxable benefits; see box 21 of your 2316." />}
           {mixed && <NumField label="Tax withheld by employer" value={v.compensationWithheld} onChange={x => set('compensationWithheld', x)} prefix="₱" />}
         </div>
       </div>
 
       {r.overThreshold && (
         <div style={{ marginTop: '16px' }} className="mini-warn">
-          You're above the <b>₱3,000,000 VAT threshold</b> — the 8% option and the 3% percentage tax no longer apply,
+          You're above the <b>₱3,000,000 VAT threshold</b>, so the 8% option and the 3% percentage tax no longer apply,
           and VAT registration is mandatory (register before the end of the month after the month you crossed it).
           Income-tax figures below exclude VAT, which is computed separately on sales less input VAT.
         </div>
@@ -125,7 +125,7 @@ function IndividualEstimator({ app, mixed }) {
                 {!c.eligible && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: '#eef3f8', color: 'var(--mut)' }}>N/A</span>}
               </div>
               <div className="mono" style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-.01em', marginTop: '10px', color: isBest ? 'var(--accInk)' : 'var(--ink)' }}>{c.eligible ? money(c.total) : '—'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '3px' }}>{c.eligible ? 'estimated annual tax' : 'Over ₱3M / VAT — not available'}</div>
+              <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '3px' }}>{c.eligible ? 'estimated annual tax' : 'Over ₱3M / VAT: not available'}</div>
               <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--line2)', display: 'flex', flexDirection: 'column', gap: '7px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '12.5px', color: 'var(--mut)' }}>Income tax</span>
@@ -148,14 +148,14 @@ function IndividualEstimator({ app, mixed }) {
         <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--good)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>✓</span>
         <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
           {r.best.name} is the cheapest eligible option at {money(r.best.total)}
-          {r.savingsVsNext > 0 ? ` — saving ${money(r.savingsVsNext)} versus the next best.` : '.'}
+          {r.savingsVsNext > 0 ? `, saving ${money(r.savingsVsNext)} versus the next best.` : '.'}
           {' '}Note: the regime on this profile is {p.regime === '8pct' ? 'the 8% option' : 'graduated rates'}, and the election locks for the year on the Q1 filing.
         </span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
         <div className="card pad">
-          <h3 className="sec-h">How we got there — {r.best.name}</h3>
+          <h3 className="sec-h">How we got there: {r.best.name}</h3>
           <Rows rows={r.rows} />
           <BasisNote refs={r.references} />
         </div>
@@ -174,7 +174,7 @@ function FormPreview({ r, mixed }) {
   const rows = [
     { label: taxableLabel, value: null },
     { label: 'Income tax due', value: money(best.incomeTax) },
-    { label: best.businessTax.kind === 'vat' ? 'Business tax (VAT — separate 2550Q)' : 'Percentage tax (separate 2551Q)', value: best.businessTax.kind === 'vat' ? 'VAT 12%' : best.businessTax.kind === 'pct' ? money(best.businessTax.amount) : '—' },
+    { label: best.businessTax.kind === 'vat' ? 'Business tax (VAT, separate 2550Q)' : 'Percentage tax (separate 2551Q)', value: best.businessTax.kind === 'vat' ? 'VAT 12%' : best.businessTax.kind === 'pct' ? money(best.businessTax.amount) : '—' },
     { label: 'Less: creditable withholding', value: r.credits > 0 ? `(${money(r.credits)})` : '—' },
     { label: r.netPayable >= 0 ? 'Tax payable with the annual return' : 'Overpayment (refund / carry-over)', value: money(Math.abs(r.netPayable)) },
   ]
@@ -203,7 +203,7 @@ function SelfContributionsCard({ monthly }) {
     <div className="card pad" style={{ marginTop: '16px' }}>
       <h3 className="sec-h">Monthly contributions on top (self-employed)</h3>
       <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px' }}>
-        Based on average monthly income of {money(monthly)} — SSS, PhilHealth, and Pag-IBIG are separate from your taxes.
+        Based on average monthly income of {money(monthly)}. SSS, PhilHealth, and Pag-IBIG are separate from your taxes.
       </p>
       <Rows rows={[
         { label: 'SSS (self-employed, incl. EC)', value: c.sss },
@@ -212,7 +212,7 @@ function SelfContributionsCard({ monthly }) {
         { label: 'Total per month', value: c.total, strong: true, rule: true },
       ]} />
       <p className="cite" style={{ marginTop: '10px' }}>
-        Contribution schedules carry a "needs CPA review" flag until re-verified — see References.
+        Contribution schedules change by agency circular; confirm the current tables before paying.
       </p>
     </div>
   )
@@ -226,7 +226,7 @@ function EmployeeEstimator({ app }) {
       <div className="card pad">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
           <NumField label="Monthly basic salary" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />
-          <NumField label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" hint="Regular taxable extras — exclude de minimis benefits." />
+          <NumField label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" hint="Regular taxable extras, excluding de minimis benefits." />
           <NumField label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint="First ₱90,000 is tax-exempt." />
         </div>
       </div>
@@ -271,7 +271,7 @@ function CorporationEstimator({ app }) {
         <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
           {r.usesMcit
             ? <>The 2% MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
-            : <>Income tax due: {money(r.incomeTaxDue)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitApplies ? ` — above the ${money(r.mcit)} MCIT floor` : ''}.</>}
+            : <>Income tax due: {money(r.incomeTaxDue)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitApplies ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
           {!r.vat && r.pct > 0 && <> Plus {money(r.pct)} percentage tax (non-VAT).</>}
         </span>
       </div>
@@ -315,7 +315,7 @@ export default function Estimator() {
     return (
       <div className="page wrap" style={{ paddingTop: '40px', paddingBottom: '64px' }}>
         <div className="card pad empty-note">
-          Set up a taxpayer profile first — the estimator adapts to the profile's regime and registrations.
+          Set up a taxpayer profile first. The estimator adapts to the profile's regime and registrations.
           <div style={{ marginTop: '14px' }}><button className="btn" onClick={() => nav('/profiles/new')}>Create a profile</button></div>
         </div>
       </div>
@@ -336,7 +336,7 @@ export default function Estimator() {
     individual: 'Which regime saves you the most?',
     mixed: 'Your combined tax picture',
     employee: 'Your pay, your tax, your take-home',
-    corporation: 'RCIT or MCIT — what will you owe?',
+    corporation: 'RCIT or MCIT: what will you owe?',
     payroll: 'What withholding an employee costs',
   }
 
@@ -345,7 +345,7 @@ export default function Estimator() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
         <div>
           <h1 className="pg-h1">{titles[active]}</h1>
-          <p className="pg-sub">Estimating for <b>{p.name}</b> — every line shows its math, every rate shows its source.</p>
+          <p className="pg-sub">Estimating for <b>{p.name}</b>. Every line shows its math, every rate shows its source.</p>
         </div>
         {tabs.length > 1 && (
           <div className="seg" role="group" aria-label="Estimator">

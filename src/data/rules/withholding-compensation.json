@@ -1,5 +1,5 @@
 {
-  "$comment": "Withholding tax on compensation tables effective Jan 1, 2023 (RR 11-2018 as amended; BIR revised withholding tax tables). Each bracket: floor (compensation exceeds), base tax, rate on excess over floor. Draft pending research reconciliation.",
+  "$comment": "Withholding tax on compensation tables effective Jan 1, 2023 (RR 11-2018 as amended; BIR revised withholding tax tables). Each bracket: floor (compensation exceeds), base tax, rate on excess over floor.",
   "tables": {
     "value": {
       "daily": [
@@ -56,26 +56,26 @@
         { "benefit": "Monetized vacation & sick leave (government employees)", "ceiling": "No ceiling" }
       ]
     },
-    "legalBasis": ["RR 29-2025 (effective Jan 6, 2026), amending RR 2-98 Sec 2.78.1(A)(3)", "RR 4-2025 (effective Feb 14, 2025 — uniform allowance to ₱7,000; cash/GC achievement awards allowed)", "RR 11-2018 (earlier ceilings)"],
+    "legalBasis": ["RR 29-2025 (effective Jan 6, 2026), amending RR 2-98 Sec 2.78.1(A)(3)", "RR 4-2025 (effective Feb 14, 2025: uniform allowance to ₱7,000; cash/GC achievement awards allowed)", "RR 11-2018 (earlier ceilings)"],
     "confidence": "verified",
     "notes": "RR 29-2025 raised EVERY capped item effective Jan 6, 2026: VL monetization 10→12 days, dependents' medical cash ₱1,500→₱2,000/semester, rice ₱2,000→₱2,500, uniforms ₱7,000→₱8,000 (RR 4-2025 had taken it ₱6,000→₱7,000 in Feb 2025), actual medical ₱10,000→₱12,000, laundry ₱300→₱400, awards ₱10,000→₱12,000 (cash/GC allowed since RR 4-2025), gifts ₱5,000→₱6,000, meal allowance 25%→30%, CBA/productivity ₱10,000→₱12,000. Apply the old ceilings to pre-2026 payroll periods. Amounts within ceilings are tax-free; the excess counts toward the ₱90,000 other-benefits cap."
   },
   "minimumWageReference": {
     "value": { "region": "NCR", "dailyNonAgriculture": 695, "effective": "2025-07-18", "enjoinedOrder": { "order": "NCR-27", "dailyNonAgriculture": 755, "wouldHaveTakenEffect": "2026-07-25", "secondTranche": 780, "secondTrancheDate": "2027-01-20" } },
-    "legalBasis": ["Wage Order NCR-26 (₱695 non-agriculture, in force since July 18, 2025 — the last uncontested rate)", "Wage Order NCR-27 (₱755/₱780 in two tranches — implementation ENJOINED by Pasig RTC: status quo ante Jul 24, TRO Jul 30, preliminary injunction Aug 13, 2026)"],
+    "legalBasis": ["Wage Order NCR-26 (₱695 non-agriculture, in force since July 18, 2025, the last uncontested rate)", "Wage Order NCR-27 (₱755/₱780 in two tranches; implementation ENJOINED by Pasig RTC: status quo ante Jul 24, TRO Jul 30, preliminary injunction Aug 13, 2026)"],
     "confidence": "needs_review",
-    "notes": "NCR-27's ₱85 increase is judicially frozen as of Aug 26, 2026 — DOLE's motion for reconsideration (filed Aug 17) is pending, so the operative NCR floor for minimum-wage-earner exemption purposes remains NCR-26's ₱695 (₱658 agriculture/small retail). Region-specific — every region has its own wage order; check your RTWPB's current order and the litigation's outcome."
+    "notes": "NCR-27's ₱85 increase is judicially frozen as of Aug 26, 2026; DOLE's motion for reconsideration (filed Aug 17) is pending, so the operative NCR floor for minimum-wage-earner exemption purposes remains NCR-26's ₱695 (₱658 agriculture/small retail). Region-specific: every region has its own wage order; check your RTWPB's current order and the litigation's outcome."
   },
   "annualization": {
     "value": { "method": "graduated table on annualized taxable compensation; December adjustment trues up the year" },
     "legalBasis": ["NIRC Sec 79(H)", "RR 2-98 Sec 2.79(B)(5)(b), as amended by RR 11-2018"],
     "confidence": "verified",
-    "notes": "On the last payroll of the year (or on termination), the employer computes tax on the full year's taxable compensation — including pay from a previous employer within the year — using the annual graduated table, and withholds or refunds the difference so total withheld equals annual tax due. Refunds of over-withholding are due to employees not later than January 25 of the following year."
+    "notes": "On the last payroll of the year (or on termination), the employer computes tax on the full year's taxable compensation (including pay from a previous employer within the year) using the annual graduated table, and withholds or refunds the difference so total withheld equals annual tax due. Refunds of over-withholding are due to employees not later than January 25 of the following year."
   },
   "mweExempt": {
     "value": true,
     "legalBasis": ["NIRC Sec 24(A)(2), as amended by RA 9504", "RR 10-2008"],
     "confidence": "verified",
-    "notes": "Statutory minimum wage earners are exempt from income tax on their SMW, plus holiday pay, overtime, night differential, and hazard pay — no withholding applies."
+    "notes": "Statutory minimum wage earners are exempt from income tax on their SMW, plus holiday pay, overtime, night differential, and hazard pay; no withholding applies."
   }
 }

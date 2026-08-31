@@ -175,6 +175,78 @@ describe('shifted deadlines remain visible through their effective due date', ()
   })
 })
 
+describe('SAWT for taxpayers who receive 2307s', () => {
+  it('individual claiming 2307 credits: SAWT rides each 1701Q and the annual return', () => {
+    const p = { ...defaultProfile('individual'), name: 'T', regime: '8pct', receives2307: true }
+    const d = datesOf(gen(p, '2026-01-01', '2027-04-30'), 'bir-sawt-individual')
+    // Annual (TY2025) Apr 15, then Q1–Q3 sharing the 1701Q shifts, then Annual (TY2026)
+    expect(d).toEqual(['2026-04-15', '2026-05-15', '2026-08-17', '2026-11-16', '2027-04-15'])
+  })
+  it('no SAWT without the receives-2307 answer', () => {
+    const p = { ...defaultProfile('individual'), name: 'T', regime: '8pct' }
+    expect(datesOf(gen(p, '2026-01-01', '2027-04-30'), 'bir-sawt-individual')).toEqual([])
+  })
+  it('employees never see the SAWT track (they are withheld via 2316, not 2307)', () => {
+    const p = { ...defaultProfile('employee'), name: 'E', receives2307: true }
+    const list = gen(p, '2026-01-01', '2027-04-30')
+    expect(datesOf(list, 'bir-sawt-individual')).toEqual([])
+    expect(datesOf(list, 'bir-sawt-corp-quarterly')).toEqual([])
+  })
+  it('calendar-year corporation: SAWT follows the 1702Q dates and the Apr 15 annual', () => {
+    const p = { ...defaultProfile('corporation'), name: 'C', receives2307: true }
+    const list = gen(p, '2026-01-01', '2027-04-30')
+    const q = datesOf(list, 'bir-sawt-corp-quarterly')
+    expect(q).toContain('2026-06-01') // Mar 31 + 60 = May 30 (Sat) → Jun 1, as for the 1702Q
+    expect(q).toContain('2026-09-01')
+    expect(q).toContain('2026-12-01')
+    expect(datesOf(list, 'bir-sawt-corp-annual')).toContain('2027-04-15')
+  })
+  it('fiscal-year corporation (FY ends Jun 30): SAWT follows fiscal quarters and the Oct 15 annual', () => {
+    const p = { ...defaultProfile('corporation'), name: 'C', fiscalYearEndMonth: 6, receives2307: true }
+    const list = gen(p, '2026-01-01', '2026-12-31')
+    const q = datesOf(list, 'bir-sawt-corp-quarterly')
+    expect(q).toContain('2026-06-01') // FY2026 Q3 ends Mar 31 + 60 = May 30 (Sat) → Jun 1
+    expect(q).toContain('2026-12-01') // FY2027 Q1 ends Sep 30 + 60 = Nov 29 (Sun) → Nov 30 Bonifacio → Dec 1
+    expect(datesOf(list, 'bir-sawt-corp-annual')).toContain('2026-10-15')
+  })
+})
+
+describe('final-withholding certificates', () => {
+  const p = { ...defaultProfile('individual'), name: 'T', withholdsFwt: true }
+  const list = gen(p, '2026-01-01', '2027-02-28')
+  it('2306 certificates due January 31 following the year, weekend-shifted', () => {
+    const d = datesOf(list, 'bir-2306-issue')
+    expect(d).toContain('2026-02-02') // Jan 31 2026 Sat → Feb 2
+    expect(d).toContain('2027-02-01') // Jan 31 2027 Sun → Feb 1
+  })
+  it('no 2306 duty without the FWT facet', () => {
+    const p2 = { ...defaultProfile('individual'), name: 'T' }
+    expect(datesOf(gen(p2, '2026-01-01', '2027-02-28'), 'bir-2306-issue')).toEqual([])
+  })
+})
+
+describe('QAP rides the quarterly withholding returns', () => {
+  it('EWT agent: QAP due with the 1601-EQ, sharing its shifts', () => {
+    const p = { ...defaultProfile('individual'), name: 'T', withholdsEwt: true }
+    const d = datesOf(gen(p, '2026-01-01', '2027-02-28'), 'bir-qap')
+    expect(d).toContain('2026-04-30')
+    expect(d).toContain('2026-11-03') // Oct 31 Sat → Nov 1 All Saints → Nov 2 All Souls → Nov 3
+    expect(d).toContain('2027-02-01') // Jan 31 2027 Sun → Feb 1
+  })
+  it('FWT-only agent gets the QAP too (1601-FQ carries it)', () => {
+    const p = { ...defaultProfile('individual'), name: 'T', withholdsFwt: true }
+    expect(datesOf(gen(p, '2026-01-01', '2026-12-31'), 'bir-qap')).toContain('2026-04-30')
+  })
+  it('no withholding facets → no QAP', () => {
+    const p = { ...defaultProfile('individual'), name: 'T' }
+    expect(datesOf(gen(p, '2026-01-01', '2026-12-31'), 'bir-qap')).toEqual([])
+  })
+  it('stays calendar-quarter based despite a fiscal year', () => {
+    const p = { ...defaultProfile('corporation'), name: 'C', fiscalYearEndMonth: 6 } // corp default withholds EWT
+    expect(datesOf(gen(p, '2026-01-01', '2026-12-31'), 'bir-qap')).toContain('2026-04-30')
+  })
+})
+
 describe('eAFS annual ITR attachment deadlines', () => {
   it('individual in business: attachments due Apr 30 (15 days after Apr 15)', () => {
     const p = { ...defaultProfile('individual'), name: 'T', regime: '8pct' }

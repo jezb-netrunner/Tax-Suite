@@ -40,7 +40,7 @@ export default function ToolsPage() {
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px' }}>
       <div style={{ marginBottom: '20px' }}>
         <h1 className="pg-h1">Tools &amp; calculators</h1>
-        <p className="pg-sub">Quick utilities for the in-between moments — estimate a penalty, figure out withholding, or project where your year is heading.</p>
+        <p className="pg-sub">Quick utilities for the in-between moments: estimate a penalty, figure out withholding, or project where your year is heading.</p>
       </div>
 
       {/* penalty */}
@@ -61,7 +61,7 @@ export default function ToolsPage() {
         <div style={{ marginTop: '18px', borderTop: '1px solid var(--line2)', paddingTop: '6px' }}>
           {[
             { label: 'Basic tax due', value: money(penDue) },
-            { label: `Surcharge (${Math.round(pen.surRate * 100)}% — NIRC Sec 248${penEopt ? ', reduced by EOPT' : ''})`, value: money2(pen.surcharge) },
+            { label: `Surcharge (${Math.round(pen.surRate * 100)}%, NIRC Sec 248${penEopt ? ', reduced by EOPT' : ''})`, value: money2(pen.surcharge) },
             { label: `Interest · ${penDays} days @ ${Math.round(pen.intRate * 100)}%/yr (NIRC Sec 249)`, value: money2(pen.interest) },
             { label: `Compromise penalty (RMO 7-2015 schedule${penEopt ? ', 50% off' : ''})`, value: money2(pen.compromise) },
           ].map((row, i) => (
@@ -122,7 +122,7 @@ export default function ToolsPage() {
               <span className="mono" style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accInk)' }}>{money(perMonth)}</span>
             </div>
           </div>
-          {projVat && <div className="mini-warn">You're projected to pass the ₱3M VAT threshold — the 8% option won't be available at that level, and VAT registration kicks in. Run the estimator with your full-year figure.</div>}
+          {projVat && <div className="mini-warn">You're projected to pass the ₱3M VAT threshold. The 8% option won't be available at that level, and VAT registration kicks in. Run the estimator with your full-year figure.</div>}
         </div>
       </div>
 

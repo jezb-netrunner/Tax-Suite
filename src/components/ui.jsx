@@ -78,11 +78,6 @@ export function Disclaimer({ children, lead }) {
   )
 }
 
-export function ConfidenceBadge({ confidence }) {
-  if (confidence === 'verified') return <span className="badge-verified">✓ verified</span>
-  return <span className="badge-review" title="This rule could not be fully verified against a primary source — confirm with your CPA before relying on it.">needs CPA review</span>
-}
-
 export function AgencyTag({ agency }) {
   const key = String(agency || '').toLowerCase().replace(/[^a-z]/g, '')
   return <span className={'agency ' + key}>{agency}</span>

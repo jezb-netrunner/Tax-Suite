@@ -52,11 +52,11 @@ export function estimateEmployee(in_) {
   a('13th month & other benefits', bonusesAnnual)
   a(`Less: exclusion cap (₱${CAP13.toLocaleString('en-US')})`, -Math.min(bonusesAnnual, CAP13))
   a('Annual taxable income', annualTaxable, { rule: true })
-  a('Annual income tax (graduated table)', annualTax, { strong: true, sub: 'Your employer trues this up in December — extra tax is withheld or over-withholding refunded (NIRC Sec 79(H)).' })
+  a('Annual income tax (graduated table)', annualTax, { strong: true, sub: 'Your employer trues this up in December: extra tax is withheld or over-withholding refunded (NIRC Sec 79(H)).' })
   a('Total withheld over 12 months', monthlyWithholding * 12)
   const diff = annualTax - monthlyWithholding * 12
   if (Math.abs(diff) >= 1) {
-    a(diff > 0 ? 'Year-end adjustment — extra withholding due' : 'Year-end adjustment — refund due to you', Math.abs(diff), { strong: true })
+    a(diff > 0 ? 'Year-end adjustment: extra withholding due' : 'Year-end adjustment: refund due to you', Math.abs(diff), { strong: true })
   }
 
   return {

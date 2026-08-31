@@ -1,25 +1,25 @@
 {
-  "$comment": "Common expanded (creditable) withholding tax rates — RR 2-98 as amended by RR 11-2018. Reference table for the employer/withholding-agent surfaces. Draft pending research reconciliation.",
+  "$comment": "Common expanded (creditable) withholding tax rates (RR 2-98 as amended by RR 11-2018). Reference table for the employer/withholding-agent surfaces.",
   "rates": {
     "value": [
-      { "atc": "WI010/WI011", "payee": "Professional fees — individual", "rate": "5% if annual gross ≤ ₱3M with sworn declaration; 10% otherwise" },
-      { "atc": "WC010/WC011", "payee": "Professional fees — corporation", "rate": "10% if annual gross ≤ ₱720,000; 15% otherwise" },
+      { "atc": "WI010/WI011", "payee": "Professional fees (individual)", "rate": "5% if annual gross ≤ ₱3M with sworn declaration; 10% otherwise" },
+      { "atc": "WC010/WC011", "payee": "Professional fees (corporation)", "rate": "10% if annual gross ≤ ₱720,000; 15% otherwise" },
       { "atc": "WI100/WC100", "payee": "Rental of real/personal property", "rate": "5%" },
       { "atc": "WI120/WC120", "payee": "Contractors & subcontractors (incl. security, janitorial, IT services)", "rate": "2%" },
       { "atc": "WI158/WC158", "payee": "Purchases of goods by Top Withholding Agents", "rate": "1%" },
       { "atc": "WI160/WC160", "payee": "Purchases of services by Top Withholding Agents", "rate": "2%" },
-      { "atc": "WI010/WI011, WC010/WC011", "payee": "Commissions of brokers/agents (non-employees) — folded into the professional-fee tiers since RR 11-2018", "rate": "Individuals: 5% if annual gross ≤ ₱3M with sworn declaration, else 10%; corporations: 10% if ≤ ₱720,000, else 15%. (Legacy ATC WI515/WC515 still appears in some tables at a flat 10%.)" },
-      { "atc": "WI152/WI153", "payee": "Income payments by GPPs to their partners (drawings, advances, sharings, allowances)", "rate": "10% if annual ≤ ₱720,000; 15% otherwise (individual codes only — partners are natural persons)" },
-      { "atc": "—", "payee": "TWA purchases from manufacturers or direct importers of goods intended for wholesale: motor vehicles (CBU/SKD, incl. motorcycles) and their parts/accessories, pharmaceutical products, solid/liquid fuels", "rate": "0.5% in lieu of the 1% goods rate — RR 24-2025, effective Oct 10, 2025; supplier need only be a manufacturer OR direct importer, with documentary proof per RMC 79-2026" },
-      { "atc": "—", "payee": "E-marketplace / digital-platform and DFSP remittances to online sellers", "rate": "0.5% of gross remittances (flat, per RR 5-2025 implementing CREATE MORE — superseding RR 16-2023's 1%-of-one-half mechanic); excluded if annual gross remittances across all platforms ≤ ₱500,000 with BIR-received sworn declaration, or BMBE-registered" },
-      { "atc": "—", "payee": "Credit-card company payments to businesses for cardholder sales", "rate": "0.5% of the gross amounts paid (RR 5-2025; previously 1% of one-half) — the acquirer withholds and issues Form 2307" }
+      { "atc": "WI010/WI011, WC010/WC011", "payee": "Commissions of brokers/agents (non-employees), folded into the professional-fee tiers since RR 11-2018", "rate": "Individuals: 5% if annual gross ≤ ₱3M with sworn declaration, else 10%; corporations: 10% if ≤ ₱720,000, else 15%. (Legacy ATC WI515/WC515 still appears in some tables at a flat 10%.)" },
+      { "atc": "WI152/WI153", "payee": "Income payments by GPPs to their partners (drawings, advances, sharings, allowances)", "rate": "10% if annual ≤ ₱720,000; 15% otherwise (individual codes only; partners are natural persons)" },
+      { "atc": "—", "payee": "TWA purchases from manufacturers or direct importers of goods intended for wholesale: motor vehicles (CBU/SKD, incl. motorcycles) and their parts/accessories, pharmaceutical products, solid/liquid fuels", "rate": "0.5% in lieu of the 1% goods rate per RR 24-2025, effective Oct 10, 2025; supplier need only be a manufacturer OR direct importer, with documentary proof per RMC 79-2026" },
+      { "atc": "—", "payee": "E-marketplace / digital-platform and DFSP remittances to online sellers", "rate": "0.5% of gross remittances (flat, per RR 5-2025 implementing CREATE MORE, superseding RR 16-2023's 1%-of-one-half mechanic); excluded if annual gross remittances across all platforms ≤ ₱500,000 with BIR-received sworn declaration, or BMBE-registered" },
+      { "atc": "—", "payee": "Credit-card company payments to businesses for cardholder sales", "rate": "0.5% of the gross amounts paid (RR 5-2025; previously 1% of one-half); the acquirer withholds and issues Form 2307" }
     ],
     "legalBasis": ["RR 2-98 Sec 2.57.2, as amended by RR 11-2018 & RR 7-2019", "RR 31-2020 (TWA criteria)", "RR 24-2025 & RMC 79-2026", "RR 16-2023, as amended by RR 5-2025 (CREATE MORE)", "RMO 18-2025 (new ATCs for the 0.5% categories)"],
     "confidence": "verified",
-    "notes": "The full ATC schedule is longer; these are the rates MSMEs meet most. Top Withholding Agents: designated by published BIR list — criteria per RR 31-2020 (gross sales/receipts or purchases ≥ ₱12M for Groups A/B, ≥ ₱5M for C/D/E); obligation starts the month after list publication, and TWA status is independent of the EOPT micro/small/medium/large classification. Individual 5% professional-fee rate requires the payee's sworn declaration (gross ≤ ₱3M, non-VAT); without it, withhold 10%. Lone-payor payees with annual income ≤ ₱250,000 may be exempted by sworn declaration. Platforms' alphalist duties per RMC 55-2026."
+    "notes": "The full ATC schedule is longer; these are the rates MSMEs meet most. Top Withholding Agents: designated by published BIR list, with criteria per RR 31-2020 (gross sales/receipts or purchases ≥ ₱12M for Groups A/B, ≥ ₱5M for C/D/E); obligation starts the month after list publication, and TWA status is independent of the EOPT micro/small/medium/large classification. Individual 5% professional-fee rate requires the payee's sworn declaration (gross ≤ ₱3M, non-VAT); without it, withhold 10%. Lone-payor payees with annual income ≤ ₱250,000 may be exempted by sworn declaration. Platforms' alphalist duties per RMC 55-2026."
   },
   "sec34kRepealed": {
-    "value": "For taxable years from 2024, an expense is deductible even if the related withholding tax was not withheld or remitted — EOPT repealed NIRC Sec 34(K). The withholding agent remains liable for the unremitted tax, surcharge, and interest.",
+    "value": "For taxable years from 2024, an expense is deductible even if the related withholding tax was not withheld or remitted, because EOPT repealed NIRC Sec 34(K). The withholding agent remains liable for the unremitted tax, surcharge, and interest.",
     "legalBasis": ["RA 11976 (EOPT), repealing NIRC Sec 34(K)", "NIRC Sec 251 (withholding agent liability)"],
     "confidence": "verified",
     "notes": "Major change from the pre-2024 deduction-disallowance regime, in force since January 22, 2024; the agent's own exposure (tax not withheld plus surcharge and interest) survives."

@@ -101,7 +101,7 @@ function WizardForm({ app, editing }) {
             <div style={{ marginTop: '10px' }}>
               <Switch on={p.multipleEmployers} onChange={v => set('multipleEmployers', v)}
                 title="More than one employer this year (or switched jobs mid-year)"
-                desc="Two or more employers usually means substituted filing no longer applies — you file BIR Form 1700 yourself by April 15." />
+                desc="Two or more employers usually means substituted filing no longer applies, so you file BIR Form 1700 yourself by April 15." />
               <Switch on={p.licensedProfessional} onChange={v => set('licensedProfessional', v)}
                 title="PRC-licensed professional"
                 desc="Licensed professionals renew a Professional Tax Receipt (PTR) with the LGU every January, even when purely employed." />
@@ -144,11 +144,11 @@ function WizardForm({ app, editing }) {
                     <div className="opt-grid" style={{ marginTop: '10px' }}>
                       <button type="button" className={'opt-card' + (p.regime !== 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime !== 'graduated_itemized'} onClick={() => set('regime', 'graduated_osd')}>
                         <div className="t">Graduated + OSD</div>
-                        <div className="d">40% Optional Standard Deduction — simpler books, files 1701A.</div>
+                        <div className="d">40% Optional Standard Deduction: simpler books, files 1701A.</div>
                       </button>
                       <button type="button" className={'opt-card' + (p.regime === 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime === 'graduated_itemized'} onClick={() => set('regime', 'graduated_itemized')}>
                         <div className="t">Graduated + itemized</div>
-                        <div className="d">Actual documented expenses — files the full 1701.</div>
+                        <div className="d">Actual documented expenses: files the full 1701.</div>
                       </button>
                     </div>
                   </div>
@@ -183,6 +183,9 @@ function WizardForm({ app, editing }) {
           <div>
             <h2 className="sec-h">Withholding &amp; payroll</h2>
             <div style={{ marginTop: '10px' }}>
+              <Switch on={p.receives2307} onChange={v => set('receives2307', v)}
+                title="Clients withhold tax from your payments (you receive Form 2307)"
+                desc="Common with corporate or government clients. Each 2307 is a tax credit, and claiming credits means submitting the SAWT via eSubmission with every return where they're claimed." />
               <Switch on={p.hasEmployees} onChange={v => set('hasEmployees', v)}
                 title="Has employees"
                 desc="Switches on the employer set: monthly 1601-C, annual 1604-C, employee 2316s, plus SSS, PhilHealth, Pag-IBIG and 13th-month obligations." />
@@ -191,7 +194,7 @@ function WizardForm({ app, editing }) {
                 desc="For payments like rent, professional fees, or contractor services: monthly 0619-E, quarterly 1601-EQ, annual 1604-E, and 2307 certificates to payees." />
               <Switch on={p.withholdsFwt} onChange={v => set('withholdsFwt', v)}
                 title="Withholds final taxes"
-                desc="Less common — final withholding on items like dividends or certain interest: 0619-F, 1601-FQ, 1604-F, and 2306 certificates." />
+                desc="Less common. Final withholding on items like dividends or certain interest: 0619-F, 1601-FQ, 1604-F, and 2306 certificates." />
             </div>
           </div>
         )}
@@ -204,9 +207,9 @@ function WizardForm({ app, editing }) {
                 <div style={{ margin: '6px 0 12px' }}>
                   <label className="lbl">Books of accounts</label>
                   <div className="opt-grid" style={{ marginTop: '10px' }}>
-                    {[['manual', 'Manual books', 'Handwritten ledgers registered with the BIR — no annual re-registration; new books only when full.'],
-                      ['looseleaf', 'Loose-leaf', 'Printed/bound records under a BIR permit — bound copies submitted every January 15.'],
-                      ['cas', 'Computerized (CAS)', 'BIR-registered accounting system — annual back-up/registration by January 30.']].map(([k, t, d]) => (
+                    {[['manual', 'Manual books', 'Handwritten ledgers registered with the BIR. No annual re-registration; new books only when full.'],
+                      ['looseleaf', 'Loose-leaf', 'Printed/bound records under a BIR permit; bound copies submitted every January 15.'],
+                      ['cas', 'Computerized (CAS)', 'BIR-registered accounting system; annual back-up/registration by January 30.']].map(([k, t, d]) => (
                       <button key={k} type="button" className={'opt-card' + (p.booksType === k ? ' on' : '')} aria-pressed={p.booksType === k} onClick={() => set('booksType', k)}>
                         <div className="t">{t}</div>
                         <div className="d">{d}</div>
@@ -236,11 +239,12 @@ function WizardForm({ app, editing }) {
               </div>
             )}
             <div style={{ marginTop: '18px', background: 'var(--accSoft)', borderRadius: '11px', padding: '14px 16px', fontSize: '13px', color: 'var(--accInk)', lineHeight: 1.6 }}>
-              <b>{p.name || 'This profile'}</b> — {PROFILE_TYPES[p.type].name}
+              <b>{p.name || 'This profile'}</b>: {PROFILE_TYPES[p.type].name}
               {(isBiz || isCorp) && <> · {p.vatRegistered ? 'VAT' : 'Non-VAT'}</>}
               {isBiz && !p.vatRegistered && <> · {p.regime === '8pct' ? '8% flat tax' : p.regime === 'graduated_osd' ? 'Graduated + OSD' : 'Graduated + itemized'}</>}
               {p.hasEmployees && <> · employer</>}
               {p.withholdsEwt && <> · EWT agent</>}
+              {p.receives2307 && <> · receives 2307s (SAWT)</>}
               {isCorp && <> · FY ends {MONTHS[(p.fiscalYearEndMonth || 12) - 1]}</>}
             </div>
           </div>
