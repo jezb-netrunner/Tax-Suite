@@ -183,6 +183,9 @@ function WizardForm({ app, editing }) {
           <div>
             <h2 className="sec-h">Withholding &amp; payroll</h2>
             <div style={{ marginTop: '10px' }}>
+              <Switch on={p.receives2307} onChange={v => set('receives2307', v)}
+                title="Clients withhold tax from your payments (you receive Form 2307)"
+                desc="Common with corporate or government clients. Each 2307 is a tax credit — and claiming credits means submitting the SAWT via eSubmission with every return where they're claimed." />
               <Switch on={p.hasEmployees} onChange={v => set('hasEmployees', v)}
                 title="Has employees"
                 desc="Switches on the employer set: monthly 1601-C, annual 1604-C, employee 2316s, plus SSS, PhilHealth, Pag-IBIG and 13th-month obligations." />
@@ -241,6 +244,7 @@ function WizardForm({ app, editing }) {
               {isBiz && !p.vatRegistered && <> · {p.regime === '8pct' ? '8% flat tax' : p.regime === 'graduated_osd' ? 'Graduated + OSD' : 'Graduated + itemized'}</>}
               {p.hasEmployees && <> · employer</>}
               {p.withholdsEwt && <> · EWT agent</>}
+              {p.receives2307 && <> · receives 2307s (SAWT)</>}
               {isCorp && <> · FY ends {MONTHS[(p.fiscalYearEndMonth || 12) - 1]}</>}
             </div>
           </div>

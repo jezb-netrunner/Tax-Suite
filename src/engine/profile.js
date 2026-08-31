@@ -31,6 +31,7 @@ export function defaultProfile(type = 'individual') {
     hasEmployees: false,
     withholdsEwt: false,
     withholdsFwt: false,
+    receives2307: false,            // clients withhold on payments → SAWT with every return claiming the credits
     booksType: 'manual', // 'manual' | 'looseleaf' | 'cas'
     usesCrmPos: false,
     sellsGoods: false,              // maintains inventory → annual inventory list
@@ -87,6 +88,8 @@ export function profileFlags(p) {
   if (p.hasEmployees) f.add('employer')
   if (p.withholdsEwt) f.add('ewt')
   if (p.withholdsFwt) f.add('fwt')
+  // Employees are withheld via 2316, not 2307 — the SAWT track is business-only.
+  if (isBusiness && p.receives2307) f.add('receives-2307')
   if (p.booksType === 'looseleaf') f.add('books:looseleaf')
   if (p.booksType === 'cas') f.add('books:cas')
   if (p.usesCrmPos) f.add('crm-pos')
