@@ -293,7 +293,7 @@
     {
       "id": "bir-eafs-itr-attachments-individual",
       "title": "Submit annual ITR attachments via eAFS",
-      "desc": "Scanned attachments to the annual return: SAWT eSubmission confirmation, 2307s, 2316 (mixed income / 1700 filers), and for itemized-deduction filers the FS (audited above ₱3M gross sales, unaudited below), uploaded to eAFS in the prescribed PDF file groups.",
+      "desc": "Scanned attachments to the annual return: SAWT eSubmission confirmation, 2307s and 2304s, 2316 (mixed income / 1700 filers), for itemized-deduction filers the FS (audited above ₱3M gross sales, unaudited below), plus tax debit memos and credit proofs where applicable, uploaded to eAFS in the prescribed PDF file groups.",
       "form": "via eAFS",
       "agency": "BIR",
       "category": "income",
@@ -319,7 +319,7 @@
     {
       "id": "bir-eafs-itr-attachments-corp",
       "title": "Submit annual ITR attachments via eAFS",
-      "desc": "Corporate annual-return attachments: the FS with SMR (audited with auditor's report when gross sales exceed ₱3M), SAWT confirmation and 2307s, Form 1709 and CETI where applicable, uploaded to eAFS in the prescribed PDF file groups.",
+      "desc": "Corporate annual-return attachments: the FS with SMR (audited with auditor's report when gross sales exceed ₱3M), SAWT confirmation with 2307s and 2304s, Form 1709, CETI, tax debit memos and credit proofs where applicable, uploaded to eAFS in the prescribed PDF file groups.",
       "form": "via eAFS",
       "agency": "BIR",
       "category": "income",

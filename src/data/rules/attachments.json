@@ -16,8 +16,8 @@
     "value": {
       "annual": [
         { "group": "File 1: Income Tax Return", "name": "EAFS<TIN>ITRTY<MM><YYYY>", "contains": "The filed AITR; for e-filers, the Filing Reference Number page (eFPS) or email Tax Return Receipt Confirmation (eBIRForms), plus proof of payment" },
-        { "group": "File 2: Financial Statements", "name": "EAFS<TIN>AFSTY<MM><YYYY>", "contains": "Independent auditor's report, audited FS with notes, and the Statement of Management Responsibility, or the unaudited FS / Account Information Form for filers below the ₱3M audit threshold" },
-        { "group": "File 3: Other Attachments", "name": "EAFS<TIN>OTHTY<MM><YYYY>-01 … -99", "contains": "SAWT eSubmission confirmation, Forms 2307/2304/2316, tax debit memos, proof of prior years' excess credits and foreign tax credits, CETI, and the like" },
+        { "group": "File 2: Financial Statements", "name": "EAFS<TIN>AFSTY<MM><YYYY>", "contains": "Statement of Management Responsibility; the audited FS with notes and independent auditor's report plus the certificate of the BIR-accredited independent CPA (audit required above ₱3M gross annual sales); or the unaudited FS / Account Information Form for filers below the threshold" },
+        { "group": "File 3: Other Attachments", "name": "EAFS<TIN>OTHTY<MM><YYYY>-01 … -99", "contains": "SAWT validation report, Forms 2307/2304/2316, duly approved tax debit memos, proofs of prior years' excess credits, foreign tax credits and other tax payments, CETI, and for amended returns the previously filed return with its proof of payment" },
         { "group": "RPT Form", "name": "EAFS<TIN>RPTTY<MM><YYYY>", "contains": "BIR Form 1709 (Related Party Transactions), for covered taxpayers" },
         { "group": "Tax credit documents", "name": "EAFS<TIN>TCRTY<MM><YYYY>-01 … -99", "contains": "Tax credit certificates and supporting documents" }
       ],
@@ -80,7 +80,7 @@
   },
   "cetiForRbes": {
     "value": "Registered business enterprises claiming ITH, 5% SCIT, or enhanced deductions must secure the Certificate of Entitlement to Tax Incentives from their IPA (PEZA/BOI/etc.) before filing the annual ITR and attach it (eAFS Other Attachments group)",
-    "legalBasis": ["RMC 28-2022", "FIRB Advisory 004-2022", "RA 11534 (CREATE)"],
+    "legalBasis": ["RMC 28-2022", "RMC 42-2026 (May 7, 2026 clarification on CETI submission with the AITR)", "FIRB Advisory 004-2022", "RA 11534 (CREATE)"],
     "confidence": "verified",
     "notes": "Without the CETI the incentive claim on the return is at risk. Relevant to 1702-MX/1702-EX filers and BOI-registered individuals."
   },
@@ -103,24 +103,27 @@
     "value": [
       { "form": "1700", "items": [
         { "doc": "Form 2316 from each employer for the year", "channel": "eAFS (Other Attachments)", "when": "Within 15 days of the deadline / actual e-filing, whichever is later" },
-        { "doc": "Proof of filing (FRN or email Tax Return Receipt Confirmation) and proof of payment", "channel": "eAFS (ITR group)", "when": "Same 15-day window" }
+        { "doc": "Proof of filing (FRN or email Tax Return Receipt Confirmation) and proof of payment", "channel": "eAFS (ITR group)", "when": "Same 15-day window" },
+        { "doc": "Tax debit memo, proofs of prior years' excess or foreign tax credits, and for an amended return the previously filed return with proof of payment, if any", "channel": "eAFS (Other Attachments)", "when": "Same 15-day window" }
       ] },
       { "form": "1701", "items": [
         { "doc": "Proof of filing (FRN/TRRC) and proof of payment", "channel": "eAFS (ITR group)", "when": "Within 15 days of the deadline / actual e-filing, whichever is later" },
         { "doc": "Form 2316 from your employer (mixed-income earners)", "channel": "eAFS (Other Attachments)", "when": "Same 15-day window" },
         { "doc": "SAWT + Forms 2307, when creditable withholding is claimed", "channel": "SAWT .dat via eSubmission (due with the return); confirmation + scanned 2307s to eAFS", "when": "SAWT with the return; scans in the 15-day window" },
-        { "doc": "Financial statements, itemized-deduction filers: audited FS + auditor's report + SMR when gross sales exceed ₱3M; unaudited FS (or AIF) at or below ₱3M; no FS on the 8% option or OSD", "channel": "eAFS (AFS group)", "when": "Same 15-day window" },
-        { "doc": "Form 1709 (only if a covered related-party taxpayer); tax debit memos; proof of prior years' excess or foreign tax credits, if any", "channel": "eAFS (RPT / Other Attachments)", "when": "Same 15-day window" }
+        { "doc": "Financial statements, itemized-deduction filers: audited FS + auditor's report + SMR + the BIR-accredited CPA's certificate when gross sales exceed ₱3M; unaudited FS (or AIF) at or below ₱3M; no FS on the 8% option or OSD", "channel": "eAFS (AFS group)", "when": "Same 15-day window" },
+        { "doc": "Form 1709 (only if a covered related-party taxpayer); Form 2304 for income not subjected to withholding; tax debit memos; proofs of prior years' excess credits, foreign tax credits and other tax payments; for an amended return, the previously filed return with proof of payment, if any", "channel": "eAFS (RPT / Other Attachments)", "when": "Same 15-day window" }
       ] },
       { "form": "1701A", "items": [
         { "doc": "Proof of filing (FRN/TRRC) and proof of payment", "channel": "eAFS (ITR group)", "when": "Within 15 days of the deadline / actual e-filing, whichever is later" },
         { "doc": "SAWT + Forms 2307, when creditable withholding is claimed", "channel": "SAWT .dat via eSubmission (due with the return); confirmation + scanned 2307s to eAFS", "when": "SAWT with the return; scans in the 15-day window" },
+        { "doc": "Form 2304, tax debit memos, proofs of prior years' excess credits, and for an amended return the previously filed return with proof of payment, if any", "channel": "eAFS (Other Attachments)", "when": "Same 15-day window" },
         { "doc": "No financial statements; 8% and OSD filers are not required to attach FS", "channel": "—", "when": "—" }
       ] },
       { "form": "1701-MS", "items": [
         { "doc": "Proof of filing (FRN/TRRC) and proof of payment", "channel": "eAFS (ITR group)", "when": "Within 15 days of the deadline / actual e-filing, whichever is later" },
         { "doc": "SAWT + Forms 2307, when creditable withholding is claimed; Form 2316 for mixed-income filers", "channel": "SAWT .dat via eSubmission; scans to eAFS", "when": "SAWT with the return; scans in the 15-day window" },
-        { "doc": "Micro filers (below ₱3M): no CPA audit; unaudited FS (or AIF) still attach on itemized deductions, none on 8%/OSD; small filers (₱3M–₱20M) on itemized attach audited FS", "channel": "eAFS (AFS group), if applicable", "when": "Same 15-day window" }
+        { "doc": "Micro filers (below ₱3M): no CPA audit; unaudited FS (or AIF) still attach on itemized deductions, none on 8%/OSD; small filers (₱3M–₱20M) on itemized attach audited FS", "channel": "eAFS (AFS group), if applicable", "when": "Same 15-day window" },
+        { "doc": "The same if-applicable proofs as the other individual returns: Form 2304, tax debit memos, prior years' excess credits, and amended-return copies", "channel": "eAFS (Other Attachments)", "when": "Same 15-day window" }
       ] },
       { "form": "1701Q", "items": [
         { "doc": "SAWT, when 2307 credits are claimed for the quarter", "channel": ".dat via eSubmission (esubmission@bir.gov.ph) or eFPS", "when": "Due with the return" },
@@ -132,9 +135,9 @@
       ] },
       { "form": "1702-RT", "items": [
         { "doc": "Proof of filing (FRN/TRRC) and proof of payment", "channel": "eAFS (ITR group)", "when": "Within 15 days of the deadline / actual e-filing, whichever is later" },
-        { "doc": "Financial statements + SMR: audited with independent auditor's report when gross sales exceed ₱3M, not necessarily audited at or below; FS attach even on OSD (RR 16-2008). The SEC's own AFS filing still needs an audit unless total assets or liabilities are under ₱600k", "channel": "eAFS (AFS group)", "when": "Same 15-day window" },
+        { "doc": "Financial statements + SMR: audited with independent auditor's report and the BIR-accredited CPA's certificate when gross sales exceed ₱3M, not necessarily audited at or below; FS attach even on OSD (RR 16-2008). The SEC's own AFS filing still needs an audit unless total assets or liabilities are under ₱600k", "channel": "eAFS (AFS group)", "when": "Same 15-day window" },
         { "doc": "SAWT + Forms 2307, when creditable withholding is claimed", "channel": "SAWT .dat via eSubmission; confirmation + scans to eAFS", "when": "SAWT with the return; scans in the 15-day window" },
-        { "doc": "Form 1709 (covered taxpayers); CETI (RBEs, filed on 1702-MX); NOLCO/MCIT schedules; tax debit memos; proof of excess credits, if any", "channel": "eAFS (RPT / Other Attachments)", "when": "Same 15-day window" }
+        { "doc": "Form 1709 (covered taxpayers); CETI (RBEs, filed on 1702-MX); Form 2304; NOLCO/MCIT schedules; tax debit memos; proofs of prior years' excess credits, foreign tax credits and other tax payments; for an amended return, the previously filed return with proof of payment, if any", "channel": "eAFS (RPT / Other Attachments)", "when": "Same 15-day window" }
       ] },
       { "form": "2550Q", "items": [
         { "doc": "Summary List of Sales & Purchases (SLSP): all VAT-registered taxpayers, zero lists included", "channel": "RELIEF .dat via eSubmission or eFPS", "when": "25th day after the quarter (30th for eFPS/LTS)" },
@@ -163,8 +166,8 @@
       { "form": "0619-E", "items": [ { "doc": "None", "channel": "—", "when": "—" } ] },
       { "form": "0605", "items": [ { "doc": "None; the form is itself the payment vehicle", "channel": "—", "when": "—" } ] }
     ],
-    "legalBasis": ["RMC 20-2026 Annexes (CY2025 per-form attachment lists)", "NIRC Sec 232, as amended by TRAIN (₱3M audit threshold)", "RR 16-2008 (OSD FS rules)", "RR 2-2006 (SAWT)", "RR 1-2012 (SLSP)", "RR 11-2018 (QAP & alphalists)", "RR 2-2015 as amended by RR 16-2021 (2316 batches)"],
+    "legalBasis": ["RMC 20-2026 Annexes (CY2025 per-form attachment lists)", "RMC 43-2021 (revised eAFS guidelines and file groups)", "NIRC Sec 232, as amended by TRAIN (₱3M audit threshold)", "RR 16-2008 (OSD FS rules)", "RR 2-2006 (SAWT)", "RR 1-2012 (SLSP)", "RR 11-2018 (QAP & alphalists)", "RR 2-2015 as amended by RR 16-2021 (2316 batches)"],
     "confidence": "verified",
-    "notes": "Everything is 'if applicable': a taxpayer with no attachments has nothing to upload. 1702-EX filers add their certificate of tax exemption; 1702-MX filers add the BOI/PEZA/IPA certificate and CETI."
+    "notes": "Everything is 'if applicable': a taxpayer with no attachments has nothing to upload. 1702-EX filers add their certificate of tax exemption; 1702-MX filers add the BOI/PEZA/IPA certificate and CETI. The per-form lists have stayed consistent from season to season (RMC 44-2023, 51-2024, 34-2025, then RMC 20-2026 for CY2025), and RMC 43-2021 remains the authority on the eAFS file groups; consult those annexes for the complete official wording."
   }
 }
