@@ -91,7 +91,7 @@
         "NIRC Sec 51(C), as amended"
       ],
       "confidence": "verified",
-      "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed (the SAWT itself is filed via eSubmission with the return); audited FS + Statement of Management Responsibility if gross sales exceed ₱3M on itemized deductions. Attachments go to eAFS within 15 days of the statutory deadline or actual e-filing, whichever comes later — a separately dated item on this calendar."
+      "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed (the SAWT itself is filed via eSubmission with the return). Itemized-deduction filers attach financial statements: audited with SMR when gross sales exceed ₱3M, not necessarily audited (or the AIF) at or below — only 8%/OSD filers attach no FS at all (NIRC Sec 232; RR 16-2008). Attachments go to eAFS within 15 days of the statutory deadline or actual e-filing, whichever comes later — a separately dated item on this calendar."
     },
     {
       "id": "bir-sawt-individual",
@@ -234,7 +234,7 @@
         "NIRC Sec 77(B), as amended"
       ],
       "confidence": "verified",
-      "notes": "Due the 15th day of the fourth month following the close of the taxable year (April 15 for calendar-year corporations). Variants: 1702-EX (exempt), 1702-MX (mixed/special-rate regimes — RBEs attach the CETI). Attachments — audited FS + SMR, SAWT/2307s, Form 1709 for covered related-party taxpayers — go to eAFS within 15 days of the deadline or actual e-filing, whichever comes later (fiscal-year naming per RMC 82-2020); a separately dated item on this calendar. E-filing is mandatory for all corporations (RMC 20-2026)."
+      "notes": "Due the 15th day of the fourth month following the close of the taxable year (April 15 for calendar-year corporations). Variants: 1702-EX (exempt), 1702-MX (mixed/special-rate regimes — RBEs attach the CETI). Attachments — FS + SMR (audited only when gross sales exceed ₱3M per NIRC Sec 232, though FS attach even on OSD per RR 16-2008), SAWT/2307s, Form 1709 for covered related-party taxpayers — go to eAFS within 15 days of the deadline or actual e-filing, whichever comes later (fiscal-year naming per RMC 82-2020); a separately dated item on this calendar. E-filing is mandatory for all corporations (RMC 20-2026)."
     },
     {
       "id": "bir-sawt-corp-quarterly",
@@ -293,7 +293,7 @@
     {
       "id": "bir-eafs-itr-attachments-individual",
       "title": "Submit annual ITR attachments via eAFS",
-      "desc": "Scanned attachments to the annual return — SAWT eSubmission confirmation, 2307s, 2316 (mixed income / 1700 filers), audited FS where required — uploaded to eAFS in the prescribed PDF file groups.",
+      "desc": "Scanned attachments to the annual return — SAWT eSubmission confirmation, 2307s, 2316 (mixed income / 1700 filers), and for itemized-deduction filers the FS (audited above ₱3M gross sales, unaudited below) — uploaded to eAFS in the prescribed PDF file groups.",
       "form": "via eAFS",
       "agency": "BIR",
       "category": "income",
@@ -319,7 +319,7 @@
     {
       "id": "bir-eafs-itr-attachments-corp",
       "title": "Submit annual ITR attachments via eAFS",
-      "desc": "Corporate annual-return attachments — audited FS with auditor's report and SMR, SAWT confirmation and 2307s, Form 1709 and CETI where applicable — uploaded to eAFS in the prescribed PDF file groups.",
+      "desc": "Corporate annual-return attachments — the FS with SMR (audited with auditor's report when gross sales exceed ₱3M), SAWT confirmation and 2307s, Form 1709 and CETI where applicable — uploaded to eAFS in the prescribed PDF file groups.",
       "form": "via eAFS",
       "agency": "BIR",
       "category": "income",
@@ -1158,7 +1158,7 @@
         "SEC MC 9-2026 (Feb 11, 2026 — single uniform date via eFAST; FY2025's May 29 was revised to June 15, 2026 after the BIR's AITR extension)"
       ],
       "confidence": "needs_review",
-      "notes": "The SEC sets the exact date each year by memorandum circular — the old last-digit staggering is gone, but the date can move mid-year (FY2025: May 29 → June 15, 2026). Later years shown at May 29 provisionally — update when each year's MC issues. Attach the BIR eAFS Transaction Reference Number in lieu of a BIR-stamped AFS. PSE-listed/public companies follow the 105-day SEC Form 17-A rule instead."
+      "notes": "The SEC sets the exact date each year by memorandum circular — the old last-digit staggering is gone, but the date can move mid-year (FY2025: May 29 → June 15, 2026). Later years shown at May 29 provisionally — update when each year's MC issues. Attach the BIR eAFS Transaction Reference Number in lieu of a BIR-stamped AFS. PSE-listed/public companies follow the 105-day SEC Form 17-A rule instead. Corporations with total assets or total liabilities under ₱600,000 file FS certified under oath by the treasurer/CFO instead of audited (RCC Sec 177)."
     },
     {
       "id": "sec-afs-fiscal",
@@ -1183,7 +1183,7 @@
         "SEC MC 9-2026"
       ],
       "confidence": "verified",
-      "notes": "Within 120 calendar days from the end of a fiscal year other than December 31 (per the annual SEC MC, most recently MC 9-2026)."
+      "notes": "Within 120 calendar days from the end of a fiscal year other than December 31 (per the annual SEC MC, most recently MC 9-2026). Corporations with total assets or total liabilities under ₱600,000 file FS certified under oath by the treasurer/CFO instead of audited (RCC Sec 177)."
     },
     {
       "id": "sec-gis",
