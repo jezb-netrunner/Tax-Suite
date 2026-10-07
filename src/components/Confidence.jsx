@@ -1,4 +1,3 @@
-import React from 'react'
 import { confidenceReasons, isUnconfirmed } from '../engine/deadlines.js'
 import { formCodeHint } from '../data/glossary.js'
 

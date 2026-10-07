@@ -546,10 +546,10 @@ function CorporationEstimator({ app, onPrintYear }) {
   const earlier = choice === 'earlier'
   const dueNext = years.options.find(o => o.year === years.defaultYear)
   // M11: excess MCIT of the 3 taxable years before the chosen one, keyed by year.
-  const mcitYears = earlier ? [] : [choice - 1, choice - 2, choice - 3]
+  const mcitYears = useMemo(() => (earlier ? [] : [choice - 1, choice - 2, choice - 3]), [earlier, choice])
   const excessMcit = useMemo(
     () => mcitYears.map(y => ({ year: y, amount: v.excessMcit?.[y] })).filter(x => Number(x.amount) > 0),
-    [v.excessMcit, choice, earlier], // mcitYears follows choice and earlier
+    [v.excessMcit, mcitYears],
   )
   const osd = v.deduction === 'osd'
   const r = useMemo(() => (earlier ? null : estimateCorporation({

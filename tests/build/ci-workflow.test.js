@@ -46,6 +46,18 @@ describe('deploy.yml (L20)', () => {
   })
 })
 
+describe('lint (L22)', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
+  it('has an npm run lint script that fails on any warning', () => {
+    expect(pkg.scripts.lint).toBe('eslint . --max-warnings 0')
+    expect(fs.existsSync(path.join(root, 'eslint.config.js'))).toBe(true)
+  })
+  it('CI runs the linter before the tests', () => {
+    const build = jobText('build')
+    expect(build).toMatch(/- run: npm run lint\n\s+- run: npm test/)
+  })
+})
+
 describe('.gitignore (L20)', () => {
   const ignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8').split('\n').map((l) => l.trim())
   it('ignores every .env.* file except .env.example', () => {

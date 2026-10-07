@@ -1,4 +1,3 @@
-import React from 'react'
 import { formCodeHint } from '../data/glossary.js'
 
 // A form or channel chip ('SSS R-5/PRN', 'via ORUS', '1701Q'). Codes with a

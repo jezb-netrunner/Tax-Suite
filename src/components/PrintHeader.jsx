@@ -1,4 +1,3 @@
-import React from 'react'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { printHeaderText } from '../lib/exports.js'
 

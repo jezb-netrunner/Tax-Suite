@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES } from '../engine/profile.js'
@@ -57,7 +57,7 @@ export function LocalLeftovers() {
       setMsg(r.failed
         ? { ok: false, text: `Imported ${count(r.imported)}. ${count(r.failed)} could not be imported and ${r.failed === 1 ? 'is' : 'are'} still in this browser; please try again later.` }
         : { ok: true, text: `Imported ${count(r.imported)} into your account and removed the copy from this browser.` })
-    } catch (e) {
+    } catch {
       setMsg({ ok: false, text: 'The import did not finish. Your profiles are still in this browser; please try again.' })
     }
     setBusy(false)

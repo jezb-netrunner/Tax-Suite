@@ -33,6 +33,7 @@ in-browser).
 npm install
 npm run dev        # local dev
 npm test           # engine tests (hand-worked tax examples)
+npm run lint       # ESLint (eslint.config.js); CI fails on any warning
 npm run build      # production build → dist/
 npm run audit:calendar   # print every taxpayer type's generated calendar
 ```

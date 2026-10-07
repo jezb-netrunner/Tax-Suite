@@ -39,6 +39,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm test
       # Local-mode build. It also regenerates the committed single-file
       # index.html, which must match the source exactly.

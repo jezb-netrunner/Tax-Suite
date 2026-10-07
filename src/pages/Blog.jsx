@@ -1,4 +1,3 @@
-import React from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { POSTS } from '../data/posts.js'
 

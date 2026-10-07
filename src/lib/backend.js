@@ -117,9 +117,12 @@ export function createBackend({ client = null, storage } = {}) {
     try {
       store().setItem(LS_KEY, JSON.stringify(profiles))
     } catch (e) {
+      // L22: keep the browser's own error as the cause for debugging; the
+      // message shown to the user stays in plain words.
       throw new Error(
         'This browser refused to save the profile (storage may be full or blocked in private browsing). ' +
-        'Your changes were not kept.'
+        'Your changes were not kept.',
+        { cause: e }
       )
     }
   }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES, defaultProfile, changeProfileType, withWizardChanges } from '../engine/profile.js'

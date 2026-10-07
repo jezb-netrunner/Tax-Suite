@@ -3,7 +3,7 @@
 // In cloud mode (Supabase configured) users sign in and their profiles sync.
 // In local mode there is no sign-in; profiles persist in this browser only.
 
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
   hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
   localLeftovers, importLocalProfiles, eraseLocalLeftovers, openedFromRecoveryLink, emailLinkError,
