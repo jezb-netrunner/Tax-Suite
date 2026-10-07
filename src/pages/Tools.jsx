@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { estimatePenalty, parseISODate } from '../engine/estimators/penalties.js'
+import { projectYear, projectorKind, MONTHS_MIN, MONTHS_MAX } from '../engine/estimators/projector.js'
 import { withholdingForPeriod } from '../engine/estimators/payroll.js'
 import { employeeMandatoryDeductions } from '../engine/estimators/contributions.js'
 import businessTax from '../data/rules/business-tax.json'
@@ -11,8 +13,9 @@ import { toCentavos, fromCentavos } from '../lib/money.js'
 import { iso, fromISO } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { HOLIDAYS } from '../lib/deadlineData.js'
+import { useApp } from '../state/AppState.jsx'
 
-const VAT_THRESHOLD = businessTax.vatThreshold.value
+const VAT_RATE = businessTax.vatRate.value
 const EIGHT = incomeTax.eightPercent.value
 const SUR = penaltyRules.surcharge.value
 const INT = penaltyRules.interest.value
@@ -230,12 +233,108 @@ function PenaltyCard() {
   )
 }
 
+const KIND_LABEL = {
+  pure: `purely self-employed (${money(EIGHT.allowanceForPureSelfEmployed)} reduction)`,
+  mixed: `mixed income (no ${money(EIGHT.allowanceForPureSelfEmployed)} reduction)`,
+  vat: 'VAT-registered',
+  corporation: 'corporation',
+}
+
+function ProjectorCard() {
+  const app = useApp()
+  const profile = app ? app.active : null
+  const profileKind = projectorKind(profile)
+  const [askedKind, setAskedKind] = useState(null)
+  const [gross, setGross] = useState(240000)
+  const [months, setMonths] = useState(6)
+  const kind = profileKind ?? askedKind
+  const reduction = money(EIGHT.allowanceForPureSelfEmployed)
+  const ceiling = wholePesoMillions(EIGHT.grossCeiling)
+
+  const r = useMemo(
+    () => projectYear({ grossSoFar: gross, monthsIn: months, kind: kind ?? 'mixed' }),
+    [gross, months, kind]
+  )
+  const estimatorLink = <Link to="/estimator" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Open the Estimator</Link>
+
+  let why = null
+  if (kind === 'vat') {
+    why = <>The {pct(EIGHT.rate)} option isn't available to VAT-registered individuals: you pay graduated income tax plus {pct(VAT_RATE)} VAT. {estimatorLink} for your tax.</>
+  } else if (kind === 'corporation') {
+    why = <>The {pct(EIGHT.rate)} option is for individuals only. A corporation pays corporate income tax instead. {estimatorLink} for your tax.</>
+  } else if (r.overCeiling) {
+    why = <>Projected gross sales pass {ceiling}, so the {pct(EIGHT.rate)} option won't be available and VAT registration kicks in. {estimatorLink} with your full-year figure.</>
+  }
+
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Year-to-date projector</h3>
+      <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '3px' }}>Where your gross sales and {pct(EIGHT.rate)} tax are heading.</p>
+      {profileKind
+        ? (
+          <p style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '8px', lineHeight: 1.5 }}>
+            Following the active profile <b style={{ color: 'var(--ink)' }}>{profile.name}</b>: {KIND_LABEL[profileKind]}.
+          </p>
+        )
+        : (
+          <div style={{ marginTop: '14px' }}>
+            <span className="lbl" aria-hidden="true">Purely self-employed or mixed income?</span>
+            <div style={{ marginTop: '8px' }}>
+              <Seg
+                options={[['pure', 'Self-employed only'], ['mixed', 'Mixed income']]}
+                value={askedKind}
+                onChange={setAskedKind}
+                ariaLabel="Purely self-employed or mixed income?"
+              />
+            </div>
+            <div style={{ fontSize: '11.5px', color: 'var(--dim)', marginTop: '5px' }}>Mixed income: you also earn a salary from an employer.</div>
+          </div>
+        )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '12px', marginTop: '18px', alignItems: 'start' }}>
+        <NumField label="Gross so far" value={gross} onChange={setGross} prefix="₱" />
+        <NumField label="Months in" value={months} onChange={setMonths} kind="integer" min={MONTHS_MIN} max={MONTHS_MAX}
+          hint={`${MONTHS_MIN} to ${MONTHS_MAX}`} />
+      </div>
+      <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <span style={{ fontSize: '13.5px', color: 'var(--mut)' }}>Projected gross sales / receipts</span>
+          <span className="mono" style={{ fontSize: '14px', fontWeight: 600 }}>{money(r.projectedGross)}</span>
+        </div>
+        {kind && r.eightPercentAvailable && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <span style={{ fontSize: '13.5px', color: 'var(--mut)' }}>
+                Estimated {pct(EIGHT.rate)} tax{kind === 'pure' ? ` (after the ${reduction} reduction)` : ''}
+              </span>
+              <span className="mono" style={{ fontSize: '14px', fontWeight: 600 }}>{money(r.eightPercentTax)}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', borderTop: '1px solid var(--line2)', paddingTop: '9px' }}>
+              <span style={{ fontSize: '13.5px', fontWeight: 600 }}>Set aside / month</span>
+              <span className="mono" style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accInk)' }}>{money(r.setAsidePerMonth)}</span>
+            </div>
+          </>
+        )}
+      </div>
+      {!kind && (
+        <p style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '12px', lineHeight: 1.5 }}>
+          Choose "Self-employed only" or "Mixed income" to see the {pct(EIGHT.rate)} tax.
+        </p>
+      )}
+      {kind === 'mixed' && r.eightPercentAvailable && (
+        <p style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '12px', lineHeight: 1.5 }}>
+          With a salary too, there is no {reduction} reduction on the business side (it is already in the tax on your
+          salary). Tax on your salary is separate.
+        </p>
+      )}
+      {why && <div className="mini-warn">{why}</div>}
+    </div>
+  )
+}
+
 // Ported from v1; the math now runs through the shared engine + data layer.
 export default function ToolsPage() {
   const [whComp, setWhComp] = useState(50000)
   const [whGrossMode, setWhGrossMode] = useState('taxable')
-  const [ytdGross, setYtdGross] = useState(240000)
-  const [ytdMonths, setYtdMonths] = useState(6)
 
   const whTaxable = useMemo(() => {
     if (whGrossMode === 'taxable') return whComp
@@ -244,12 +343,6 @@ export default function ToolsPage() {
   }, [whComp, whGrossMode])
   const whTax = useMemo(() => withholdingForPeriod(whTaxable, 'monthly'), [whTaxable])
   const whRate = whTaxable > 0 ? (whTax / whTaxable * 100) : 0
-
-  const mIn = Math.min(12, Math.max(0, ytdMonths))
-  const projAnnual = mIn > 0 ? ytdGross / mIn * 12 : 0
-  const proj8 = Math.max(0, projAnnual - EIGHT.allowanceForPureSelfEmployed) * EIGHT.rate
-  const perMonth = proj8 / 12
-  const projVat = projAnnual > VAT_THRESHOLD
 
   return (
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px' }}>
@@ -280,29 +373,7 @@ export default function ToolsPage() {
             <div style={{ fontSize: '12.5px', color: 'var(--accInk)', opacity: .8, marginTop: '3px' }}>Effective rate {whRate.toFixed(1)}% of taxable pay</div>
           </div>
         </div>
-        <div className="card pad">
-          <h3 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Year-to-date projector</h3>
-          <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '3px' }}>Where your annual income and 8% tax are heading.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '12px', marginTop: '18px' }}>
-            <NumField label="Gross so far" value={ytdGross} onChange={setYtdGross} prefix="₱" />
-            <NumField label="Months in" value={ytdMonths} onChange={setYtdMonths} kind="integer" />
-          </div>
-          <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13.5px', color: 'var(--mut)' }}>Projected annual income</span>
-              <span className="mono" style={{ fontSize: '14px', fontWeight: 600 }}>{money(projAnnual)}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13.5px', color: 'var(--mut)' }}>Estimated 8% tax</span>
-              <span className="mono" style={{ fontSize: '14px', fontWeight: 600 }}>{money(proj8)}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--line2)', paddingTop: '9px' }}>
-              <span style={{ fontSize: '13.5px', fontWeight: 600 }}>Set aside / month</span>
-              <span className="mono" style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accInk)' }}>{money(perMonth)}</span>
-            </div>
-          </div>
-          {projVat && <div className="mini-warn">You're projected to pass the ₱3M VAT threshold. The 8% option won't be available at that level, and VAT registration kicks in. Run the estimator with your full-year figure.</div>}
-        </div>
+        <ProjectorCard />
       </div>
 
       <Disclaimer />
