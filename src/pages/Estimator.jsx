@@ -96,6 +96,7 @@ function IndividualEstimator({ app, mixed }) {
     crossedMonth: v.crossedMonth, salesThroughCrossMonth: v.salesThroughCrossMonth,
     eightPercentPaid: v.eightPercentPaid, taxYear,
     otherIncome: v.otherIncome, subjectToOtherPercentageTax: v.otherPercentageTax === 'yes',
+    nolcoPrior: v.nolcoPrior,
   }), [v, p.vatRegistered, mixed, taxYear])
 
   // The profile's regime, unless the figures override it.
@@ -114,6 +115,7 @@ function IndividualEstimator({ app, mixed }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
           <NumField label="Business gross sales / receipts · year" value={v.gross} onChange={x => set('gross', x)} prefix="₱" lg />
           <NumField label="Itemized expenses" value={v.expenses} onChange={x => set('expenses', x)} prefix="₱" />
+          <NumField label="NOLCO from prior years" value={v.nolcoPrior} onChange={x => set('nolcoPrior', x)} prefix="₱" hint="Unused net operating losses from the last 3 years. Used only in the itemized option, and only against business income. Losses from 2020 and 2021 may carry over for 5 years (RA 11494); check with your CPA." />
           <NumField label="Other non-operating income (not subject to final tax)" value={v.otherIncome} onChange={x => set('otherIncome', x)} prefix="₱" hint="Income outside your main business. Leave out bank interest and other income already taxed at a final rate." />
           <NumField label="Tax withheld by clients (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
           {mixed && <NumField label="Taxable compensation · year" value={v.compensationTaxable} onChange={x => set('compensationTaxable', x)} prefix="₱" hint="After mandatory contributions and non-taxable benefits; see box 21 of your 2316." />}
@@ -172,6 +174,10 @@ function IndividualEstimator({ app, mixed }) {
           </div>
           {r.crossing.warnings.map(w => <div key={w} className="mini-warn" role="alert">{w}</div>)}
         </div>
+      )}
+
+      {r.nolco.note && (
+        <div className="mini-warn" role="note" style={{ marginTop: '16px' }}>{r.nolco.note}</div>
       )}
 
       <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>

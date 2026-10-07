@@ -17,6 +17,7 @@ import { manilaToday } from '../dates.js'
 const BR = incomeTax.graduatedBrackets.value
 const EIGHT = incomeTax.eightPercent.value
 const OSD = incomeTax.osd.value
+const NOLCO_YEARS = incomeTax.netOperatingLossCarryOver.value.carryOverYears
 const VAT_THRESHOLD = businessTax.vatThreshold.value
 const PCT_RATE = businessTax.percentageTaxRate.value
 export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -53,6 +54,8 @@ export function gradTax(taxable) {
  *                    counts in the 8% ₱3M test and 8% base, added after OSD /
  *                    itemized deductions; not part of the OSD or percentage-tax base
  *   subjectToOtherPercentageTax  business subject to NIRC Secs 117-127 (no 8%)
+ *   nolcoPrior       NOLCO from prior years (M04): itemized option only, and
+ *                    only against business income (never compensation)
  */
 export function estimateIndividual(in_) {
   const { vatRegistered = false, mixed = false } = in_
@@ -140,7 +143,14 @@ export function estimateIndividual(in_) {
 
   const osdDeductionC = toWholePesos(mulRate(grossC, OSD.rate))
   const osdNetC = grossC - osdDeductionC
-  const itemNetC = Math.max(0, grossC - expensesC)
+  // Itemized (M04): a loss is shown and becomes NOLCO; NOLCO from prior years
+  // reduces business income only (not compensation, not other income).
+  const businessNetC = grossC - expensesC
+  const netLossC = Math.max(0, -businessNetC)
+  const nolcoPriorC = line(in_.nolcoPrior)
+  const nolcoAppliedC = Math.min(nolcoPriorC, Math.max(0, businessNetC))
+  const nolcoLeftC = nolcoPriorC - nolcoAppliedC
+  const itemNetC = Math.max(0, businessNetC) - nolcoAppliedC
 
   // Mixed graduated: compensation and business net are AGGREGATED into one
   // graduated computation (single taxable income). Other non-operating income
@@ -282,6 +292,26 @@ export function estimateIndividual(in_) {
     }
   }
 
+  // NOLCO (NIRC Sec 34(D)(3); RR 14-2001; RR 16-2008): usable in the next
+  // 3 years when itemizing; not on OSD or 8%, and those years still count.
+  const nolco = {
+    createdAmount: P(netLossC),
+    usableFrom: taxYear + 1,
+    usableTo: taxYear + NOLCO_YEARS,
+    priorEntered: P(nolcoPriorC),
+    applied: P(nolcoAppliedC),
+    left: P(nolcoLeftC),
+    note: netLossC > 0
+      ? `Net loss ${pesoText(netLossC)}. This net operating loss (NOLCO) can be deducted from business income in the next ` +
+        `${NOLCO_YEARS} years (${taxYear + 1} to ${taxYear + NOLCO_YEARS}), but only in years you itemize deductions. ` +
+        `It cannot be used while on OSD or the 8% option, and those years still count toward the ${NOLCO_YEARS}.` +
+        (mixed ? ' A business loss does not reduce taxable compensation.' : '')
+      : null,
+    shortNote: netLossC > 0
+      ? `Becomes NOLCO: deductible from business income in ${taxYear + 1} to ${taxYear + NOLCO_YEARS}, in years you itemize.`
+      : null,
+  }
+
   // Transparent breakdown for the chosen option.
   function rowsFor(opt) {
     const rows = []
@@ -313,7 +343,15 @@ export function estimateIndividual(in_) {
     }
     if (opt.key === 'itemized') {
       r('Less: itemized expenses', -expenses)
-      r('Net taxable business income', itemNet, { rule: true })
+      if (netLossC > 0) {
+        r('Net loss', P(netLossC), { rule: true, sub: nolco.shortNote })
+      } else if (nolcoAppliedC > 0) {
+        r('Net business income', P(businessNetC), { rule: true })
+        r('Less: NOLCO from prior years', -P(nolcoAppliedC), nolcoLeftC > 0
+          ? { sub: `${pesoText(nolcoLeftC)} of NOLCO is left for later years, within its ${NOLCO_YEARS}-year limit.` }
+          : {})
+      }
+      r('Net taxable business income', itemNet, { rule: netLossC === 0 && nolcoAppliedC === 0 })
       if (withOther) r('Plus: other non-operating income', other)
       if (mixed) r('Plus: taxable compensation', compensationTaxable)
       r('Graduated income tax', incItem, { strong: true })
@@ -353,6 +391,8 @@ export function estimateIndividual(in_) {
     crossing,
     vatNotIncluded,
     vatNote: vatNotIncluded ? VAT_NOTE : null,
+    netLoss: P(netLossC),
+    nolco,
     options,
     best,
     savingsVsNext: runnersUp.length ? diff(runnersUp[0], best.total) : null,
