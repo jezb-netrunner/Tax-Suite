@@ -5,7 +5,7 @@ import { employeeMandatoryDeductions } from '../engine/estimators/contributions.
 import businessTax from '../data/rules/business-tax.json'
 import incomeTax from '../data/rules/income-tax.json'
 import penaltyRules from '../data/rules/penalties.json'
-import { NumField, Seg, Disclaimer } from '../components/ui.jsx'
+import { NumField, Seg, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2, pct } from '../lib/format.js'
 import { toCentavos, fromCentavos } from '../lib/money.js'
 import { iso, fromISO } from '../engine/dates.js'
@@ -76,11 +76,13 @@ const infoNote = {
   background: 'var(--accSoft)', color: 'var(--accInk)',
 }
 
-function Row({ label, value }) {
+function Row({ label, value, text }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '8px 0' }}>
       <span style={{ fontSize: '13.5px', color: 'var(--mut)' }}>{label}</span>
-      <span className="mono" style={{ fontSize: '13.5px', fontWeight: 500, whiteSpace: 'nowrap' }}>{value}</span>
+      {text
+        ? <span style={{ fontSize: '13.5px', fontWeight: 600, textAlign: 'right' }}>{value}</span>
+        : <span className="mono" style={{ fontSize: '13.5px', fontWeight: 500, whiteSpace: 'nowrap' }}>{value}</span>}
     </div>
   )
 }
@@ -91,6 +93,7 @@ function PenaltyCard() {
   const [dueDate, setDueDate] = useState('')
   const [paidDate, setPaidDate] = useState(null) // null = today in Manila
   const [microSmall, setMicroSmall] = useState(true)
+  const [willful, setWillful] = useState(false)
 
   const paid = paidDate ?? iso(today)
   const dueErr = dateError(dueDate, 'Enter the original due date of the return or payment.')
@@ -98,8 +101,8 @@ function PenaltyCard() {
   const ready = !dueErr && !paidErr
 
   const pen = useMemo(
-    () => (ready ? estimatePenalty({ taxDue, dueDate, paymentDate: paid, microSmall }) : null),
-    [ready, taxDue, dueDate, paid, microSmall]
+    () => (ready ? estimatePenalty({ taxDue, dueDate, paymentDate: paid, microSmall, willful }) : null),
+    [ready, taxDue, dueDate, paid, microSmall, willful]
   )
 
   const reducedFrom = fmtShort(SUR.microSmallFrom)
@@ -139,14 +142,22 @@ function PenaltyCard() {
           </div>
         </div>
       </div>
+      <div style={{ marginTop: '14px' }}>
+        <Switch
+          on={willful}
+          onChange={setWillful}
+          title={`Willful neglect / false or fraudulent return (${pct(SUR.willfulNeglect)} surcharge)`}
+          desc={`NIRC Sec 248(B): for example, not filing on purpose, or understating sales by more than 30%. The ${pct(SUR.willfulNeglect)} is not reduced for micro and small taxpayers, and the standard compromise schedule does not cover fraud.`}
+        />
+      </div>
 
       <div role="status" aria-live="polite">
         {notes.map((n, i) => <div key={i} style={infoNote}>{n}</div>)}
         {pen && microSmall && pen.late && !pen.reducedRates && (
           <div className="mini-warn">
             The reduced micro and small rates apply only to returns due on or after {reducedFrom}. This one was due
-            earlier, so the regular rates apply for the whole period: {pct(SUR.standard)} surcharge
-            and {pct(INT.standardAnnualRate)} interest a year ({pct(INT.priorAnnualRate)} for days
+            earlier, so the regular rates apply for the whole period: {willful ? '' : `${pct(SUR.standard)} surcharge and `}
+            {pct(INT.standardAnnualRate)} interest a year ({pct(INT.priorAnnualRate)} for days
             before {fmtShort(INT.standardFrom)}).
           </div>
         )}
@@ -171,7 +182,9 @@ function PenaltyCard() {
           <>
             <Row label="Basic tax due" value={money2(taxDue)} />
             <Row
-              label={`Surcharge (${pct(pen.surRate)}, NIRC Sec 248${pen.surRate === SUR.microSmall ? ', reduced for micro & small' : ''})`}
+              label={pen.willful
+                ? `Surcharge (${pct(pen.surRate)}, NIRC Sec 248(B), willful neglect or fraud)`
+                : `Surcharge (${pct(pen.surRate)}, NIRC Sec 248${pen.surRate === SUR.microSmall ? ', reduced for micro & small' : ''})`}
               value={money2(pen.surcharge)}
             />
             {pen.interestPeriods.map(p => (
@@ -181,13 +194,25 @@ function PenaltyCard() {
                 value={money2(p.interest)}
               />
             ))}
-            <Row label="Compromise penalty (RMO 7-2015 schedule)" value={money2(pen.compromise)} />
+            {pen.compromiseOnSchedule
+              ? <Row label="Compromise penalty (RMO 7-2015 schedule)" value={money2(pen.compromise)} />
+              : <Row label="Compromise penalty" value="Not on the standard schedule" text />}
           </>
         )}
         {pen && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 0 2px', borderTop: '1px solid var(--line)', marginTop: '4px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 700 }}>Estimated total to pay</span>
+            <span style={{ fontSize: '14px', fontWeight: 700 }}>
+              Estimated total to pay{pen.late && !pen.compromiseOnSchedule ? ' (before any compromise)' : ''}
+            </span>
             <span className="mono" style={{ fontSize: '20px', fontWeight: 600, color: 'var(--accInk)' }}>{money2(pen.total)}</span>
+          </div>
+        )}
+        {pen && pen.late && !pen.compromiseOnSchedule && (
+          <div className="mini-warn">
+            The standard compromise schedule (RMO 7-2015) covers only violations that do not involve fraud, so no
+            compromise is added here; a fraud case may be referred for prosecution instead. If no fraud is involved
+            and the BIR applies the schedule, the compromise would be {money2(pen.scheduleCompromise)}, for a total
+            of {money2(pen.totalWithScheduleCompromise)}.
           </div>
         )}
         {pen && pen.late && (

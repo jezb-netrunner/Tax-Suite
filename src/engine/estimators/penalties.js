@@ -17,7 +17,10 @@
 //
 // Compromise: the full RMO 7-2015 Annex A amount for every taxpayer size. Late
 // filing or payment is a Sec 255 violation; RR 6-2024 halves the compromise
-// only for invoicing violations (Secs 113, 237 and 238).
+// only for invoicing violations (Secs 113, 237 and 238). The schedule does not
+// cover fraud, so a willful neglect / fraud case gets no compromise amount
+// (compromise null, compromiseOnSchedule false); the schedule amount is still
+// reported as scheduleCompromise for a willful case that involves no fraud.
 //
 // Rounding: each line (surcharge, each interest period, compromise) is rounded
 // half-up to the centavo, computed exactly in whole centavos (BigInt for
@@ -133,12 +136,18 @@ export function estimatePenalty(in_) {
     late,
     daysLate,
     reducedRates: reducedSurcharge || reducedInterest,
+    willful,
+    compromiseOnSchedule: !willful,
     surRate,
     references: [...pen.surcharge.legalBasis, ...pen.interest.legalBasis, ...pen.compromiseTiers.legalBasis],
   }
 
   if (!late) {
-    return { ...base, interestPeriods: [], surcharge: 0, interest: 0, compromise: 0, total: fromCentavos(dueC) }
+    const total = fromCentavos(dueC)
+    return {
+      ...base, interestPeriods: [], surcharge: 0, interest: 0, compromise: 0,
+      scheduleCompromise: 0, total, totalWithScheduleCompromise: total,
+    }
   }
 
   const surchargeC = mulRate(dueC, surRate)
@@ -149,14 +158,17 @@ export function estimatePenalty(in_) {
     return { from: iso(p.from), to: iso(p.to), days, rate: p.rate, interestC }
   })
   const interestC = sumCentavos(periods.map(p => p.interestC))
-  const compromiseC = toCentavos(compromiseFor(taxDue))
+  const scheduleC = toCentavos(compromiseFor(taxDue))
+  const compromiseC = willful ? 0 : scheduleC
 
   return {
     ...base,
     interestPeriods: periods.map(({ interestC: c, ...p }) => ({ ...p, interest: fromCentavos(c) })),
     surcharge: fromCentavos(surchargeC),
     interest: fromCentavos(interestC),
-    compromise: fromCentavos(compromiseC),
+    compromise: willful ? null : fromCentavos(compromiseC),
+    scheduleCompromise: fromCentavos(scheduleC),
     total: fromCentavos(sumCentavos(dueC, surchargeC, interestC, compromiseC)),
+    totalWithScheduleCompromise: fromCentavos(sumCentavos(dueC, surchargeC, interestC, scheduleC)),
   }
 }

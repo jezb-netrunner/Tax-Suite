@@ -84,6 +84,48 @@ describe('late-filing penalty, 2026 violations', () => {
   })
 })
 
+// TB:W03: willful neglect or a false/fraudulent return (Sec 248(B)): 50%
+// surcharge, never reduced for micro & small. Interest follows the usual rates.
+// The RMO 7-2015 compromise schedule covers only violations not involving
+// fraud, so no compromise is added; the schedule amount is reported separately.
+describe('willful neglect / false or fraudulent return (L04)', () => {
+  it('TB:W03 ₱10,000, 30 days, micro: 50% surcharge 5,000, interest 49.32, compromise not on the schedule', () => {
+    const r = pen(10000, '2026-04-15', '2026-05-15', true, { willful: true })
+    expect(r.willful).toBe(true)
+    expect(r.surRate).toBe(0.5)
+    expect(r.surcharge).toBe(5000)
+    expect(r.interest).toBe(49.32)
+    expect(r.compromiseOnSchedule).toBe(false)
+    expect(r.compromise).toBe(null)
+    expect(r.total).toBe(15049.32)
+    // If no fraud is involved and the schedule is applied anyway: tier 5,001-10,000.
+    expect(r.scheduleCompromise).toBe(3000)
+    expect(r.totalWithScheduleCompromise).toBe(18049.32)
+  })
+  it('medium/large: same 50% surcharge and 12% interest', () => {
+    const r = pen(10000, '2026-04-15', '2026-05-15', false, { willful: true })
+    expect(r.surcharge).toBe(5000)
+    expect(r.interest).toBe(98.63)
+    expect(r.total).toBe(15098.63)
+    expect(r.totalWithScheduleCompromise).toBe(18098.63)
+  })
+  it('a normal late return stays on the schedule', () => {
+    const r = pen(10000, '2026-04-15', '2026-05-15', true)
+    expect(r.willful).toBe(false)
+    expect(r.compromiseOnSchedule).toBe(true)
+    expect(r.compromise).toBe(3000)
+    expect(r.scheduleCompromise).toBe(3000)
+    expect(r.totalWithScheduleCompromise).toBe(14049.32)
+  })
+  it('paid on time: no surcharge even when marked willful', () => {
+    const r = pen(10000, '2026-04-15', '2026-04-15', true, { willful: true })
+    expect(r.late).toBe(false)
+    expect(r.surcharge).toBe(0)
+    expect(r.compromise).toBe(0)
+    expect(r.total).toBe(10000)
+  })
+})
+
 describe('not late: paid on or before the (rolled-over) due date', () => {
   it('BUG:W5 ₱50,000 paid on the due date, micro/small: no surcharge, interest or compromise; total 50,000', () => {
     const r = pen(50000, '2026-04-15', '2026-04-15', true)
