@@ -771,6 +771,7 @@ export default function Estimator() {
         <div>
           <h1 className="pg-h1">{titles[active]}</h1>
           <p className="pg-sub">Estimating for <b>{p.name}</b>. Every line shows its math, every rate shows its source.</p>
+          <p style={{ fontSize: '12.5px', color: 'var(--ink)', marginTop: '4px' }}>{app.hasCloud ? 'Figures you type are saved to this profile in your account.' : 'Figures you type are saved to this profile in this browser.'}</p>
         </div>
         {tabs.length > 1 && (
           <div className="seg" role="group" aria-label="Estimator">

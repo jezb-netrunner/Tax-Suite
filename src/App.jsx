@@ -11,6 +11,7 @@ import References from './pages/References.jsx'
 import AuthPage from './pages/Auth.jsx'
 import ProfileWizard from './pages/ProfileWizard.jsx'
 import ProfilesPage from './pages/Profiles.jsx'
+import Privacy from './pages/Privacy.jsx'
 import meta from './data/rules/meta.json'
 import { statuteListText } from './data/statutes.js'
 
@@ -92,7 +93,12 @@ export default function App() {
             <span className="brand-name">JEZ Tax Suite</span>
           </div>
         </header>
-        <main style={{ flex: 1 }}><AuthPage /></main>
+        <main style={{ flex: 1 }}>
+          <Routes>
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="*" element={<AuthPage />} />
+          </Routes>
+        </main>
       </div>
     )
   }
@@ -134,6 +140,7 @@ export default function App() {
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:postId" element={<BlogPage />} />
           <Route path="/references" element={<References />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/profiles" element={<ProfilesPage />} />
           <Route path="/profiles/new" element={<ProfileWizard />} />
           <Route path="/profiles/:profileId/edit" element={<ProfileWizard />} />
@@ -148,6 +155,9 @@ export default function App() {
           BIR, SSS, PhilHealth, Pag-IBIG, SEC, and LGU issuances, with rules as of {meta.verifiedDate}. Every
           figure's legal basis and confidence is on the <NavLink to="/references" style={{ color: 'var(--accInk)', fontWeight: 600 }}>References</NavLink> page.
           Always confirm dates and amounts with the agency before filing.
+        </p>
+        <p style={{ marginTop: '8px' }}>
+          <NavLink to="/privacy" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Privacy Notice</NavLink>
         </p>
       </footer>
     </div>

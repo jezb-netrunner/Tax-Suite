@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES, defaultProfile } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
@@ -90,7 +90,10 @@ function WizardForm({ app, editing }) {
             <h2 className="sec-h">Who is this profile for?</h2>
             <div className="field" style={{ marginTop: '14px' }}>
               <label className="lbl" htmlFor="pf-name">Profile name</label>
-              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} onChange={e => set('name', e.target.value)} />
+              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} onChange={e => set('name', e.target.value)} aria-describedby="pf-name-privacy" />
+              <p id="pf-name-privacy" style={{ fontSize: '12.5px', color: 'var(--ink)', marginTop: '6px', lineHeight: 1.5 }}>
+                {app.hasCloud ? 'Saved to your account.' : 'Saved in this browser only.'} See the <Link to="/privacy" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Privacy Notice</Link> for what is kept and how to erase it.
+              </p>
             </div>
             <div className="opt-grid">
               {Object.entries(PROFILE_TYPES).map(([k, t]) => (

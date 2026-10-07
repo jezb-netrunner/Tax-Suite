@@ -88,6 +88,20 @@ VITE_SUPABASE_ANON_KEY=…
 Schema: [`supabase/migrations/0001_taxpayer_profiles.sql`](supabase/migrations/0001_taxpayer_profiles.sql):
 one table, JSONB profile data, RLS restricting every row to its owner.
 
+## Privacy
+
+The app shows a **Privacy Notice** (Data Privacy Act of 2012, RA 10173) at
+`#/privacy` ([`src/pages/Privacy.jsx`](src/pages/Privacy.jsx)). It is linked from
+the footer, the sign-up form (a required consent checkbox; the consent time and
+notice version are stored with the account) and profile setup, and the Estimator
+says that typed figures are saved to the profile.
+
+**Before publishing, fill in the placeholders** at the top of `Privacy.jsx`:
+`[CONTACT EMAIL]`, `[DPO NAME]` and, once accounts mode is on, the Supabase
+`[REGION]`. They show highlighted on the page until then. When the notice
+changes, update `PRIVACY_NOTICE_UPDATED` there and `PRIVACY_NOTICE_VERSION` in
+[`src/lib/auth.js`](src/lib/auth.js).
+
 ## Repository layout
 
 - `src/engine/`: pure tax logic: deadline generator (`deadlines.js`), estimators, date math
