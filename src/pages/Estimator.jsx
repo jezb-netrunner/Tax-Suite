@@ -3,10 +3,10 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
-import { estimateCorporation, corporateTaxYears, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
+import { estimateCorporation, estimateCorporateQuarter, corporateTaxYears, taxablePeriod, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
 import { estimatePayroll, DEFAULT_PAY_FACTOR, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions } from '../engine/estimators/contributions.js'
-import { fromISO } from '../engine/dates.js'
+import { fromISO, taxableYearQuarters } from '../engine/dates.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
@@ -497,6 +497,13 @@ function CorporationEstimator({ app }) {
     : years.options.some(o => o.year === v.taxYear) ? v.taxYear : years.defaultYear
   const earlier = choice === 'earlier'
   const dueNext = years.options.find(o => o.year === years.defaultYear)
+  // M11: excess MCIT of the 3 taxable years before the chosen one, keyed by year.
+  const mcitYears = earlier ? [] : [choice - 1, choice - 2, choice - 3]
+  const excessMcit = useMemo(
+    () => mcitYears.map(y => ({ year: y, amount: v.excessMcit?.[y] })).filter(x => Number(x.amount) > 0),
+    [v.excessMcit, choice, earlier], // mcitYears follows choice and earlier
+  )
+  const osd = v.deduction === 'osd'
   const r = useMemo(() => (earlier ? null : estimateCorporation({
     ...v,
     totalAssets: v.totalAssets ?? 0,
@@ -504,7 +511,9 @@ function CorporationEstimator({ app }) {
     taxYear: choice,
     fiscalYearEndMonth: fy,
     vatRegistered: p.vatRegistered,
-  })), [v, p, choice, fy, earlier])
+    excessMcit,
+  })), [v, p, choice, fy, earlier, excessMcit])
+  const setExcessMcit = (y, x) => set('excessMcit', { ...(v.excessMcit || {}), [y]: x })
   return (
     <>
       <div className="card pad">
@@ -518,14 +527,37 @@ function CorporationEstimator({ app }) {
           />
           <NumField emptyValue={null} label="Gross sales / revenue · year" value={v.grossSales} onChange={x => set('grossSales', x)} prefix="₱" lg />
           <NumField emptyValue={null} label="Cost of sales / services" value={v.costOfSales} onChange={x => set('costOfSales', x)} prefix="₱" />
-          <NumField emptyValue={null} label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" />
-          <NumField emptyValue={null} label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint="For the 20% small-corporation test." />
+          <SelectField
+            label="Deductions"
+            value={osd ? 'osd' : 'itemized'}
+            onChange={x => set('deduction', x)}
+            options={[['itemized', 'Itemized expenses'], ['osd', 'OSD (40%)']]}
+            hint="The optional standard deduction is 40% of gross income (sales less cost of sales). The choice is made on the first quarterly return and kept for the year."
+          />
+          <NumField emptyValue={null} label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" hint={osd ? 'Not used with the 40% OSD.' : undefined} />
+          <NumField emptyValue={null} label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint="For the 20% small-corporation test. A blank box counts as ₱0." />
           <NumField emptyValue={null} label="Creditable tax withheld (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
           <NumField emptyValue={null} label="Income tax already paid on this year's quarterly returns (1702Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
           <NumField emptyValue={null} label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
+        {!earlier && (
+          <details style={{ marginTop: '16px' }} open={excessMcit.length > 0 || undefined}>
+            <summary style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>Excess MCIT from the last 3 years (optional)</summary>
+            <p className="cite" style={{ marginTop: '8px' }}>
+              If MCIT was higher than the regular tax in an earlier year, the difference is credited against the regular tax
+              (never against the MCIT) for the next 3 taxable years. Enter what is not used yet. Excess MCIT
+              from {taxablePeriod(choice - 4, fy).name} or earlier has expired.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '10px' }}>
+              {mcitYears.map(y => (
+                <NumField key={y} emptyValue={null} label={`Excess MCIT from ${taxablePeriod(y, fy).name}`} value={v.excessMcit?.[y]} onChange={x => setExcessMcit(y, x)} prefix="₱" />
+              ))}
+            </div>
+          </details>
+        )}
         <p className="cite" style={{ marginTop: '14px' }}>
-          Quarterly amounts are not computed here. Enter the income tax already paid on this year's 1702Q returns, and it is subtracted from what you pay with the annual return (1702-RT).
+          Enter the income tax already paid on this year's 1702Q returns, and it is subtracted from what you pay with the
+          annual return (1702-RT). To estimate one quarterly return, use the 1702Q section below.
         </p>
       </div>
       {earlier ? (
@@ -561,7 +593,63 @@ function CorporationEstimator({ app }) {
           </div>
         </>
       )}
+      {!earlier && (
+        <CorporateQuarterCard v={v} set={set} p={p} taxYear={choice} fy={fy} excessMcit={excessMcit} />
+      )}
     </>
+  )
+}
+
+// M11: one 1702Q on cumulative figures (start of the taxable year to the end
+// of the quarter). Uses the deduction method, assets, registration year, last
+// year's excess credits and excess MCIT from the annual section above.
+function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
+  const quarter = [1, 2, 3].includes(Number(v.qQuarter)) ? Number(v.qQuarter) : 1
+  const quarters = taxableYearQuarters(taxYear, fy).slice(0, 3)
+  const mon = d => d.toLocaleDateString('en-US', { month: 'short' })
+  const osd = v.deduction === 'osd'
+  const hasFigures = Number(v.qGrossSales) > 0
+  const q = useMemo(() => (hasFigures ? estimateCorporateQuarter({
+    quarter,
+    grossSales: v.qGrossSales, costOfSales: v.qCostOfSales, opex: v.qOpex,
+    paidEarlierQuarters: quarter > 1 ? v.qPaidEarlier : 0, cwt: v.qCwt,
+    deduction: v.deduction, totalAssets: v.totalAssets ?? 0, registrationYear: p.registrationYear,
+    taxYear, fiscalYearEndMonth: fy, priorYearCredits: v.priorYearCredits, excessMcit,
+  }) : null), [hasFigures, quarter, v, p.registrationYear, taxYear, fy, excessMcit])
+  return (
+    <div className="card pad" style={{ marginTop: '20px' }}>
+      <h3 className="sec-h">Quarterly return (1702Q)</h3>
+      <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px', lineHeight: 1.5 }}>
+        Enter figures from the start of the taxable year to the end of the quarter, as the 1702Q asks. The regular tax and
+        the MCIT are compared on those totals, and what you paid in earlier quarters is subtracted. The deduction method,
+        total assets, last year's excess credits and excess MCIT come from the boxes above.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '14px' }}>
+        <SelectField
+          label="Quarter"
+          value={String(quarter)}
+          onChange={x => set('qQuarter', Number(x))}
+          options={quarters.map(x => [String(x.q), `Q${x.q}: ${mon(x.start)} to ${mon(x.end)} ${x.end.getFullYear()}`])}
+        />
+        <NumField emptyValue={null} label="Gross sales / revenue · year to date" value={v.qGrossSales} onChange={x => set('qGrossSales', x)} prefix="₱" />
+        <NumField emptyValue={null} label="Cost of sales · year to date" value={v.qCostOfSales} onChange={x => set('qCostOfSales', x)} prefix="₱" />
+        {!osd && <NumField emptyValue={null} label="Operating expenses · year to date" value={v.qOpex} onChange={x => set('qOpex', x)} prefix="₱" />}
+        {quarter > 1 && <NumField emptyValue={null} label="Income tax paid on earlier 1702Q this year" value={v.qPaidEarlier} onChange={x => set('qPaidEarlier', x)} prefix="₱" />}
+        <NumField emptyValue={null} label="Tax withheld by customers (2307s) · year to date" value={v.qCwt} onChange={x => set('qCwt', x)} prefix="₱" />
+      </div>
+      {!q ? (
+        <p className="cite" style={{ marginTop: '14px' }}>Enter the gross sales from the start of the year to see this quarter's 1702Q.</p>
+      ) : !q.supported ? (
+        <div className="mini-warn" role="note">{q.message}</div>
+      ) : (
+        <>
+          <p style={{ marginTop: '14px', fontSize: '13px', color: 'var(--mut)' }}>
+            <b style={{ color: 'var(--ink)' }}>{q.quarterLabel}.</b> 1702Q due {fmtISO(q.dueDate)}.
+          </p>
+          <Rows rows={q.rows} />
+        </>
+      )}
+    </div>
   )
 }
 
