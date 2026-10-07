@@ -23,6 +23,8 @@ export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', '
 const pesoText = c => '₱' + groupThousands(Math.round(c / 100))
 // H05 (owner decision 4): VAT is never computed; every VAT-case total says so.
 export const VAT_NOTE = 'Income tax and percentage tax only; VAT not included.'
+// M01 (owner decision 1): the rulebook holds the current rates only.
+export const RATES_NOTE = 'Earlier years used different rates (the 2018-2022 graduated table, and a 1% percentage tax from July 2020 to June 2023) and are not supported here.'
 export const VAT_ROW_NOTE = 'Not included in this estimate. VAT (12% of sales less creditable input VAT) is filed quarterly on Form 2550Q.'
 
 export function gradTax(taxable) {
@@ -322,6 +324,8 @@ export function estimateIndividual(in_) {
   const annualReturn = annualReturnFor(best)
   return {
     taxYear,
+    ratesLabel: `Rates for taxable year ${taxYear}`,
+    ratesNote: RATES_NOTE,
     vat,
     vatRegistered,
     overThreshold,

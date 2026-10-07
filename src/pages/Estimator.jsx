@@ -155,7 +155,11 @@ function IndividualEstimator({ app, mixed }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '14px', marginTop: '16px' }}>
+      <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
+        <b style={{ color: 'var(--ink)' }}>{r.ratesLabel}.</b> {r.ratesNote}
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '14px', marginTop: '12px' }}>
         {r.options.map(c => {
           const isBest = c.eligible && c === r.best
           return (
