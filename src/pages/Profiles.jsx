@@ -18,6 +18,99 @@ function downloadJson(name, obj) {
 
 const TEXT = { fontSize: '13.5px', color: 'var(--ink)', lineHeight: 1.6 }
 
+// M27: local mode keeps client names and income as plain text in this browser.
+export const SHARED_COMPUTER_WARNING = "Anyone who uses this browser can see these profiles. Don't use this on a shared computer."
+
+// Developer setup text: compiled out of production builds.
+const DEV_NOTE = import.meta.env.DEV
+  ? 'Developer note: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (see .env.example) to turn on accounts.'
+  : null
+
+export function LocalModeNote({ dev = import.meta.env.DEV }) {
+  return (
+    <div className="mini-warn" role="note" style={{ marginTop: '18px' }}>
+      <p style={{ fontWeight: 700 }}>{SHARED_COMPUTER_WARNING}</p>
+      <p style={{ marginTop: '4px' }}>
+        Profiles are saved in this browser only. They are not sent to us and do not sync to your other devices.
+        On a borrowed computer, use "Erase all data on this device" below when you are done.
+      </p>
+      {dev && DEV_NOTE && <p style={{ marginTop: '6px', fontSize: '12px' }}>{DEV_NOTE}</p>}
+    </div>
+  )
+}
+
+// M27: after signing in to an account, profiles saved earlier in this
+// browser's local mode are offered for import, or can be erased.
+export function LocalLeftovers() {
+  const app = useApp()
+  const [confirmErase, setConfirmErase] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
+  const n = app.leftovers ? app.leftovers.length : 0
+  if (!app.hasCloud || !app.signedIn || (!n && !msg)) return null
+  const count = k => (k === 1 ? '1 profile' : `${k} profiles`)
+
+  async function doImport() {
+    setBusy(true); setMsg(null)
+    try {
+      const r = await app.importLeftovers()
+      setMsg(r.failed
+        ? { ok: false, text: `Imported ${count(r.imported)}. ${count(r.failed)} could not be imported and ${r.failed === 1 ? 'is' : 'are'} still in this browser; please try again later.` }
+        : { ok: true, text: `Imported ${count(r.imported)} into your account and removed the copy from this browser.` })
+    } catch (e) {
+      setMsg({ ok: false, text: 'The import did not finish. Your profiles are still in this browser; please try again.' })
+    }
+    setBusy(false)
+  }
+
+  function doErase() {
+    try {
+      app.eraseLeftovers()
+      setConfirmErase(false)
+      setMsg({ ok: true, text: `Erased ${count(n)} from this browser.` })
+    } catch (e) {
+      setMsg({ ok: false, text: e.message })
+    }
+  }
+
+  return (
+    <div className="wrap" style={{ marginTop: '18px' }}>
+      <section className="card pad" aria-labelledby="leftovers-h" style={{ borderColor: '#e7d3a8' }}>
+        <p id="leftovers-h" className="sec-h">Profiles found in this browser</p>
+        {n > 0 && (
+          <>
+            <p style={{ ...TEXT, marginTop: '6px' }}>
+              This browser still holds {count(n)} saved before you signed in
+              ({app.leftovers.map(p => p.name || 'Unnamed').join(', ')}). Import them into your account, or erase them
+              so the next person who uses this browser cannot see them.
+            </p>
+            {!confirmErase ? (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+                <button className="btn sm" type="button" disabled={busy} onClick={doImport}>{busy ? 'Importing…' : 'Import them into your account'}</button>
+                <button className="btn sm ghost" type="button" disabled={busy} onClick={() => setConfirmErase(true)}>Erase them</button>
+              </div>
+            ) : (
+              <div role="group" aria-labelledby="leftovers-erase-q" className="mini-warn">
+                <p id="leftovers-erase-q" style={{ fontWeight: 600 }}>Erase {count(n)} from this browser? This cannot be undone.</p>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                  <button className="btn sm danger" type="button" autoFocus onClick={doErase}>Erase them</button>
+                  <button className="btn sm ghost" type="button" onClick={() => setConfirmErase(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        <div role="status" aria-live="polite">
+          {msg && <div className={msg.ok ? 'form-ok' : 'form-err'}>{msg.text}</div>}
+        </div>
+        {n === 0 && msg && (
+          <button className="linkbtn" type="button" style={{ marginTop: '10px' }} onClick={() => setMsg(null)}>Dismiss</button>
+        )}
+      </section>
+    </div>
+  )
+}
+
 // M25: Download my data, Erase all data on this device (local mode),
 // Delete my account (accounts mode). Data Privacy Act rights to access,
 // portability and erasure.
@@ -137,6 +230,8 @@ export default function ProfilesPage() {
         <button className="btn" onClick={() => nav('/profiles/new')}>+ New profile</button>
       </div>
 
+      {!app.hasCloud && <LocalModeNote />}
+
       {app.loadError && (
         <div className="form-err" role="alert" style={{ marginTop: '18px' }}>
           Couldn’t load your saved profiles. This is a loading problem, not lost data.{' '}
@@ -181,12 +276,6 @@ export default function ProfilesPage() {
       </div>
 
       <YourData app={app} />
-
-      {!app.hasCloud && (
-        <p className="cite" style={{ marginTop: '14px' }}>
-          Running in local mode: profiles are saved in this browser only. Connect a Supabase project (see .env.example) to enable accounts that sync across devices.
-        </p>
-      )}
     </div>
   )
 }

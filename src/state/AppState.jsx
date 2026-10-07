@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
   hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
+  localLeftovers, importLocalProfiles, eraseLocalLeftovers,
 } from '../lib/backend.js'
 
 const Ctx = createContext(null)
@@ -24,6 +25,8 @@ export function AppStateProvider({ children }) {
   const [loadError, setLoadError] = useState(null)
   // A one-off message for the sign-in screen (e.g. after deleting the account).
   const [notice, setNotice] = useState(null)
+  // M27: profiles this browser saved in local mode, found after signing in.
+  const [leftovers, setLeftovers] = useState([])
   const [activeId, setActiveId] = useState(() => {
     try { return localStorage.getItem(ACTIVE_KEY) || null } catch { return null }
   })
@@ -68,6 +71,8 @@ export function AppStateProvider({ children }) {
   }, [userId])
 
   useEffect(() => { if (authReady) refreshProfiles() }, [authReady, refreshProfiles])
+
+  useEffect(() => { setLeftovers(hasCloud && userId ? localLeftovers() : []) }, [userId])
 
   const active = useMemo(
     () => profiles.find(p => p.id === activeId) || profiles[0] || null,
@@ -118,6 +123,18 @@ export function AppStateProvider({ children }) {
       setActiveId(null)
       await refreshProfiles()
     },
+    // M27: leftover local-mode profiles, offered for import after sign-in.
+    leftovers,
+    async importLeftovers() {
+      const r = await importLocalProfiles(userId)
+      setLeftovers(localLeftovers())
+      await refreshProfiles()
+      return r
+    },
+    eraseLeftovers() {
+      eraseLocalLeftovers()
+      setLeftovers([])
+    },
     // M25 "Delete my account" (accounts mode): the server deletes the login
     // and its profiles; this device is signed out.
     async deleteAccount() {
@@ -126,7 +143,7 @@ export function AppStateProvider({ children }) {
       setNotice('Your account and every profile saved in it were deleted.')
       setSession(null)
     },
-  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice])
+  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

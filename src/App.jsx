@@ -10,7 +10,7 @@ import BlogPage from './pages/Blog.jsx'
 import References from './pages/References.jsx'
 import AuthPage from './pages/Auth.jsx'
 import ProfileWizard from './pages/ProfileWizard.jsx'
-import ProfilesPage from './pages/Profiles.jsx'
+import ProfilesPage, { LocalLeftovers, SHARED_COMPUTER_WARNING } from './pages/Profiles.jsx'
 import Privacy from './pages/Privacy.jsx'
 import meta from './data/rules/meta.json'
 import { statuteListText } from './data/statutes.js'
@@ -65,8 +65,8 @@ function ProfileMenu() {
             </>
           )}
           {!app.hasCloud && (
-            <div style={{ padding: '8px 12px 4px', fontSize: '11.5px', color: 'var(--dim)', lineHeight: 1.5 }}>
-              Local mode: profiles are saved in this browser only.
+            <div style={{ margin: '8px 4px 2px', padding: '8px 10px', fontSize: '12px', color: '#6b4a12', background: 'var(--warnSoft)', borderRadius: '8px', lineHeight: 1.5 }}>
+              Saved in this browser only. {SHARED_COMPUTER_WARNING}
             </div>
           )}
         </div>
@@ -131,6 +131,7 @@ export default function App() {
       </header>
 
       <main style={{ flex: 1 }}>
+        <LocalLeftovers />
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/estimator" element={<Estimator />} />

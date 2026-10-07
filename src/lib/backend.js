@@ -147,6 +147,42 @@ export function createBackend({ client = null, storage } = {}) {
     }
   }
 
+  // M27: profiles a browser saved in local mode stay in its storage when the
+  // site switches to accounts mode. In accounts mode they are "leftovers" the
+  // user may import into the account or erase; in local mode they are simply
+  // the live profiles, so there are none.
+  function localLeftovers() {
+    if (!cloud) return []
+    const list = localLoad()
+    return Array.isArray(list) ? list.filter(p => p && typeof p === 'object') : []
+  }
+
+  // Saves each leftover as a new profile of this user. Profiles that could not
+  // be saved stay in this browser, so nothing is lost.
+  async function importLocalProfiles(userId) {
+    const left = []
+    let imported = 0
+    for (const p of localLeftovers()) {
+      try {
+        await saveProfile(userId, { ...p, id: null })
+        imported++
+      } catch {
+        left.push(p)
+      }
+    }
+    if (left.length) localSave(left)
+    else eraseLocalLeftovers()
+    return { imported, failed: left.length }
+  }
+
+  // "Erase them": removes only the leftover profile list, not the sign-in
+  // session or the account's selected profile.
+  function eraseLocalLeftovers() {
+    try { store().removeItem(LS_KEY) } catch {
+      throw new Error("This browser blocked the erase. Clear this site's data in your browser settings instead.")
+    }
+  }
+
   // M25 "Delete my account": the database function delete_own_account()
   // (supabase/migrations/0002) deletes the signed-in login; its profiles go
   // with it (ON DELETE CASCADE). Then the session is dropped on this device.
@@ -158,7 +194,10 @@ export function createBackend({ client = null, storage } = {}) {
     try { eraseLocalData() } catch { /* nothing left that matters */ }
   }
 
-  return { hasCloud: cloud, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount }
+  return {
+    hasCloud: cloud, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
+    localLeftovers, importLocalProfiles, eraseLocalLeftovers,
+  }
 }
 
 const app = createBackend({ client: supabase })
@@ -169,3 +208,6 @@ export const deleteProfile = (...a) => app.deleteProfile(...a)
 export const exportData = (...a) => app.exportData(...a)
 export const eraseLocalData = (...a) => app.eraseLocalData(...a)
 export const deleteOwnAccount = (...a) => app.deleteOwnAccount(...a)
+export const localLeftovers = (...a) => app.localLeftovers(...a)
+export const importLocalProfiles = (...a) => app.importLocalProfiles(...a)
+export const eraseLocalLeftovers = (...a) => app.eraseLocalLeftovers(...a)
