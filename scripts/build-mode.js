@@ -13,3 +13,11 @@ export function accountsEnabled({ command, env = {}, optIn } = {}) {
   if (command !== 'build') return keys
   return keys && optIn === '1'
 }
+
+// L18: what the Content-Security-Policy must let the app connect to in an
+// accounts build: the Supabase project over HTTPS and its realtime socket.
+export function supabaseConnectSources(url) {
+  if (!url) return []
+  const u = new URL(url)
+  return [u.origin, `${u.protocol === 'http:' ? 'ws:' : 'wss:'}//${u.host}`]
+}

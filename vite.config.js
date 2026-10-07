@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { standaloneHtml } from './scripts/standalone-plugin.js'
-import { accountsEnabled, ACCOUNTS_OPT_IN } from './scripts/build-mode.js'
+import { accountsEnabled, ACCOUNTS_OPT_IN, supabaseConnectSources } from './scripts/build-mode.js'
 
 export default defineConfig(({ command, mode }) => {
   // M29: accounts mode is off in a build unless JEZ_ENABLE_ACCOUNTS=1 is set
@@ -34,7 +34,12 @@ export default defineConfig(({ command, mode }) => {
         },
     server: { open: '/app.html' },
     preview: { open: '/index.html' },
-    plugins: [react(), standaloneHtml({ writeRootIndex: !accounts })],
+    // L18: the built pages carry a Content-Security-Policy; an accounts build
+    // also lets the app talk to its Supabase project.
+    plugins: [react(), standaloneHtml({
+      writeRootIndex: !accounts,
+      connect: accounts ? supabaseConnectSources(env.VITE_SUPABASE_URL) : [],
+    })],
     test: {
       environment: 'node',
       include: ['tests/**/*.test.js'],

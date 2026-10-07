@@ -98,6 +98,16 @@ Choose one:
    account**, including a `jezb-netrunner.github.io` user site, for as long as
    the app is served from `jezb-netrunner.github.io`.
 
+**Content-Security-Policy.** `npm run build` adds a CSP `<meta>` tag to
+`dist/index.html`, `dist/standalone.html` and `index.html`
+([`scripts/standalone-plugin.js`](scripts/standalone-plugin.js)): only the
+app's own code runs (inline blocks by SHA-256 hash), styles and fonts may come
+from Google Fonts while `app.html` loads them, and connections go nowhere
+except, in an accounts build, the Supabase project. `npm run dev` has no CSP
+because Vite injects its own inline scripts there. A `<meta>` tag cannot set
+`frame-ancestors`; if the host can send HTTP headers, also send
+`Content-Security-Policy: frame-ancestors 'none'` (GitHub Pages cannot).
+
 After a move, profiles saved in local mode stay behind on the old address and
 the new address starts empty, so tell users to keep a copy with "Download my
 data" (Profiles page) before the switch. In accounts mode, also change the
