@@ -234,7 +234,8 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '14px', marginTop: '12px' }}>
             {r.options.map(c => {
-              const isBest = c.eligible && c === r.best
+              // Every option in a tie for the lowest tax is marked (L01).
+              const isBest = c.eligible && (c === r.best || Boolean(r.tie && r.tie.includes(c.key)))
               return (
                 <div key={c.key} style={{
                   borderRadius: '13px', padding: '18px',
@@ -244,7 +245,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                     <span style={{ fontWeight: 700, fontSize: '14.5px' }}>{c.name}</span>
-                    {isBest && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: 'var(--good)', color: '#fff' }}>Lowest</span>}
+                    {isBest && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: 'var(--good)', color: '#fff' }}>{r.tie ? 'Tied lowest' : 'Lowest'}</span>}
                     {!c.eligible && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: '#eef3f8', color: 'var(--mut)' }}>N/A</span>}
                   </div>
                   <div className="mono" style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-.01em', marginTop: '10px', color: isBest ? 'var(--accInk)' : 'var(--ink)' }}>{c.eligible ? money(c.total) : '—'}</div>
@@ -276,8 +277,9 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
           <div style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px', display: 'flex', alignItems: 'center', gap: '13px' }}>
             <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--good)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>✓</span>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
-              {r.best.name} is the cheapest eligible option at {money(r.best.total)}
-              {r.savingsVsNext > 0 ? `, saving ${money(r.savingsVsNext)} versus the next best.` : '.'}
+              {r.tie
+                ? r.tieNote
+                : <>{r.best.name} is the cheapest eligible option at {money(r.best.total)}{r.savingsVsNext > 0 ? `, saving ${money(r.savingsVsNext)} versus the next best.` : '.'}</>}
               {r.vatNotIncluded && <>{' '}{r.vatNote}</>}
               {' '}{regimeNote}
             </span>

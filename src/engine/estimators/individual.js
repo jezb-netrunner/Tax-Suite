@@ -277,6 +277,21 @@ export function estimateIndividual(in_) {
   // Option totals are whole pesos, so these differences are exact.
   const diff = (a, b) => P(toCentavos(a) - toCentavos(b))
 
+  // L01: options that cost the same as the cheapest (whole pesos) tie. The
+  // first in list order stays `best` for the breakdown; the tie is explained
+  // by the non-tax differences instead of a "saving ₱0".
+  const tied = eligibleOptions.filter(o => toCentavos(o.total) === toCentavos(best.total))
+  const tie = tied.length > 1 ? tied.map(o => o.key) : null
+  let tieNote = null
+  if (tie) {
+    const names = tied.map(o => o.name)
+    const list = names.length === 2 ? names.join(' and ') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+    const why = []
+    if (tie.includes('8pct')) why.push('With 8% you file no quarterly percentage tax returns (2551Q).')
+    if (tie.includes('osd') && tie.includes('itemized')) why.push('OSD needs no proof of expenses; itemized deductions must be backed by receipts and books.')
+    tieNote = `${list} tie for the lowest tax at ${pesoText(toCentavos(best.total))}. ${why.join(' ')}`
+  }
+
   // What goes on the annual income tax return (1701 / 1701A) for an option:
   // income tax due less income-tax credits. Percentage tax is reported
   // alongside for information only; it is paid on the quarterly 2551Q.
@@ -397,6 +412,8 @@ export function estimateIndividual(in_) {
     options,
     best,
     savingsVsNext: runnersUp.length ? diff(runnersUp[0], best.total) : null,
+    tie,
+    tieNote,
     rows: rowsFor(best),
     rowsFor,
     annualReturn,
