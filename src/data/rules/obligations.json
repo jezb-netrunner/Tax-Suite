@@ -971,9 +971,9 @@
     },
     {
       "id": "pagibig-self",
-      "title": "Pay Pag-IBIG savings (self-employed)",
-      "desc": "Self-employed members remit their own monthly Pag-IBIG savings.",
-      "form": "Pag-IBIG MP2/RTPO",
+      "title": "Pay Pag-IBIG regular savings (self-employed)",
+      "desc": "Self-employed members remit their own regular monthly Pag-IBIG savings.",
+      "form": "Pag-IBIG savings",
       "agency": "Pag-IBIG",
       "category": "payroll",
       "appliesTo": {
@@ -991,7 +991,7 @@
         "RA 9679"
       ],
       "confidence": "needs_review",
-      "notes": ""
+      "notes": "This is the regular monthly Pag-IBIG savings, not MP2 (Pag-IBIG's separate voluntary savings program). The name of the payment channel is not yet confirmed: check with Pag-IBIG."
     },
     {
       "id": "dole-13th-month",
