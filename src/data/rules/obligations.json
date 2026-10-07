@@ -1432,10 +1432,11 @@
         "kind": "ongoing"
       },
       "legalBasis": [
-        "NIRC Sec 236, as amended by RA 11976 (EOPT)"
+        "NIRC Sec 236, as amended by RA 11976 (EOPT)",
+        "RMC 91-2024"
       ],
       "confidence": "verified",
-      "notes": "Under EOPT, transfers and updates can be filed at any RDO; no more transfer-first requirement."
+      "notes": "Under EOPT, transfers and updates can be filed at any RDO, with no transfer-first requirement (RA 11976; RMC 91-2024)."
     },
     {
       "id": "bir-fbt-note",
