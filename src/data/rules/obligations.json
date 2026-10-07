@@ -1348,7 +1348,7 @@
     {
       "id": "bir-micro-abatement-2026",
       "title": "One-time penalty abatement for micro taxpayers: avail by Dec 31, 2026",
-      "desc": "Micro taxpayers (gross sales ≤ ₱3M) can wipe out delinquencies, assessments, and open stop-filer cases as of Dec 31, 2025 (where basic tax and/or penalties are ≤ ₱80,000 per taxable year) for a one-time ₱5,000 abatement fee.",
+      "desc": "Micro taxpayers (gross sales below ₱3M) can wipe out delinquencies, assessments, and open stop-filer cases as of Dec 31, 2025 (where the basic tax and/or penalties are ₱80,000 or less per taxable year) for a one-time ₱5,000 abatement fee.",
       "form": "per RR 4-2026",
       "agency": "BIR",
       "category": "admin",
@@ -1360,11 +1360,12 @@
       "schedule": {
         "kind": "info"
       },
+      "showUntil": "2026-12-31",
       "legalBasis": [
-        "RR 4-2026 (published July 22, 2026)"
+        "RR 4-2026 (issued June 18, 2026; effective July 7, 2026, per firm alerts)"
       ],
-      "confidence": "verified",
-      "notes": "Time-boxed: availment runs until December 31, 2026 (extendable by the DOF Secretary). If you have old open 2550Q/2551Q cases or small assessments, ask your CPA whether this clears them before the window closes."
+      "confidence": "needs_review",
+      "notes": "Time-boxed: availment runs until December 31, 2026 (extendable by the DOF Secretary); this item is hidden from January 1, 2027. If you have old open 2550Q/2551Q cases or small assessments, ask your CPA whether this clears them before the window closes. The issuance and effectivity dates come from firm alerts (Grant Thornton, KPMG), not from the BIR text itself, and whether the ₱5,000 fee is per taxable year is reported inconsistently."
     },
     {
       "id": "dti-bn-renewal",

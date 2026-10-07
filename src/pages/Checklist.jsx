@@ -14,9 +14,9 @@ export default function Checklist() {
   const nav = useNavigate()
   const p = app.active
 
-  const items = useMemo(() => (p ? generateChecklist(OBLIGATIONS, p) : []), [p])
   // Ticks are saved on the profile (M09); `pv` shows a click before the save ends.
   const today = useManilaToday()
+  const items = useMemo(() => (p ? generateChecklist(OBLIGATIONS, p, { today }) : []), [p, today])
   const { profile: pv, update, error } = useProfileMarks(app)
 
   if (!app.profilesReady) return null

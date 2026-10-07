@@ -23,7 +23,7 @@
 //   ongoing            — no dates; surfaces on the compliance checklist
 //   info               — no dates; informational only
 
-import { iso, fromISO, mkDate, lastDayOfMonth, addDays, shiftToBusinessDay, taxableYearQuarters, isWeekend, previousBusinessDay, nonWorkingReason } from './dates.js'
+import { iso, fromISO, mkDate, lastDayOfMonth, addDays, shiftToBusinessDay, taxableYearQuarters, isWeekend, previousBusinessDay, nonWorkingReason, manilaToday } from './dates.js'
 import { profileFlags, obligationApplies } from './profile.js'
 import holidayRules from '../data/rules/holidays.json'
 
@@ -297,11 +297,15 @@ export function holidayGapNote(years) {
   return `${names} holidays not yet proclaimed: a deadline may move one or more days later.`
 }
 
-// Checklist = the ongoing/info obligations for this profile.
-export function generateChecklist(obligations, profile) {
+// Checklist = the ongoing/info obligations for this profile. An item with
+// showUntil ('YYYY-MM-DD', e.g. a time-boxed program) is listed through that
+// date and dropped after it. `today` defaults to today's date in Manila.
+export function generateChecklist(obligations, profile, { today = manilaToday() } = {}) {
   const flags = profileFlags(profile)
+  const todayISO = iso(today)
   return obligations.filter(ob =>
     (ob.schedule.kind === 'ongoing' || ob.schedule.kind === 'info') &&
-    obligationApplies(ob.appliesTo, flags)
+    obligationApplies(ob.appliesTo, flags) &&
+    !(ob.showUntil && todayISO > ob.showUntil)
   )
 }
