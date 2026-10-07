@@ -1,12 +1,16 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { PROFILE_TYPES, defaultProfile } from '../engine/profile.js'
+import { PROFILE_TYPES, defaultProfile, changeProfileType } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
 import { manilaToday } from '../engine/dates.js'
 import { registrationYearOptions, registrationYearChoice } from '../engine/estimators/corporation.js'
 import { regimeCardText, booksCardText } from '../engine/wizardText.js'
 import { OBLIGATIONS } from '../lib/deadlineData.js'
+
+// C08: asked before the type of a saved profile changes.
+export const TYPE_CHANGE_CONFIRM =
+  'Changing the taxpayer type resets the registration answers. Answers both types share, saved figures and filed marks are kept. Continue?'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -45,15 +49,15 @@ function WizardForm({ app, editing }) {
     }))
   }
 
-  // Switching type resets the type-specific facets (an employee has no VAT
-  // registration), but must carry the identity across — dropping the id would
-  // save a duplicate instead of updating the profile being edited.
+  // C08: tapping the selected type changes nothing. Another type resets the
+  // answers that do not apply to it (an employee has no VAT registration) but
+  // keeps the identity (dropping the id would save a duplicate), the answers
+  // both types share, the figures and the filed marks. On a saved profile the
+  // user confirms first.
   function pickType(type) {
-    const fresh = defaultProfile(type)
-    fresh.id = p.id
-    fresh.name = p.name
-    fresh.inputs = p.inputs || {}
-    setP(fresh)
+    if (type === p.type) return
+    if (editing && !window.confirm(TYPE_CHANGE_CONFIRM)) return
+    setP(prev => changeProfileType(prev, type))
   }
 
   const isBiz = p.type === 'individual' || p.type === 'mixed'

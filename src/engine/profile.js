@@ -60,6 +60,52 @@ export function defaultProfile(type = 'individual') {
   return base
 }
 
+// C08: the registration answers the profile wizard asks for each type.
+const BUSINESS_QUESTIONS = [
+  'vatRegistered', 'regime', 'receives2307', 'hasEmployees', 'withholdsEwt', 'withholdsFwt',
+  'booksType', 'hasBusinessEstablishment', 'dtiRegistered', 'licensedProfessional', 'usesCrmPos', 'sellsGoods',
+]
+export const TYPE_QUESTIONS = {
+  employee: ['multipleEmployers', 'licensedProfessional'],
+  individual: BUSINESS_QUESTIONS,
+  mixed: BUSINESS_QUESTIONS,
+  corporation: [
+    'vatRegistered', 'fiscalYearEndMonth', 'registrationYear', 'receives2307', 'hasEmployees', 'withholdsEwt',
+    'withholdsFwt', 'booksType', 'hasBusinessEstablishment', 'usesCrmPos', 'sellsGoods',
+  ],
+}
+
+// C08: the answers asked for both types, in the order the wizard asks them
+// for the new type.
+export function sharedAnswers(fromType, toType) {
+  const from = TYPE_QUESTIONS[fromType] || []
+  return (TYPE_QUESTIONS[toType] || []).filter(k => from.includes(k))
+}
+
+// C08: the profile after the user picks a taxpayer type in the wizard.
+// The type it already has: the same profile, unchanged (re-tapping the
+// selected card used to reset every answer). Another type: that type's
+// defaults, keeping the identity (id, name), the estimator figures, filed
+// marks, checklist ticks and anything else saved, and the answers both types
+// share. A VAT-registered individual cannot use the 8% option, so the regime
+// moves to graduated + OSD as the VAT switch does.
+export function changeProfileType(profile, type) {
+  if (!PROFILE_TYPES[type] || profile.type === type) return profile
+  const next = { ...profile }
+  for (const [k, v] of Object.entries(defaultProfile(type))) {
+    if (k !== 'id' && k !== 'name' && k !== 'inputs') next[k] = v
+  }
+  for (const k of sharedAnswers(profile.type, type)) {
+    if (k in profile) next[k] = profile[k]
+  }
+  next.type = type
+  next.inputs = profile.inputs || {}
+  if ((type === 'individual' || type === 'mixed') && next.vatRegistered && next.regime === '8pct') {
+    next.regime = 'graduated_osd'
+  }
+  return next
+}
+
 // C07: a copy of the profile with the estimator figures of one tab (key:
 // 'individual', 'mixed', 'employee', 'corporation' or 'payroll') replaced and
 // every other part kept. Applied to the newest stored profile when saving, so
