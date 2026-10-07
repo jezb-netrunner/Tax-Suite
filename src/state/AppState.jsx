@@ -6,7 +6,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
   hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
-  localLeftovers, importLocalProfiles, eraseLocalLeftovers,
+  localLeftovers, importLocalProfiles, eraseLocalLeftovers, openedFromRecoveryLink, emailLinkError,
 } from '../lib/backend.js'
 
 const Ctx = createContext(null)
@@ -27,6 +27,9 @@ export function AppStateProvider({ children }) {
   const [notice, setNotice] = useState(null)
   // M27: profiles this browser saved in local mode, found after signing in.
   const [leftovers, setLeftovers] = useState([])
+  // M28: true while the user, back from a "reset your password" email link,
+  // still has to choose a new password.
+  const [recovery, setRecovery] = useState(openedFromRecoveryLink)
   const [activeId, setActiveId] = useState(() => {
     try { return localStorage.getItem(ACTIVE_KEY) || null } catch { return null }
   })
@@ -37,7 +40,11 @@ export function AppStateProvider({ children }) {
       setSession(data.session)
       setAuthReady(true)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s)
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
+      if (event === 'SIGNED_OUT') setRecovery(false)
+    })
     return () => sub.subscription.unsubscribe()
   }, [])
 
@@ -111,6 +118,9 @@ export function AppStateProvider({ children }) {
       if (hasCloud) await supabase.auth.signOut()
     },
     userEmail: session?.user?.email || null,
+    recovery: recovery && Boolean(session),
+    endRecovery() { setRecovery(false) },
+    linkError: emailLinkError,
     notice,
     clearNotice() { setNotice(null) },
     // M25 "Download my data": every profile and saved figure as one object.
@@ -143,7 +153,7 @@ export function AppStateProvider({ children }) {
       setNotice('Your account and every profile saved in it were deleted.')
       setSession(null)
     },
-  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers])
+  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers, recovery])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

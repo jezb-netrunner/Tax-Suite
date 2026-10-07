@@ -14,12 +14,20 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { iso, manilaToday } from '../engine/dates.js'
+import { isRecoveryLink, authLinkError } from './auth.js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const hasCloud = Boolean(url && anonKey)
 export const supabase = hasCloud ? createClient(url, anonKey) : null
+
+// M28: read once, as the app loads, whether it was opened from a "reset your
+// password" email link, or from an email link that failed. Supabase removes
+// the link's tokens from the address bar soon after.
+const startHref = hasCloud && typeof window !== 'undefined' ? window.location.href : ''
+export const openedFromRecoveryLink = Boolean(startHref) && isRecoveryLink(startHref)
+export const emailLinkError = startHref ? authLinkError(startHref) : null
 
 // Every key this app writes to browser storage starts with this prefix.
 export const LOCAL_PREFIX = 'pv.'

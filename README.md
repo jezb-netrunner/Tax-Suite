@@ -122,6 +122,39 @@ Users can download all their data as JSON and erase it ("Erase all data on
 this device" in local mode, "Delete my account" in accounts mode) from the
 Profiles page.
 
+### Supabase Auth settings checklist (before switching accounts mode on)
+
+These settings live only in the Supabase dashboard (Authentication section),
+so check each one by hand and again after any change. The app's sign-in
+screens show only generic messages, and "Forgot password?" answers the same
+way for every email; the settings below keep the server side consistent.
+
+- [ ] **Email confirmation ON** ("Confirm email"). With it on, signing up with
+      an email that already has an account looks the same as a new sign-up, so
+      the app cannot be used to find out who uses it.
+- [ ] **Minimum password length 8 or more** (the app asks for at least 8; keep
+      `MIN_PASSWORD_LENGTH` in [`src/lib/auth.js`](src/lib/auth.js) in step if
+      you raise it). Requiring letters and digits is a good addition.
+- [ ] **Leaked-password protection ON** (rejects passwords found in known data
+      leaks).
+- [ ] **Rate limits** kept at or below Supabase's defaults for sign-ups,
+      sign-ins, password-reset emails and token checks. **CAPTCHA** (hCaptcha or
+      Cloudflare Turnstile) needs app support that is not built yet (a captcha
+      token on sign-up, sign-in and reset); add that before turning it on.
+- [ ] **Site URL** set to the app's real address (see [Hosting](#hosting)),
+      for example `https://tax.example.ph/`.
+- [ ] **Redirect URLs allow-list limited to the real domain**: only the exact
+      app addresses, for example `https://tax.example.ph/` and
+      `https://tax.example.ph/index.html`. No wildcards for other hosts and no
+      `localhost` entries in production. Password-reset and confirmation emails
+      link back to the page the user was on, so that page must be listed.
+- [ ] **Session time-out**: set an inactivity time-out and a maximum session
+      length (for example 12 hours and 7 days), so a forgotten sign-in on a
+      shared computer ends by itself.
+- [ ] **Custom SMTP** for account emails (Supabase's built-in sender is for
+      testing and has a very low hourly limit).
+- [ ] Migrations `0001` and `0002` applied, in order.
+
 ## Privacy
 
 The app shows a **Privacy Notice** (Data Privacy Act of 2012, RA 10173) at

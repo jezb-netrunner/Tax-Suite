@@ -8,7 +8,7 @@ import FormsPage from './pages/Forms.jsx'
 import ToolsPage from './pages/Tools.jsx'
 import BlogPage from './pages/Blog.jsx'
 import References from './pages/References.jsx'
-import AuthPage from './pages/Auth.jsx'
+import AuthPage, { SetNewPassword, ChangePassword } from './pages/Auth.jsx'
 import ProfileWizard from './pages/ProfileWizard.jsx'
 import ProfilesPage, { LocalLeftovers, SHARED_COMPUTER_WARNING } from './pages/Profiles.jsx'
 import Privacy from './pages/Privacy.jsx'
@@ -61,6 +61,7 @@ function ProfileMenu() {
           {app.hasCloud && (
             <>
               <div className="menu-sep" />
+              <button className="menu-item" role="menuitem" onClick={() => { setOpen(false); nav('/account/password') }}>Change password</button>
               <button className="menu-item" role="menuitem" onClick={async () => { setOpen(false); await app.signOut() }}>Sign out</button>
             </>
           )}
@@ -84,7 +85,7 @@ export default function App() {
   if (!app.authReady) return null
 
   const needsAuth = app.hasCloud && !app.signedIn
-  if (needsAuth) {
+  if (needsAuth || app.recovery) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <header className="hdr">
@@ -94,10 +95,12 @@ export default function App() {
           </div>
         </header>
         <main style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="*" element={<AuthPage />} />
-          </Routes>
+          {app.recovery ? <SetNewPassword /> : (
+            <Routes>
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="*" element={<AuthPage />} />
+            </Routes>
+          )}
         </main>
       </div>
     )
@@ -142,6 +145,7 @@ export default function App() {
           <Route path="/blog/:postId" element={<BlogPage />} />
           <Route path="/references" element={<References />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/account/password" element={<ChangePassword />} />
           <Route path="/profiles" element={<ProfilesPage />} />
           <Route path="/profiles/new" element={<ProfileWizard />} />
           <Route path="/profiles/:profileId/edit" element={<ProfileWizard />} />
