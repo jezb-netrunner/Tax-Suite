@@ -4,7 +4,8 @@ import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS, HOLIDAY_SET } from '../lib/deadlineData.js'
 import { generateDeadlines } from '../engine/deadlines.js'
 import { profileFlags } from '../engine/profile.js'
-import { today, addDays, fmtDate, fmtMonthShort, lastDayOfMonth } from '../engine/dates.js'
+import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
+import { useManilaToday } from '../lib/useManilaToday.js'
 import { AgencyTag } from '../components/ui.jsx'
 import { PROFILE_TYPES } from '../engine/profile.js'
 
@@ -36,7 +37,8 @@ export default function Dashboard() {
   const [view, setView] = useState('feed')
   const p = app.active
 
-  const t = useMemo(() => today(), [])
+  // Today in Manila; refreshes at Manila midnight and when the tab comes back.
+  const t = useManilaToday()
   const deadlines = useMemo(() => {
     if (!p) return []
     return generateDeadlines(OBLIGATIONS, p, {
@@ -143,8 +145,14 @@ export default function Dashboard() {
                       <button className="btn-light" onClick={() => nav('/forms')}>Read the form guide →</button>
                     </div>
                     <div className="hero-side">
-                      <div className="hero-days" style={hero.daysAway <= 7 ? { color: '#f3cf9a' } : undefined}>{hero.daysAway}</div>
-                      <div style={{ fontSize: '12.5px', color: '#a9cde6', marginTop: '4px' }}>{hero.daysAway === 1 ? 'day left' : 'days left'}</div>
+                      {hero.daysAway === 0 ? (
+                        <div className="hero-days" style={{ color: '#f3cf9a', fontSize: '32px' }}>{daysLeftLabel(0)}</div>
+                      ) : (
+                        <>
+                          <div className="hero-days" style={hero.daysAway <= 7 ? { color: '#f3cf9a' } : undefined}>{hero.daysAway}</div>
+                          <div style={{ fontSize: '12.5px', color: '#a9cde6', marginTop: '4px' }}>{hero.daysAway === 1 ? 'day left' : 'days left'}</div>
+                        </>
+                      )}
                       <div style={{ marginTop: '18px', fontSize: '14px', fontWeight: 600 }}>{fmtDate(hero.date)}</div>
                       {hero.shifted && (
                         <div style={{ fontSize: '12px', color: '#9bbdd6', marginTop: '3px' }}>

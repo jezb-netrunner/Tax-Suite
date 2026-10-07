@@ -1,5 +1,14 @@
-// Pure date helpers. All dates are handled as local-midnight Date objects or
-// ISO 'YYYY-MM-DD' strings; no timezone math beyond the user's local clock.
+// Pure date helpers. Calendar dates are handled as local-midnight Date objects
+// or ISO 'YYYY-MM-DD' strings. Only the meaning of "today" involves a time
+// zone: BIR, SSS, PhilHealth and Pag-IBIG deadlines are Philippine calendar
+// dates, so "today" is always the calendar date in Asia/Manila, whatever the
+// device's own time zone.
+//
+//   manilaToday(now = new Date())       -> Date at local midnight of the Manila
+//                                          calendar date (same type as fromISO)
+//   today()                             -> manilaToday()
+//   msUntilManilaMidnight(now = new Date()) -> ms until the next Manila midnight
+//   daysLeftLabel(n)                    -> 'Due today' | '1 day left' | 'n days left'
 
 export function fromISO(s) {
   const [y, m, d] = s.split('-').map(Number)
@@ -11,9 +20,42 @@ export function iso(d) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
+const MANILA_PARTS = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric', month: 'numeric', day: 'numeric',
+  hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23',
+})
+
+function manilaParts(now) {
+  const out = {}
+  for (const p of MANILA_PARTS.formatToParts(now)) {
+    if (p.type !== 'literal') out[p.type] = Number(p.value)
+  }
+  return out
+}
+
+// The calendar date in Manila at the instant `now`, as a local-midnight Date.
+export function manilaToday(now = new Date()) {
+  const { year, month, day } = manilaParts(now)
+  return new Date(year, month - 1, day)
+}
+
 export function today() {
-  const n = new Date()
-  return new Date(n.getFullYear(), n.getMonth(), n.getDate())
+  return manilaToday()
+}
+
+// Milliseconds from `now` until the next midnight in Manila (UTC+8, no daylight
+// saving), for refreshing "today" on screens left open overnight.
+export function msUntilManilaMidnight(now = new Date()) {
+  const { hour, minute, second } = manilaParts(now)
+  const ms = now.getTime() % 1000
+  const elapsed = ((hour * 60 + minute) * 60 + second) * 1000 + (ms < 0 ? ms + 1000 : ms)
+  return 86400000 - elapsed
+}
+
+export function daysLeftLabel(n) {
+  if (n === 0) return 'Due today'
+  return n === 1 ? '1 day left' : `${n} days left`
 }
 
 export function addDays(d, n) {

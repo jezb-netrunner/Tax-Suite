@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES, defaultProfile } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
+import { manilaToday } from '../engine/dates.js'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -169,7 +170,7 @@ function WizardForm({ app, editing }) {
                   <SelectField label="Year operations began" value={String(p.registrationYear || '')}
                     onChange={v => set('registrationYear', v ? Number(v) : null)}
                     options={[['', 'Not sure'], ...Array.from({ length: 30 }, (_, i) => {
-                      const y = new Date().getFullYear() - i
+                      const y = manilaToday().getFullYear() - i
                       return [String(y), String(y)]
                     })]} />
                 </div>

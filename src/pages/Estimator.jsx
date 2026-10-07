@@ -8,6 +8,7 @@ import { estimatePayroll } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions } from '../engine/estimators/contributions.js'
 import { NumField, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
+import { useManilaToday } from '../lib/useManilaToday.js'
 
 // fmt 'peso': return figures in whole pesos (BIR form lines);
 // fmt 'centavo': payslip and contribution figures to the centavo.
@@ -253,12 +254,13 @@ function CorporationEstimator({ app }) {
   const [v, set] = useInputs(app, 'corporation', {
     grossSales: 10000000, costOfSales: 4000000, opex: 3000000, totalAssets: 50000000, cwt: 0,
   })
+  const taxYear = useManilaToday().getFullYear()
   const r = useMemo(() => estimateCorporation({
     ...v,
     registrationYear: p.registrationYear,
-    taxYear: new Date().getFullYear(),
+    taxYear,
     vatRegistered: p.vatRegistered,
-  }), [v, p])
+  }), [v, p, taxYear])
   return (
     <>
       <div className="card pad">

@@ -8,6 +8,7 @@
 import corp from '../../data/rules/corporate.json'
 import businessTax from '../../data/rules/business-tax.json'
 import { toCentavos, fromCentavos, toWholePesos, mulRate } from '../../lib/money.js'
+import { manilaToday } from '../dates.js'
 
 const RCIT = corp.rcit.value
 const MCIT = corp.mcit.value
@@ -27,7 +28,8 @@ const PCT_RATE = businessTax.percentageTaxRate.value
  */
 export function estimateCorporation(in_) {
   const { totalAssets = 0, registrationYear = null, vatRegistered = false } = in_
-  const taxYear = in_.taxYear ?? new Date().getFullYear()
+  // Default: the current calendar year in Manila (not the device's time zone).
+  const taxYear = in_.taxYear ?? manilaToday().getFullYear()
   const line = pesos => toWholePesos(toCentavos(pesos || 0))
   const P = fromCentavos
 
