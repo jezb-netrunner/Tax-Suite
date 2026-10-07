@@ -132,20 +132,25 @@ export function SelectField({ label, value, onChange, options, hint }) {
   )
 }
 
+// M20: the switch is named by its visible title and described by its text.
 export function Switch({ on, onChange, title, desc }) {
+  const id = React.useId()
+  const titleId = id + '-title'
+  const descId = desc ? id + '-desc' : undefined
   return (
     <div className="switch-row" onClick={() => onChange(!on)} role="presentation">
       <button
         type="button"
         role="switch"
         aria-checked={on}
-        aria-label={title}
+        aria-labelledby={titleId}
+        aria-describedby={descId}
         className={'switch' + (on ? ' on' : '')}
         onClick={e => { e.stopPropagation(); onChange(!on) }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="tt">{title}</div>
-        {desc && <div className="dd">{desc}</div>}
+        <div className="tt" id={titleId}>{title}</div>
+        {desc && <div className="dd" id={descId}>{desc}</div>}
       </div>
     </div>
   )

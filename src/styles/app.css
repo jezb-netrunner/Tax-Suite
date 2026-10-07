@@ -277,6 +277,13 @@ a { color: inherit; }
 .wiz-steps { display: flex; gap: 6px; margin-bottom: 22px; }
 .wiz-step { height: 4px; border-radius: 2px; flex: 1; background: var(--line); }
 .wiz-step.on { background: var(--acc); }
+/* M20: wizard step heading, option groups and field notes. */
+.wiz-head { outline: none; }
+.wiz-count { display: block; font-size: 12px; font-weight: 600; color: var(--mut); letter-spacing: .02em; margin-bottom: 4px; }
+.opt-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.opt-fieldset > legend { padding: 0; }
+.opt-fieldset > .opt-grid { margin-top: 10px; }
+.field-note { font-size: 12.5px; color: var(--ink); margin-top: 6px; line-height: 1.5; }
 .opt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 16px; }
 .opt-card {
   text-align: left; border: 1.5px solid var(--line); border-radius: 13px; background: var(--sf);

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES, defaultProfile, changeProfileType, withWizardChanges } from '../engine/profile.js'
@@ -116,6 +116,22 @@ function WizardForm({ app, editing }) {
   // H11: books deadlines come from the obligation rules (fiscal-year aware).
   const booksText = booksCardText(OBLIGATIONS, isCorp ? (p.fiscalYearEndMonth || 12) : 12)
 
+  // M20: each step's heading says "Step X of Y" and takes the focus when
+  // Continue or Back changes the step, so screen-reader users hear the new
+  // question. (Not on the first render: the page heading gets focus then.)
+  const headRef = useRef(null)
+  const shownStep = useRef(step)
+  useEffect(() => {
+    if (shownStep.current === step) return
+    shownStep.current = step
+    if (headRef.current) headRef.current.focus()
+  }, [step])
+  const stepHead = title => (
+    <h2 className="sec-h wiz-head" ref={headRef} tabIndex={-1}>
+      <span className="wiz-count">Step {step + 1} of {steps}</span>{' '}{title}
+    </h2>
+  )
+
   async function finish() {
     setBusy(true); setErr(null)
     try {
@@ -142,28 +158,32 @@ function WizardForm({ app, editing }) {
       <div className="card pad">
         {step === 0 && (
           <div>
-            <h2 className="sec-h">Who is this profile for?</h2>
+            {stepHead('Who is this profile for?')}
             <div className="field" style={{ marginTop: '14px' }}>
               <label className="lbl" htmlFor="pf-name">Profile name</label>
-              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} onChange={e => set('name', e.target.value)} aria-describedby="pf-name-privacy" />
+              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} onChange={e => set('name', e.target.value)} aria-required="true" aria-describedby="pf-name-req pf-name-privacy" />
+              <p id="pf-name-req" className="field-note">Required. Type a name for this profile to continue.</p>
               <p id="pf-name-privacy" style={{ fontSize: '12.5px', color: 'var(--ink)', marginTop: '6px', lineHeight: 1.5 }}>
                 {app.hasCloud ? 'Saved to your account.' : 'Saved in this browser only.'} See the <Link to="/privacy" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Privacy Notice</Link> for what is kept and how to erase it.
               </p>
             </div>
-            <div className="opt-grid">
-              {Object.entries(PROFILE_TYPES).map(([k, t]) => (
-                <button key={k} type="button" className={'opt-card' + (p.type === k ? ' on' : '')} aria-pressed={p.type === k} onClick={() => pickType(k)}>
-                  <div className="t">{t.name}</div>
-                  <div className="d">{t.desc}</div>
-                </button>
-              ))}
-            </div>
+            <fieldset className="opt-fieldset" style={{ marginTop: '16px' }}>
+              <legend className="lbl">Taxpayer type</legend>
+              <div className="opt-grid">
+                {Object.entries(PROFILE_TYPES).map(([k, t]) => (
+                  <button key={k} type="button" className={'opt-card' + (p.type === k ? ' on' : '')} aria-pressed={p.type === k} onClick={() => pickType(k)}>
+                    <div className="t">{t.name}</div>
+                    <div className="d">{t.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           </div>
         )}
 
         {step === 1 && p.type === 'employee' && (
           <div>
-            <h2 className="sec-h">Employment situation</h2>
+            {stepHead('Employment situation')}
             <div style={{ marginTop: '10px' }}>
               <Switch on={p.multipleEmployers} onChange={v => set('multipleEmployers', v)}
                 title="More than one employer this year (or switched jobs mid-year)"
@@ -177,7 +197,7 @@ function WizardForm({ app, editing }) {
 
         {step === 1 && (isBiz || isCorp) && (
           <div>
-            <h2 className="sec-h">Tax registration</h2>
+            {stepHead('Tax registration')}
             {isBiz && (
               <>
                 <div style={{ marginTop: '14px' }}>
@@ -186,8 +206,8 @@ function WizardForm({ app, editing }) {
                     desc="Required once gross sales pass the ₱3,000,000 threshold; optional below it. VAT registration removes the 8% option and the percentage tax." />
                 </div>
                 {!p.vatRegistered && (
-                  <div style={{ marginTop: '16px' }}>
-                    <label className="lbl">Income tax regime</label>
+                  <fieldset className="opt-fieldset" style={{ marginTop: '16px' }}>
+                    <legend className="lbl">Income tax regime</legend>
                     <div className="opt-grid" style={{ marginTop: '10px' }}>
                       <button type="button" className={'opt-card' + (p.regime === '8pct' ? ' on' : '')} aria-pressed={p.regime === '8pct'} onClick={() => set('regime', '8pct')}>
                         <div className="t">8% flat tax</div>
@@ -202,11 +222,11 @@ function WizardForm({ app, editing }) {
                         <div className="d">{regimeText.graduated_itemized}</div>
                       </button>
                     </div>
-                  </div>
+                  </fieldset>
                 )}
                 {p.vatRegistered && (
-                  <div style={{ marginTop: '16px' }}>
-                    <label className="lbl">Deduction method</label>
+                  <fieldset className="opt-fieldset" style={{ marginTop: '16px' }}>
+                    <legend className="lbl">Deduction method</legend>
                     <div className="opt-grid" style={{ marginTop: '10px' }}>
                       <button type="button" className={'opt-card' + (p.regime !== 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime !== 'graduated_itemized'} onClick={() => set('regime', 'graduated_osd')}>
                         <div className="t">Graduated + OSD</div>
@@ -217,7 +237,7 @@ function WizardForm({ app, editing }) {
                         <div className="d">{regimeText.graduated_itemized}</div>
                       </button>
                     </div>
-                  </div>
+                  </fieldset>
                 )}
               </>
             )}
@@ -246,7 +266,7 @@ function WizardForm({ app, editing }) {
 
         {step === 2 && (isBiz || isCorp) && (
           <div>
-            <h2 className="sec-h">Withholding &amp; payroll</h2>
+            {stepHead('Withholding & payroll')}
             <div style={{ marginTop: '10px' }}>
               <Switch on={p.receives2307} onChange={v => set('receives2307', v)}
                 title="Clients withhold tax from your payments (you receive Form 2307)"
@@ -266,11 +286,11 @@ function WizardForm({ app, editing }) {
 
         {((step === 2 && p.type === 'employee') || (step === 3 && (isBiz || isCorp))) && (
           <div>
-            <h2 className="sec-h">{p.type === 'employee' ? 'Review' : 'Registrations & records'}</h2>
+            {stepHead(p.type === 'employee' ? 'Review' : 'Registrations & records')}
             {(isBiz || isCorp) && (
               <div style={{ marginTop: '10px' }}>
-                <div style={{ margin: '6px 0 12px' }}>
-                  <label className="lbl">Books of accounts</label>
+                <fieldset className="opt-fieldset" style={{ margin: '6px 0 12px' }}>
+                  <legend className="lbl">Books of accounts</legend>
                   <div className="opt-grid" style={{ marginTop: '10px' }}>
                     {[['manual', 'Manual books', 'Handwritten ledgers registered with the BIR. No annual re-registration; new books only when full.'],
                       ['looseleaf', 'Loose-leaf', booksText.looseleaf],
@@ -282,7 +302,7 @@ function WizardForm({ app, editing }) {
                     ))}
                   </div>
                   <p style={{ fontSize: '12.5px', color: '#4a5a6a', marginTop: '10px', lineHeight: 1.5 }}>{booksText.summary}</p>
-                </div>
+                </fieldset>
                 <Switch on={p.hasBusinessEstablishment} onChange={v => set('hasBusinessEstablishment', v)}
                   title="Registered place of business (LGU permit holder)"
                   desc="Switches on mayor's/business-permit renewal and local business tax every January, plus barangay clearance." />
@@ -317,6 +337,10 @@ function WizardForm({ app, editing }) {
         )}
 
         {err && <div className="form-err" role="alert">{err}</div>}
+
+        {step === 0 && !p.name.trim() && (
+          <p className="field-note" style={{ marginTop: '20px' }}>Type a profile name above to continue.</p>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '24px' }}>
           <button className="btn ghost" type="button" onClick={() => (step === 0 ? cancelWizard(nav, location) : setStep(s => s - 1))}>
