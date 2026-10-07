@@ -3,6 +3,7 @@ import meta from '../data/rules/meta.json'
 import { AgencyTag } from '../components/ui.jsx'
 import { ConfidenceBadge } from '../components/Confidence.jsx'
 import { ruleRegister } from '../engine/rulebook.js'
+import { STATUTES } from '../data/statutes.js'
 
 // The register of every rule in the rulebook (src/data/rules/*.json): its
 // value, legal basis, notes and confidence. It is generated from the same
@@ -126,10 +127,7 @@ export default function References() {
         <h2 className="sec-h">Primary statutes</h2>
         <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13.5px', lineHeight: 1.6, color: 'var(--mut)' }}>
           <div><b style={{ color: 'var(--ink)' }}>NIRC of 1997</b>, the Tax Code, as amended by:</div>
-          <div>· RA 10963 (TRAIN, 2017): individual rate tables, 8% option, withholding structure</div>
-          <div>· RA 11534 (CREATE, 2021): corporate rates, MCIT reduction window, percentage-tax window</div>
-          <div>· RA 11976 (Ease of Paying Taxes Act, 2024): invoicing, classification, penalty reductions, filing venue</div>
-          <div>· RA 12066 (CREATE MORE, 2024): RBE enhanced-deduction regime, 20% RBE rate</div>
+          {STATUTES.map(st => <div key={st.ra}>{`· ${st.ra} (${st.name}, ${st.year}): ${st.covers}`}</div>)}
           <div><b style={{ color: 'var(--ink)' }}>Non-BIR:</b> RA 7160 (Local Government Code) · RA 11199 (SSS) · RA 11223 (UHC/PhilHealth) · RA 9679 (Pag-IBIG) · PD 851 (13th month) · Revised Corporation Code</div>
         </div>
       </div>
