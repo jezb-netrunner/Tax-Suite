@@ -8,7 +8,7 @@
 // always add up to the premium (owner default, flagged needs_review).
 
 import contrib from '../../data/rules/contributions.json'
-import { toCentavos, fromCentavos, mulRate, divRoundHalfUp } from '../../lib/money.js'
+import { toCentavos, fromCentavos, mulRate, mulFrac, divRoundHalfUp } from '../../lib/money.js'
 
 const P = fromCentavos
 const C = toCentavos
@@ -132,7 +132,21 @@ export function employerContributions(monthlyBasic, other = {}) {
   }
 }
 
+// M13 (owner default): the base for a self-employed member's contributions is
+// the net monthly earnings, (gross − expenses) ÷ 12 rounded half-up to the
+// centavo, unless the member enters the monthly earnings declared to SSS and
+// PhilHealth. basis: 'declared' | 'net' | 'none' (no net earnings).
+export function selfEmployedMonthlyEarnings({ grossAnnual = 0, expensesAnnual = 0, declaredMonthly = null } = {}) {
+  const declaredC = C(declaredMonthly || 0)
+  if (declaredC > 0) return { monthly: P(declaredC), basis: 'declared' }
+  const netC = C(grossAnnual || 0) - C(expensesAnnual || 0)
+  if (netC <= 0) return { monthly: 0, basis: 'none' }
+  return { monthly: P(mulFrac(netC, 1, 12)), basis: 'net' }
+}
+
 export function selfEmployedMonthlyContributions(declaredMonthlyIncome) {
+  // No earnings, no contributions (not the floor amounts).
+  if (C(declaredMonthlyIncome || 0) <= 0) return { sss: 0, philhealth: 0, pagibig: 0, total: 0 }
   const sss = C(sssSelfEmployed(declaredMonthlyIncome).amount)
   const ph = philhealthC(declaredMonthlyIncome).premiumC // direct contributors shoulder the full premium
   const pi = pagibigSelfTotalC(declaredMonthlyIncome)

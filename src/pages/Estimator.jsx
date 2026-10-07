@@ -5,7 +5,7 @@ import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/esti
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation, estimateCorporateQuarter, corporateTaxYears, taxablePeriod, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
 import { estimatePayroll, DEFAULT_PAY_FACTOR, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
-import { selfEmployedMonthlyContributions } from '../engine/estimators/contributions.js'
+import { selfEmployedMonthlyContributions, selfEmployedMonthlyEarnings } from '../engine/estimators/contributions.js'
 import { fromISO, taxableYearQuarters } from '../engine/dates.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
@@ -294,7 +294,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
             </div>
             <FormPreview r={r} />
           </div>
-          <SelfContributionsCard monthly={Math.round((Number(v.gross) || 0) / 12)} />
+          <SelfContributionsCard v={v} set={set} />
         </>
       )}
     </>
@@ -355,20 +355,34 @@ function FormPreview({ r }) {
   )
 }
 
-function SelfContributionsCard({ monthly }) {
-  const c = useMemo(() => selfEmployedMonthlyContributions(monthly), [monthly])
+// M13: based on net monthly earnings, (gross − expenses) ÷ 12, or on the
+// monthly earnings the member declared to SSS and PhilHealth.
+function SelfContributionsCard({ v, set }) {
+  const e = selfEmployedMonthlyEarnings({ grossAnnual: v.gross, expensesAnnual: v.expenses, declaredMonthly: v.declaredMonthlyEarnings })
+  const c = useMemo(() => selfEmployedMonthlyContributions(e.monthly), [e.monthly])
+  const noExpenses = !(Number(v.expenses) > 0)
   return (
     <div className="card pad" style={{ marginTop: '16px' }}>
       <h3 className="sec-h">Monthly contributions on top (self-employed)</h3>
-      <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px' }}>
-        Based on average monthly income of {money(monthly)}. SSS, PhilHealth, and Pag-IBIG are separate from your taxes.
+      <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px', lineHeight: 1.5 }}>
+        {e.basis === 'declared'
+          ? <>Based on the monthly earnings you declared: {money2(e.monthly)}.</>
+          : e.basis === 'net'
+            ? <>Based on net monthly earnings of {money2(e.monthly)}: (gross sales {money(v.gross)} − expenses {money(v.expenses || 0)}) ÷ 12.{noExpenses && ' No expenses are entered above, so this is your gross sales ÷ 12.'}</>
+            : <>Your expenses are equal to or more than your sales, so there are no net earnings to base contributions on. Enter the monthly earnings you declare to SSS and PhilHealth below.</>}
+        {' '}SSS, PhilHealth, and Pag-IBIG are separate from your taxes.
       </p>
-      <Rows fmt="centavo" rows={[
-        { label: 'SSS (self-employed, incl. EC)', value: c.sss },
-        { label: 'PhilHealth (direct contributor)', value: c.philhealth },
-        { label: 'Pag-IBIG savings', value: c.pagibig },
-        { label: 'Total per month', value: c.total, strong: true, rule: true },
-      ]} />
+      <div style={{ maxWidth: '320px', marginTop: '12px' }}>
+        <NumField emptyValue={null} label="Declared monthly earnings (optional)" value={v.declaredMonthlyEarnings} onChange={x => set('declaredMonthlyEarnings', x)} prefix="₱" hint="The monthly earnings you declare to SSS and PhilHealth, if different from the net figure." />
+      </div>
+      {e.basis !== 'none' && (
+        <Rows fmt="centavo" rows={[
+          { label: 'SSS (self-employed, incl. EC)', value: c.sss },
+          { label: 'PhilHealth (direct contributor)', value: c.philhealth },
+          { label: 'Pag-IBIG savings', value: c.pagibig },
+          { label: 'Total per month', value: c.total, strong: true, rule: true },
+        ]} />
+      )}
       <p className="cite" style={{ marginTop: '10px' }}>
         Contribution schedules change by agency circular; confirm the current tables before paying.
       </p>
