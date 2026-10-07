@@ -7,7 +7,7 @@ import { estimateCorporation } from '../../src/engine/estimators/corporation.js'
 describe('corporation — small-corp RCIT beats MCIT', () => {
   const r = estimateCorporation({
     grossSales: 10000000, costOfSales: 4000000, opex: 3000000,
-    totalAssets: 50000000, registrationYear: 2020, taxYear: 2026,
+    totalAssets: 50000000, registrationYear: 2020, taxYear: 2026, vatRegistered: true,
   })
   it('gross income and taxable income', () => {
     expect(r.grossIncome).toBe(6000000)
@@ -24,7 +24,9 @@ describe('corporation — small-corp RCIT beats MCIT', () => {
     expect(r.usesMcit).toBe(false)
     expect(r.incomeTaxDue).toBe(600000)
   })
-  it('over ₱3M sales → VAT, no percentage tax', () => {
+  // H04: a NON-VAT corporation over ₱3M keeps percentage tax until it passes
+  // ₱3M (tests/engine/corporate-crossing.test.js); this one is VAT-registered.
+  it('VAT-registered → VAT, no percentage tax', () => {
     expect(r.vat).toBe(true)
     expect(r.pct).toBe(0)
   })

@@ -57,7 +57,7 @@ describe('VAT-registered under ₱3M also gets the note (UX-08)', () => {
 
 describe('corporate estimator VAT text', () => {
   it('VAT corporation: not included, no "computed separately" promise', () => {
-    const r = estimateCorporation({ grossSales: 10000000, costOfSales: 4000000, opex: 3000000, totalAssets: 50000000, taxYear: 2026 })
+    const r = estimateCorporation({ grossSales: 10000000, costOfSales: 4000000, opex: 3000000, totalAssets: 50000000, taxYear: 2026, vatRegistered: true })
     expect(r.vatNotIncluded).toBe(true)
     expect(r.vatNote).toBe(NOTE)
     expect(row(r.rows, /^Value-added tax/).sub).toBe('Not included in this estimate. VAT (12% of sales less creditable input VAT) is filed quarterly on Form 2550Q.')

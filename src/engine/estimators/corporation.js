@@ -14,10 +14,11 @@ import { manilaToday, mkDate, lastDayOfMonth, shiftToBusinessDay, iso, addDays, 
 import { HOLIDAY_SET, OBLIGATIONS } from '../../lib/deadlineData.js'
 import { fyDue } from '../rulebook.js'
 import { RT, percentText } from '../ruleText.js'
+import { thresholdCrossing, crossingRows, overVatThreshold } from './crossing.js'
+import { VAT_NOTE } from './individual.js'
 
 const RCIT = corp.rcit.value
 const MCIT = corp.mcit.value
-const VAT_THRESHOLD = businessTax.vatThreshold.value
 const PCT_RATE = businessTax.percentageTaxRate.value
 // C06: the 2% MCIT and 3% percentage tax apply to periods from this date. Earlier
 // periods used 1% (Jul 2020 to Jun 2023) and are not supported (owner decision 1).
@@ -271,9 +272,18 @@ export function estimateCorporation(in_) {
   const creditsC = creditItems.reduce((t, x) => t + x.c, 0)
 
   // The ₱3M test uses the actual sales, not the rounded line.
-  const overThreshold = toCentavos(in_.grossSales || 0) > toCentavos(VAT_THRESHOLD)
+  const overThreshold = overVatThreshold(in_.grossSales)
   const vat = vatRegistered || overThreshold
-  const pctC = vat ? 0 : toWholePesos(mulRate(grossSalesC, PCT_RATE))
+  // H04 (owner decision 6): a non-VAT corporation whose sales pass ₱3M during
+  // the year pays percentage tax on its sales from the start of the taxable
+  // year to the end of the month the ₱3M was passed; VAT applies from the
+  // following month (not computed). Same rule as for individuals.
+  const crossing = vatRegistered ? null : thresholdCrossing({
+    salesC: toCentavos(in_.grossSales || 0), grossC: grossSalesC,
+    crossedMonth: in_.crossedMonth, salesThroughCrossMonth: in_.salesThroughCrossMonth,
+    firstMonth: Number(period.start.slice(5, 7)), firstYear: Number(period.start.slice(0, 4)),
+  })
+  const pctC = vatRegistered ? 0 : toWholePesos(mulRate(crossing ? crossing.ptBaseC : grossSalesC, PCT_RATE))
 
   const rcit = P(rcitC)
   const mcit = P(mcitC)
@@ -313,9 +323,10 @@ export function estimateCorporation(in_) {
     })
   }
   if (excessMcitNote) r('Excess MCIT from earlier years', null, { sub: excessMcitNote })
-  if (!vat && pct > 0) r(`Percentage tax (${RT.percentageTaxRate} of gross)`, pct, { strong: true, sub: `Non-VAT corporation under the ${RT.vatThresholdShort} threshold (Form 2551Q).` })
+  if (crossing) crossingRows(r, crossing, pct)
+  else if (!vat && pct > 0) r(`Percentage tax (${RT.percentageTaxRate} of gross)`, pct, { strong: true, sub: `Non-VAT corporation under the ${RT.vatThresholdShort} threshold (Form 2551Q).` })
   // H05 (owner decision 4): VAT is not computed here.
-  if (vat) r('Value-added tax', null, { sub: `Not included in this estimate. VAT (${RT.vatRate} of sales less creditable input VAT) is filed quarterly on Form 2550Q.` })
+  if (vatRegistered) r('Value-added tax', null, { sub: `Not included in this estimate. VAT (${RT.vatRate} of sales less creditable input VAT) is filed quarterly on Form 2550Q.` })
   if (creditsC > 0) {
     for (const x of creditItems) r(x.label, -P(x.c))
     const net = P(incomeTaxDueC - creditsC)
@@ -348,8 +359,14 @@ export function estimateCorporation(in_) {
     pct,
     vat,
     overThreshold,
+    crossing,
     vatNotIncluded: vat,
-    vatNote: vat ? 'Income tax and percentage tax only; VAT not included.' : null,
+    vatNote: vat ? VAT_NOTE : null,
+    // The summary banner's business-tax sentence.
+    businessTaxNote: crossing
+      ? `Plus ${formatPesos(pctC)} percentage tax on sales from ${crossing.span} (Form 2551Q). VAT applies from ${crossing.vatFrom}: not included in this estimate.`
+      : vat ? VAT_NOTE
+        : pctC > 0 ? `Plus ${formatPesos(pctC)} percentage tax (non-VAT).` : null,
     credits: P(creditsC),
     netPayable: P(incomeTaxDueC - creditsC),
     rows,

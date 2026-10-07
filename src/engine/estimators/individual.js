@@ -11,10 +11,11 @@
 import incomeTax from '../../data/rules/income-tax.json'
 import businessTax from '../../data/rules/business-tax.json'
 import { bracketTax, bracketTaxCentavos } from '../tax.js'
-import { toCentavos, fromCentavos, toWholePesos, mulRate, mulFrac, groupThousands } from '../../lib/money.js'
+import { toCentavos, fromCentavos, toWholePesos, mulRate, groupThousands } from '../../lib/money.js'
 import { manilaToday } from '../dates.js'
 import { estimateEmployee } from './employee.js'
-import { RT } from '../ruleText.js'
+import { RT, MONTH_NAMES } from '../ruleText.js'
+import { thresholdCrossing, crossingRows } from './crossing.js'
 
 const BR = incomeTax.graduatedBrackets.value
 const EIGHT = incomeTax.eightPercent.value
@@ -22,7 +23,7 @@ const OSD = incomeTax.osd.value
 const NOLCO_YEARS = incomeTax.netOperatingLossCarryOver.value.carryOverYears
 const VAT_THRESHOLD = businessTax.vatThreshold.value
 const PCT_RATE = businessTax.percentageTaxRate.value
-export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+export const MONTHS = MONTH_NAMES
 const pesoText = c => '₱' + groupThousands(Math.round(c / 100))
 // H05 (owner decision 4): VAT is never computed; every VAT-case total says so.
 export const VAT_NOTE = 'Income tax and percentage tax only; VAT not included.'
@@ -107,40 +108,10 @@ export function estimateIndividual(in_) {
   // during the year. The whole year is on graduated rates, the 3% percentage
   // tax applies to sales from January to the end of the month the ₱3M was
   // passed, and VAT applies from the following month (not computed here).
-  let crossing = null
-  let ptBaseC = grossC
-  if (!vatRegistered && overThreshold) {
-    const given = Number(in_.crossedMonth)
-    const validMonth = Number.isInteger(given) && given >= 1 && given <= 12
-    // Even monthly sales pass ₱3M in the first month m with sales × m / 12 > ₱3M.
-    const evenMonth = Math.min(12, Math.floor((12 * thresholdC) / salesC) + 1)
-    const month = validMonth ? given : evenMonth
-    const span = month === 1 ? 'January' : `January to ${MONTHS[month - 1]}`
-    const warnings = []
-    const enteredC = line(in_.salesThroughCrossMonth)
-    if (enteredC > 0) {
-      ptBaseC = enteredC
-      if (enteredC > grossC) {
-        ptBaseC = grossC
-        warnings.push(`Sales from ${span} can't be more than the year's gross sales (${pesoText(grossC)}); ${pesoText(grossC)} is used.`)
-      } else if (enteredC <= thresholdC) {
-        warnings.push(`Sales from ${span} should be more than ${RT.vatThreshold}, since that is the month the threshold was passed.`)
-      }
-    } else {
-      ptBaseC = toWholePesos(mulFrac(grossC, month, 12))
-    }
-    crossing = {
-      month,
-      monthName: MONTHS[month - 1],
-      span,
-      assumedEvenSales: !validMonth,
-      evenMonth,
-      ptBase: P(ptBaseC),
-      ptBaseProrated: !(enteredC > 0),
-      vatFrom: month === 12 ? `January ${taxYear + 1}` : `${MONTHS[month]} ${taxYear}`,
-      warnings,
-    }
-  }
+  const crossing = vatRegistered ? null : thresholdCrossing({
+    salesC, grossC, crossedMonth: in_.crossedMonth, salesThroughCrossMonth: in_.salesThroughCrossMonth, firstYear: taxYear,
+  })
+  const ptBaseC = crossing ? crossing.ptBaseC : grossC
 
   const gradLine = taxableC => toWholePesos(bracketTaxCentavos(BR, taxableC))
 
@@ -383,12 +354,7 @@ export function estimateIndividual(in_) {
       r('Graduated income tax', incItem, { strong: true })
     }
     if (opt.businessTax.kind === 'pct' && crossing) {
-      r(`Percentage tax (${RT.percentageTaxRate} of sales ${crossing.span})`, opt.businessTax.amount, {
-        strong: true,
-        sub: `NIRC Sec 116. Paid quarterly on Form 2551Q, not with the annual return. Sales from ${crossing.span}: ${pesoText(ptBaseC)}` +
-          (crossing.ptBaseProrated ? ' (the year\'s sales spread evenly by month).' : '.'),
-      })
-      r('Value-added tax', null, { sub: `VAT applies from ${crossing.vatFrom}: not included in this estimate.` })
+      crossingRows(r, crossing, opt.businessTax.amount)
     } else if (opt.businessTax.kind === 'pct') {
       r(`Percentage tax (${RT.percentageTaxRate} of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116. Percentage tax: paid quarterly on Form 2551Q, not with the annual return.' })
     }

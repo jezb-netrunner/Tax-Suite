@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
+import { estimateIndividual, compensationForMixed } from '../engine/estimators/individual.js'
+import { crossingMonthOptions } from '../engine/estimators/crossing.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation, estimateCorporateQuarter, corporateTaxYears, taxablePeriod, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
 import { estimatePayroll, DEFAULT_PAY_FACTOR, PAY_FACTORS, PAY_PERIODS, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
@@ -208,29 +209,13 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
       ) : (
         <>
           {r.crossing && (
-            <div className="card pad" style={{ marginTop: '16px' }}>
-              <h2 className="sec-h">Your sales passed {RT.vatThreshold} this year</h2>
-              <div className="mini-warn" role="note">
-                The whole year moves to graduated rates: the {RT.eightRate} option is not available this year, and any {RT.eightRate} income tax
-                already paid on your 1701Q is credited. The {RT.percentageTaxRate} percentage tax still applies to your sales from {r.crossing.span}.
-                {' '}<b>VAT applies from {r.crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
-                registration) before the end of the month after the month your sales passed {RT.vatThreshold}.
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
-                <SelectField
-                  label={`Month your sales passed ${RT.vatThreshold}`}
-                  value={v.crossedMonth ? String(v.crossedMonth) : ''}
-                  onChange={x => set('crossedMonth', x ? Number(x) : null)}
-                  options={[
-                    ['', `Not sure: assume even monthly sales (${MONTHS[r.crossing.evenMonth - 1]})`],
-                    ...MONTHS.map((m, i) => [String(i + 1), m]),
-                  ]}
-                />
-                <NumField emptyValue={null} label={`Sales from ${r.crossing.span}`} value={v.salesThroughCrossMonth} onChange={x => set('salesThroughCrossMonth', x)} prefix="₱" hint="Optional. If blank, the year's sales are spread evenly by month." />
-                <NumField emptyValue={null} label={`${RT.eightRate} income tax already paid on 1701Q this year`} value={v.eightPercentPaid} onChange={x => set('eightPercentPaid', x)} prefix="₱" hint="Credited against this year's graduated income tax. Don't count it again in the quarterly-payments box above." />
-              </div>
-              {r.crossing.warnings.map(w => <div key={w} className="mini-warn" role="alert">{w}</div>)}
-            </div>
+            <CrossingCard
+              crossing={r.crossing} v={v} set={set} monthOptions={crossingMonthOptions(1)}
+              extraFields={<NumField emptyValue={null} label={`${RT.eightRate} income tax already paid on 1701Q this year`} value={v.eightPercentPaid} onChange={x => set('eightPercentPaid', x)} prefix="₱" hint="Credited against this year's graduated income tax. Don't count it again in the quarterly-payments box above." />}
+            >
+              The whole year moves to graduated rates: the {RT.eightRate} option is not available this year, and any {RT.eightRate} income tax
+              already paid on your 1701Q is credited. The {RT.percentageTaxRate} percentage tax still applies to your sales from {r.crossing.span}.
+            </CrossingCard>
           )}
 
           {r.nolco.note && (
@@ -306,6 +291,33 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
         </>
       )}
     </>
+  )
+}
+
+// H04 (owner decision 6): a non-VAT taxpayer, individual or corporation,
+// whose sales passed the VAT threshold this year. Asks the month and,
+// optionally, the sales up to the end of that month.
+function CrossingCard({ crossing, v, set, monthOptions, extraFields, children }) {
+  return (
+    <div className="card pad" style={{ marginTop: '16px' }}>
+      <h2 className="sec-h">Your sales passed {RT.vatThreshold} this year</h2>
+      <div className="mini-warn" role="note">
+        {children}
+        {' '}<b>VAT applies from {crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
+        registration) before the end of the month after the month your sales passed {RT.vatThreshold}.
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
+        <SelectField
+          label={`Month your sales passed ${RT.vatThreshold}`}
+          value={v.crossedMonth ? String(v.crossedMonth) : ''}
+          onChange={x => set('crossedMonth', x ? Number(x) : null)}
+          options={[['', `Not sure: assume even monthly sales (${crossing.evenMonthName})`], ...monthOptions]}
+        />
+        <NumField emptyValue={null} label={`Sales from ${crossing.span}`} value={v.salesThroughCrossMonth} onChange={x => set('salesThroughCrossMonth', x)} prefix="₱" hint="Optional. If blank, the year's sales are spread evenly by month." />
+        {extraFields}
+      </div>
+      {crossing.warnings.map(w => <div key={w} className="mini-warn" role="alert">{w}</div>)}
+    </div>
   )
 }
 
@@ -619,6 +631,11 @@ function CorporationEstimator({ app, onPrintYear }) {
         <EnterFigures>Start with gross sales or revenue for the year. Your estimate appears here as you type.</EnterFigures>
       ) : (
         <>
+          {r.crossing && (
+            <CrossingCard crossing={r.crossing} v={v} set={set} monthOptions={crossingMonthOptions(Number(r.period.start.slice(5, 7)))}>
+              As a non-VAT corporation, you still pay the {RT.percentageTaxRate} percentage tax on your sales from {r.crossing.span} (Form 2551Q).
+            </CrossingCard>
+          )}
           <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
             <b style={{ color: 'var(--ink)' }}>{r.period.label}.</b> Annual return (1702-RT) due {fmtISO(r.period.annualDue)}.
           </p>
@@ -635,8 +652,7 @@ function CorporationEstimator({ app, onPrintYear }) {
                 : r.usesMcit
                   ? <>The {RT.mcitRate} MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
                   : <>Income tax due: {money(r.incomeTaxDue)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitStatus !== 'notYet' ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
-              {!r.vat && r.pct > 0 && <> Plus {money(r.pct)} percentage tax (non-VAT).</>}
-              {r.vatNotIncluded && <> {r.vatNote}</>}
+              {r.businessTaxNote && <> {r.businessTaxNote}</>}
             </span>
           </div>
           <div className="card pad" style={{ marginTop: '20px' }}>
