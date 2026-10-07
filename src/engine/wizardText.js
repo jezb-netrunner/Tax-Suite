@@ -1,6 +1,8 @@
 // Profile setup card text (src/pages/ProfileWizard.jsx), built from the
 // profile type so each taxpayer is told the right thing.
 
+import { calendarYearDue } from './rulebook.js'
+
 // Text of the income-tax regime cards: { '8pct', graduated_osd, graduated_itemized }.
 //
 // H08: the annual return depends on the profile type. Form 1701A is only for
@@ -29,5 +31,31 @@ export function regimeCardText({ type, vatRegistered }) {
     '8pct': '8% on gross above ₱250,000, in lieu of graduated rates and percentage tax. Elected each year on the Q1 return; files 1701A.',
     graduated_osd: 'Graduated rates on income after the 40% Optional Standard Deduction, plus 3% percentage tax; files 1701A.',
     graduated_itemized: 'Graduated rates on income after actual documented expenses, plus 3% percentage tax; files the full 1701.',
+  }
+}
+
+// Text of the books-of-accounts cards: { looseleaf, cas, summary }.
+//
+// H11: built from the obligation rules (bir-looseleaf-books and bir-cas-books:
+// a number of days after the taxable year ends), so a fiscal-year taxpayer is
+// not told "January". fyEndMonth (1-12) adds that year-end's own dates.
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+export function booksCardText(obligations, fyEndMonth = 12) {
+  const rule = id => {
+    const ob = obligations.find(o => o.id === id)
+    return ob && ob.schedule
+  }
+  const loose = rule('bir-looseleaf-books')
+  const cas = rule('bir-cas-books')
+  const days = s => `${s.daysAfterEnd} days`
+  const cal = s => calendarYearDue(s, { short: true })
+  const own = s => calendarYearDue(s, { short: true, fyEndMonth })
+  let summary = `Loose-leaf and computerized books are due ${days(loose)} (loose-leaf) / ${days(cas)} (computerized) after your taxable year ends (${cal(loose)} / ${cal(cas)} for calendar-year taxpayers).`
+  if (fyEndMonth !== 12) summary += ` For your taxable year ending in ${MONTHS[fyEndMonth - 1]}: ${own(loose)} / ${own(cas)}.`
+  return {
+    looseleaf: `Printed/bound records under a BIR permit; bound copies due ${days(loose)} after your taxable year ends (${cal(loose)} for calendar-year taxpayers).`,
+    cas: `BIR-registered accounting system; annual back-up/registration due ${days(cas)} after your taxable year ends (${cal(cas)} for calendar-year taxpayers).`,
+    summary,
   }
 }

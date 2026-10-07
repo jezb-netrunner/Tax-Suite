@@ -5,7 +5,8 @@ import { PROFILE_TYPES, defaultProfile } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
 import { manilaToday } from '../engine/dates.js'
 import { registrationYearOptions, registrationYearChoice } from '../engine/estimators/corporation.js'
-import { regimeCardText } from '../engine/wizardText.js'
+import { regimeCardText, booksCardText } from '../engine/wizardText.js'
+import { OBLIGATIONS } from '../lib/deadlineData.js'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -60,6 +61,8 @@ function WizardForm({ app, editing }) {
   const steps = p.type === 'employee' ? 3 : 4
   // H08: card text depends on the profile type (mixed income files 1701).
   const regimeText = regimeCardText({ type: p.type, vatRegistered: p.vatRegistered })
+  // H11: books deadlines come from the obligation rules (fiscal-year aware).
+  const booksText = booksCardText(OBLIGATIONS, isCorp ? (p.fiscalYearEndMonth || 12) : 12)
 
   async function finish() {
     setBusy(true); setErr(null)
@@ -212,14 +215,15 @@ function WizardForm({ app, editing }) {
                   <label className="lbl">Books of accounts</label>
                   <div className="opt-grid" style={{ marginTop: '10px' }}>
                     {[['manual', 'Manual books', 'Handwritten ledgers registered with the BIR. No annual re-registration; new books only when full.'],
-                      ['looseleaf', 'Loose-leaf', 'Printed/bound records under a BIR permit; bound copies submitted every January 15.'],
-                      ['cas', 'Computerized (CAS)', 'BIR-registered accounting system; annual back-up/registration by January 30.']].map(([k, t, d]) => (
+                      ['looseleaf', 'Loose-leaf', booksText.looseleaf],
+                      ['cas', 'Computerized (CAS)', booksText.cas]].map(([k, t, d]) => (
                       <button key={k} type="button" className={'opt-card' + (p.booksType === k ? ' on' : '')} aria-pressed={p.booksType === k} onClick={() => set('booksType', k)}>
                         <div className="t">{t}</div>
                         <div className="d">{d}</div>
                       </button>
                     ))}
                   </div>
+                  <p style={{ fontSize: '12.5px', color: '#4a5a6a', marginTop: '10px', lineHeight: 1.5 }}>{booksText.summary}</p>
                 </div>
                 <Switch on={p.hasBusinessEstablishment} onChange={v => set('hasBusinessEstablishment', v)}
                   title="Registered place of business (LGU permit holder)"
