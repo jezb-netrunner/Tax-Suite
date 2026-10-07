@@ -315,31 +315,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {view === 'table' && (
-              <div className="list-card" style={{ overflowX: 'auto', position: 'relative' }}>
-                <table className="tbl">
-                  <thead>
-                    <tr><th>Date</th><th>Obligation</th><th>Form</th><th>Agency</th><th>Type</th><th>Period</th></tr>
-                  </thead>
-                  <tbody>
-                    {deadlines.map(d => (
-                      <tr key={d.id}>
-                        <td className="mono" style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>{fmtDate(d.date)}</td>
-                        <td style={{ fontWeight: 600 }}>
-                          {d.obligation.title}
-                          {d.extended && <div style={{ fontSize: '12px', fontWeight: 400, color: 'var(--mut)' }}>Extended by {d.extended.basis}</div>}
-                          {isUnconfirmed(d) && <div style={{ marginTop: '4px', fontWeight: 400 }}><ItemBadge item={d} /></div>}
-                        </td>
-                        <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}><FormCode form={d.obligation.form || '—'} className={null} /></td>
-                        <td><AgencyTag agency={d.obligation.agency} /></td>
-                        <td style={{ color: 'var(--mut)' }}>{CATLABEL[d.obligation.category] || ''}</td>
-                        <td className="mono" style={{ fontSize: '12px', color: 'var(--dim)', whiteSpace: 'nowrap' }}>{d.label || '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            {view === 'table' && <DeadlineTable deadlines={deadlines} />}
           </div>
 
           {/* right rail */}
@@ -604,6 +580,58 @@ function RollNote({ d, onDark }) {
     <div style={{ ...style, color: onDark ? '#f3cf9a' : '#7a5a1f' }}>
       <b>{why}</b> {d.rollNote} Last working day before: <b>{fmtDay(d.lastWorkingDayBefore)}</b>.
     </div>
+  )
+}
+
+// L14: the Table view scrolls sideways inside its box on narrow screens. The
+// box is a focusable, labelled region (so it can be scrolled with the
+// keyboard), and a visible note says when there are more columns to the right.
+function DeadlineTable({ deadlines }) {
+  const ref = useRef(null)
+  const [overflows, setOverflows] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return undefined
+    const check = () => setOverflows(el.scrollWidth > el.clientWidth + 1)
+    check()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null
+    if (ro) ro.observe(el)
+    window.addEventListener('resize', check)
+    return () => { if (ro) ro.disconnect(); window.removeEventListener('resize', check) }
+  }, [deadlines])
+  return (
+    <>
+      {overflows && (
+        <p id="tbl-cue" className="scroll-cue">
+          More columns (form, agency, type and period) are to the right: scroll the table sideways <span aria-hidden="true">→</span>
+        </p>
+      )}
+      <div ref={ref} className="list-card tbl-scroll" role="region" aria-label="Deadline table" tabIndex={0}
+        aria-describedby={overflows ? 'tbl-cue' : undefined}>
+        <table className="tbl">
+          <caption className="sr-only">All {deadlines.length} deadlines in the next 13 months</caption>
+          <thead>
+            <tr><th scope="col">Date</th><th scope="col">Obligation</th><th scope="col">Form</th><th scope="col">Agency</th><th scope="col">Type</th><th scope="col">Period</th></tr>
+          </thead>
+          <tbody>
+            {deadlines.map(d => (
+              <tr key={d.id}>
+                <td className="mono" style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>{fmtDate(d.date)}</td>
+                <td style={{ fontWeight: 600 }}>
+                  {d.obligation.title}
+                  {d.extended && <div style={{ fontSize: '12px', fontWeight: 400, color: 'var(--mut)' }}>Extended by {d.extended.basis}</div>}
+                  {isUnconfirmed(d) && <div style={{ marginTop: '4px', fontWeight: 400 }}><ItemBadge item={d} /></div>}
+                </td>
+                <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}><FormCode form={d.obligation.form || '—'} className={null} /></td>
+                <td><AgencyTag agency={d.obligation.agency} /></td>
+                <td style={{ color: 'var(--mut)' }}>{CATLABEL[d.obligation.category] || ''}</td>
+                <td className="mono" style={{ fontSize: '12px', color: 'var(--dim)', whiteSpace: 'nowrap' }}>{d.label || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
