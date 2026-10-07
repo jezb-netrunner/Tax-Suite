@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import React, { useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES, defaultProfile, changeProfileType, withWizardChanges } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
@@ -14,6 +14,20 @@ export const TYPE_CHANGE_CONFIRM =
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
+// M24: Cancel goes back inside the app, or to the profile list when the
+// wizard was the first page opened (bookmark, new tab, shared link), where
+// going back would leave the app.
+export function cancelWizard(nav, location) {
+  if (!location || location.key === 'default') nav('/profiles')
+  else nav(-1)
+}
+
+// M24: after saving, the wizard's history entry is replaced, so Back does not
+// reopen an empty wizard (and invite a duplicate profile).
+export function leaveAfterSave(nav) {
+  nav('/', { replace: true })
+}
+
 export default function ProfileWizard() {
   const app = useApp()
   const { profileId } = useParams()
@@ -21,16 +35,48 @@ export default function ProfileWizard() {
     () => (profileId ? app.profiles.find(p => p.id === profileId) : null),
     [profileId, app.profiles]
   )
+  // M24: remember that this profile was open, to tell "deleted in another
+  // window" apart from a link to a profile that never existed here.
+  const opened = useRef(null)
+  if (editing) opened.current = profileId
 
   // Profiles load asynchronously. Mounting the editor before they arrive seeded
   // a blank form and saved it as a NEW profile instead of editing the intended
   // one, so wait, then remount cleanly against the resolved profile.
   if (profileId && !app.profilesReady) return null
+  // M24: an unknown id never falls back to a blank "new profile" form.
+  if (profileId && !editing) {
+    return <ProfileMissing deleted={opened.current === profileId} loadError={app.loadError} onRetry={() => app.retryLoad()} />
+  }
   return <WizardForm key={profileId || 'new'} app={app} editing={editing} />
+}
+
+function ProfileMissing({ deleted, loadError, onRetry }) {
+  return (
+    <div className="page wrap" style={{ paddingTop: '30px', paddingBottom: '64px', maxWidth: '760px' }}>
+      <h1 className="pg-h1">{loadError ? 'Profiles not loaded' : 'Profile not found'}</h1>
+      <div className="card pad" style={{ marginTop: '18px', fontSize: '14px', lineHeight: 1.6 }}>
+        {loadError ? (
+          <p>
+            Couldn’t load your saved profiles, so this one can’t be opened. This is a loading problem, not lost data.{' '}
+            <button className="linkbtn" type="button" style={{ fontSize: '14px', textDecoration: 'underline' }} onClick={onRetry}>Try again</button>
+          </p>
+        ) : (
+          <p>{deleted
+            ? 'This profile was deleted in another window, so there is nothing to edit.'
+            : 'There is no profile at this link. It may have been deleted, or the link is incomplete.'}</p>
+        )}
+        <div style={{ marginTop: '14px' }}>
+          <Link className="btn" to="/profiles" style={{ display: 'inline-block', textDecoration: 'none' }}>Go to your profiles</Link>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function WizardForm({ app, editing }) {
   const nav = useNavigate()
+  const location = useLocation()
   const [step, setStep] = useState(0)
   const [p, setP] = useState(() => (editing ? { ...editing } : defaultProfile()))
   // M06: the profile as the form opened it, to save only what the form changed.
@@ -77,7 +123,7 @@ function WizardForm({ app, editing }) {
       // what this form changed, so figures typed meanwhile are never wiped.
       if (base) await app.updateProfile(base.id, latest => withWizardChanges(latest, base, p))
       else await app.save(p)
-      nav('/')
+      leaveAfterSave(nav)
     } catch (ex) {
       setErr(ex.message || 'Could not save the profile.')
       setBusy(false)
@@ -273,7 +319,7 @@ function WizardForm({ app, editing }) {
         {err && <div className="form-err" role="alert">{err}</div>}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '24px' }}>
-          <button className="btn ghost" type="button" onClick={() => (step === 0 ? nav(-1) : setStep(s => s - 1))}>
+          <button className="btn ghost" type="button" onClick={() => (step === 0 ? cancelWizard(nav, location) : setStep(s => s - 1))}>
             {step === 0 ? 'Cancel' : 'Back'}
           </button>
           {step < steps - 1 ? (
