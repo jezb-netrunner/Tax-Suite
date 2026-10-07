@@ -10,19 +10,25 @@ html, body, #root { height: 100%; }
   --line: #e3eaf1;
   --line2: #eef2f7;
   --ink: #27384a;
-  --mut: #76869a;
-  --dim: #9aabbc;
+  /* M19: the two greys now pass WCAG 2.2 AA (4.5:1) on white, the page
+     background and the tag/tab fills: --mut 5.87 on #fff, 5.51 on --bg,
+     5.11 on #eaf0f6; --dim 5.23 on #fff, 4.90 on --bg, 4.55 on #eaf0f6. */
+  --mut: #56667a;
+  --dim: #5e6e80;
+  /* Outline of text boxes and the off switch: 3.35:1 on #fff, 3.29 on #fbfdff. */
+  --field: #7d8ea2;
   --brand: #2a4d62;
   --brand2: #1f3d50;
   --acc: #3f7cae;
   --accSoft: #e8f1fa;
   --accInk: #2e5f88;
   --accDot: #4f88b8;
-  --good: #2f8a5b;
+  --good: #237047;     /* 5.25 on --goodSoft; white on it 6.03 */
   --goodSoft: #e3f3ea;
-  --warn: #c2843c;
+  --warn: #c2843c;     /* dots and borders only; text on --warnSoft uses --warnInk */
+  --warnInk: #7a5a1f;  /* 5.45 on --warnSoft */
   --warnSoft: #f6edd9;
-  --bad: #b4503e;
+  --bad: #a3432f;      /* 6.17 on #fff, 5.15 on --badSoft */
   --badSoft: #f8e7e3;
   --shadow-sm: 0 1px 2px rgba(16,42,67,.05);
   --shadow-md: 0 8px 22px rgba(16,42,67,.08);
@@ -36,6 +42,8 @@ body {
 }
 ::selection { background: #d4e6f6; }
 button, input, select { font-family: inherit; }
+/* M19: placeholders readable too (5.13:1 on the input fill). */
+::placeholder { color: var(--dim); opacity: 1; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: 6px; }
 .mono { font-family: 'IBM Plex Mono', monospace; }
@@ -70,7 +78,7 @@ a { color: inherit; }
   background: transparent; color: var(--mut); font-weight: 500; display: inline-block;
 }
 .nav button:hover, .nav a:hover { background: #f0f5fa; color: var(--ink); }
-.nav button.active, .nav a.active { background: var(--accSoft); color: var(--accInk); font-weight: 600; }
+.nav button.active, .nav a.active { background: var(--accSoft); color: var(--accInk); font-weight: 600; box-shadow: inset 0 -2px 0 var(--acc); }
 @media (max-width: 760px) {
   .nav-toggle {
     display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px;
@@ -104,7 +112,8 @@ a { color: inherit; }
   background: transparent; color: var(--mut); font-weight: 500;
 }
 .seg button:hover { color: var(--ink); }
-.seg button.active { background: #fff; color: var(--brand); font-weight: 600; box-shadow: 0 1px 2px rgba(20,40,60,.12); }
+/* M19: the selected tab also has an outline (3:1), not only a lighter fill. */
+.seg button.active { background: #fff; color: var(--brand); font-weight: 600; box-shadow: 0 1px 2px rgba(20,40,60,.12), inset 0 0 0 1.5px var(--acc); }
 
 /* cards & lists */
 .card { background: var(--sf); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-sm); }
@@ -148,7 +157,7 @@ a { color: inherit; }
 .lbl { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--mut); }
 .input-w {
   display: flex; align-items: center; gap: 8px; margin-top: 8px;
-  border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 13px; background: #fbfdff;
+  border: 1.5px solid var(--field); border-radius: 10px; padding: 9px 13px; background: #fbfdff;
   transition: border-color .15s, box-shadow .15s, background .15s;
 }
 .input-w:focus-within { border-color: var(--acc); box-shadow: 0 0 0 3px var(--accSoft); background: #fff; }
@@ -160,7 +169,7 @@ a { color: inherit; }
 .input-w .pre { font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: var(--mut); }
 .input-w.lg input, .input-w.lg .pre { font-size: 18px; }
 .search-w {
-  display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--line); border-radius: 10px;
+  display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--field); border-radius: 10px;
   padding: 9px 13px; background: var(--sf); min-width: 240px; transition: border-color .15s, box-shadow .15s;
 }
 .search-w:focus-within { border-color: var(--acc); box-shadow: 0 0 0 3px var(--accSoft); }
@@ -239,7 +248,7 @@ a { color: inherit; }
 .auth-card { width: 100%; max-width: 400px; }
 .field { margin-top: 14px; }
 .field input[type="email"], .field input[type="password"], .field input[type="text"] {
-  width: 100%; margin-top: 8px; border: 1.5px solid var(--line); border-radius: 10px;
+  width: 100%; margin-top: 8px; border: 1.5px solid var(--field); border-radius: 10px;
   padding: 11px 13px; background: #fbfdff; font-size: 14.5px; color: var(--ink);
   transition: border-color .15s, box-shadow .15s; outline: none;
 }
@@ -285,7 +294,7 @@ a { color: inherit; }
 .switch-row .tt { font-weight: 600; font-size: 14px; }
 .switch-row .dd { font-size: 12.5px; color: var(--mut); margin-top: 2px; line-height: 1.5; }
 .switch {
-  width: 38px; height: 22px; border-radius: 100px; background: #d7e0e9; position: relative;
+  width: 38px; height: 22px; border-radius: 100px; background: var(--field); position: relative;
   flex-shrink: 0; border: none; cursor: pointer; transition: background .18s; margin-top: 2px;
 }
 .switch::after {

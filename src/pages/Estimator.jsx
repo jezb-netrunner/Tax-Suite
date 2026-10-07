@@ -245,9 +245,9 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
               return (
                 <div key={c.key} style={{
                   borderRadius: '13px', padding: '18px',
-                  border: isBest ? '1.5px solid var(--acc)' : '1.5px solid var(--line)',
-                  background: isBest ? 'var(--accSoft)' : 'var(--sf)',
-                  opacity: c.eligible ? 1 : 0.6,
+                  // M19: an option that is not available has a dashed outline instead of faded (unreadable) text.
+                  border: isBest ? '1.5px solid var(--acc)' : c.eligible ? '1.5px solid var(--line)' : '1.5px dashed var(--field)',
+                  background: isBest ? 'var(--accSoft)' : c.eligible ? 'var(--sf)' : '#f7f9fb',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                     <span style={{ fontWeight: 700, fontSize: '14.5px' }}>{c.name}</span>

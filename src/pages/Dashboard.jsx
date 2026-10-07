@@ -267,14 +267,15 @@ export default function Dashboard() {
                       {g.label} <span style={{ fontWeight: 500, color: 'var(--mut)', fontSize: '13px' }}>({g.items.length})</span>
                     </h2>
                     {g.items.map(d => {
-                      const st = d.daysAway === 0 ? { s: 'Due today', c: 'var(--warn)', soft: 'var(--warnSoft)' }
-                        : d.daysAway <= 30 ? { s: 'Due soon', c: 'var(--warn)', soft: 'var(--warnSoft)' } : { s: 'Upcoming', c: 'var(--accInk)', soft: 'var(--accSoft)' }
+                      // M19: the pill text uses the darker ink (5.45:1 on its fill); the dot keeps the colour.
+                      const st = d.daysAway === 0 ? { s: 'Due today', c: 'var(--warn)', ink: 'var(--warnInk)', soft: 'var(--warnSoft)' }
+                        : d.daysAway <= 30 ? { s: 'Due soon', c: 'var(--warn)', ink: 'var(--warnInk)', soft: 'var(--warnSoft)' } : { s: 'Upcoming', c: 'var(--accInk)', ink: 'var(--accInk)', soft: 'var(--accSoft)' }
                       return (
                         <div key={d.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '14px', position: 'relative' }}>
                           <span style={{ width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0, marginTop: '14px', background: st.c, boxShadow: `0 0 0 3px var(--bg),0 0 0 4px ${st.c}`, position: 'relative', zIndex: 1, display: 'block' }}></span>
                           <div className="card" style={{ flex: 1, minWidth: 0, borderRadius: '12px', padding: '14px 17px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: '11.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '100px', color: st.c, background: st.soft }}>{st.s}</span>
+                              <span style={{ fontSize: '11.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '100px', color: st.ink, background: st.soft }}>{st.s}</span>
                               <span className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}>{fmtDate(d.date)}{d.label ? ` · ${d.label}` : ''}</span>
                             </div>
                             <div style={{ fontWeight: 600, fontSize: '14.5px', marginTop: '7px' }}>{d.obligation.title}</div>
@@ -346,7 +347,7 @@ export default function Dashboard() {
             {flags.has('substituted-filing') && (
               <div style={{ border: '1px solid var(--line)', borderRadius: '13px', background: 'var(--accSoft)', padding: '18px', marginTop: isEmployee ? 0 : '16px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '-.01em', color: 'var(--accInk)' }}>You're covered</div>
-                <div style={{ fontSize: '13px', color: 'var(--accInk)', marginTop: '7px', lineHeight: 1.55, opacity: .85 }}>
+                <div style={{ fontSize: '13px', color: 'var(--accInk)', marginTop: '7px', lineHeight: 1.55 }}>
                   Your employer handles monthly withholding and your annual return through substituted filing. Keep your signed 2316 each year; it is your proof of filing.
                 </div>
               </div>

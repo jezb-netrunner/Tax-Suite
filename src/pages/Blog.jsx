@@ -13,7 +13,7 @@ export default function BlogPage() {
     return (
       <div className="page wrap" style={{ paddingTop: '34px', paddingBottom: '64px' }}>
         <div style={{ marginBottom: '26px' }}>
-          <div className="mono" style={{ fontSize: '11.5px', fontWeight: 500, letterSpacing: '.13em', textTransform: 'uppercase', color: 'var(--acc)' }}>The JEZ Tax Suite Journal</div>
+          <div className="mono" style={{ fontSize: '11.5px', fontWeight: 500, letterSpacing: '.13em', textTransform: 'uppercase', color: 'var(--accInk)' }}>The JEZ Tax Suite Journal</div>
           <h1 style={{ fontSize: '30px', fontWeight: 800, letterSpacing: '-.025em', marginTop: '10px' }}>Plain-language tax, for people who'd rather be working</h1>
         </div>
         {/* M18: each card is a real link. The title is the link; its ::after
@@ -24,7 +24,7 @@ export default function BlogPage() {
             <span className="mono" style={{ fontSize: '12px', color: '#cdddea' }}>{featured.read} · {featured.date}</span>
           </div>
           <div style={{ flex: '2.4 1 300px', padding: '28px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--acc)' }}>Featured</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--accInk)' }}>Featured</div>
             <h2 style={{ fontSize: '23px', fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.2, marginTop: '10px' }}>
               <Link to={`/blog/${featured.id}`} className="card-link">{featured.title}</Link>
             </h2>
@@ -35,7 +35,7 @@ export default function BlogPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '16px', marginTop: '18px' }}>
           {rest.map(p => (
             <article key={p.id} className="card click blog-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--acc)' }}>{p.cat}</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--accInk)' }}>{p.cat}</span>
               <h3 style={{ fontSize: '16.5px', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.25, marginTop: '10px' }}>
                 <Link to={`/blog/${p.id}`} className="card-link">{p.title}</Link>
               </h3>
@@ -65,7 +65,7 @@ export default function BlogPage() {
   return (
     <div className="page" style={{ maxWidth: '680px', margin: '0 auto', padding: '30px 28px 72px' }}>
       <Link to="/blog" className="linkbtn" style={{ fontSize: '13.5px', color: 'var(--mut)', marginBottom: '24px', display: 'inline-block', textDecoration: 'none' }}>← All articles</Link>
-      <div style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--acc)' }}>{p.cat}</div>
+      <div style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--accInk)' }}>{p.cat}</div>
       <h1 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.1, marginTop: '12px' }}>{p.title}</h1>
       <div className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '14px', paddingBottom: '24px', borderBottom: '1px solid var(--line)' }}>
         {p.read} · {p.date}

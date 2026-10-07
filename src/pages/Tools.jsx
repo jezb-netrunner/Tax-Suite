@@ -383,7 +383,7 @@ export default function ToolsPage() {
             )}
             <div style={{ fontSize: '12px', color: 'var(--accInk)', fontWeight: 600 }}>Tax to withhold {payday}</div>
             <div className="mono" style={{ fontSize: '24px', fontWeight: 600, color: 'var(--accInk)', marginTop: '5px' }}>{money2(whTax)}</div>
-            <div style={{ fontSize: '12.5px', color: 'var(--accInk)', opacity: .8, marginTop: '3px' }}>Effective rate {whRate.toFixed(1)}% of taxable pay</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--accInk)', marginTop: '3px' }}>Effective rate {whRate.toFixed(1)}% of taxable pay</div>
           </div>
         </div>
         <ProjectorCard />
