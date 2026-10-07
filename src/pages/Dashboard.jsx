@@ -411,7 +411,10 @@ function OverdueSection({ items, recent, profile, onMark, onMarkMany, undoRef })
 
   if (!items.length && !recent.length) return null
 
-  const shown = showAll ? items : items.slice(0, OVERDUE_SHOWN)
+  // M22: the rows after the first OVERDUE_SHOWN stay in the page with the
+  // class print-extra (hidden on screen until "Show all", shown in print), so
+  // a printout or PDF lists every overdue item.
+  const extra = i => !showAll && i >= OVERDUE_SHOWN
 
   function markAll() {
     onMarkMany(items, true)
@@ -437,8 +440,8 @@ function OverdueSection({ items, recent, profile, onMark, onMarkMany, undoRef })
       </p>
       {items.length > 0 && (
         <ul id="overdue-list" className="list-card" style={{ listStyle: 'none', margin: '12px 0 0', padding: 0 }}>
-          {shown.map(d => (
-            <li key={d.id} className="frow" style={{ flexWrap: 'wrap', rowGap: '10px' }}>
+          {items.map((d, i) => (
+            <li key={d.id} className={extra(i) ? 'frow print-extra' : 'frow'} style={{ flexWrap: 'wrap', rowGap: '10px' }}>
               <div style={{ textAlign: 'center', flexShrink: 0, width: '44px' }}>
                 <div className="mono" style={{ fontSize: '17px', fontWeight: 600 }}>{d.date.getDate()}</div>
                 <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--mut)' }}>{fmtMonthShort(d.date)}</div>

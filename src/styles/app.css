@@ -233,6 +233,8 @@ main h1[tabindex="-1"]:focus { outline: none; }
 /* M22: print / Save as PDF. Only the page content prints, as dark text on
    white, with a header line (profile, tax year, Manila print date). */
 .print-only { display: none; }
+/* M22: overdue rows past the first five: hidden on screen until "Show all", printed. */
+.frow.print-extra { display: none; }
 @media print {
   @page { margin: 14mm 12mm; }
   :root { --mut: #333; --dim: #444; --line: #b8c2cc; --line2: #d0d7de; --bg: #fff; }
@@ -241,6 +243,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
   body { color: #000; font-size: 11pt; }
   .hdr, .no-print, button, .ftr p + p, .dl-details, .linkbtn { display: none !important; }
   .print-only { display: block !important; }
+  .frow.print-extra { display: flex; }
   .print-head { font-size: 10pt; font-weight: 600; color: #000; border-bottom: 1px solid #000; padding-bottom: 6px; margin-bottom: 14px; }
   .page, .acc-body { animation: none !important; }
   .wrap { max-width: none; padding-left: 0 !important; padding-right: 0 !important; }
