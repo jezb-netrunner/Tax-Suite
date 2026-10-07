@@ -16,7 +16,7 @@ import { HOLIDAY_SET, OBLIGATIONS } from '../../lib/deadlineData.js'
 import { fyDue } from '../rulebook.js'
 import { RT, percentText } from '../ruleText.js'
 import { thresholdCrossing, crossingRows, overVatThreshold } from './crossing.js'
-import { VAT_NOTE } from './individual.js'
+import { VAT_NOTE, OVERPAYMENT_NOTE } from './individual.js'
 
 const RCIT = corp.rcit.value
 const MCIT = corp.mcit.value
@@ -375,7 +375,9 @@ export function estimateCorporation(in_) {
     for (const x of creditItems) r(x.label, -P(x.c))
     const net = P(incomeTaxDueC - creditsC)
     if (net >= 0) r('Income tax still payable', net, { strong: true })
-    else r('Overpayment: refund or carry over', -net, { strong: true, sub: 'The carry-over election, once made on the annual return, is irrevocable (NIRC Sec 76).' })
+    // L02: refund, tax credit certificate or carry over; for a corporation the
+    // carry-over choice is irrevocable (NIRC Sec 76).
+    else r('Overpayment', -net, { strong: true, sub: `${OVERPAYMENT_NOTE} The carry-over election, once made on the annual return, is irrevocable (NIRC Sec 76).` })
   }
 
   return {
