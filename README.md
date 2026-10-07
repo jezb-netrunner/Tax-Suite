@@ -114,7 +114,10 @@ Schema: [`supabase/migrations/0001_taxpayer_profiles.sql`](supabase/migrations/0
 one table, JSONB profile data, RLS restricting every row to its owner.
 [`supabase/migrations/0002_account_privacy_and_limits.sql`](supabase/migrations/0002_account_privacy_and_limits.sql)
 adds `delete_own_account()`, the server function behind "Delete my account"
-(a signed-in user deletes their own login; their profiles go with it).
+(a signed-in user deletes their own login; their profiles go with it), a
+64 kB limit per profile, a cap of 500 profiles per account, database-set
+`created_at` / `updated_at`, and the policies rewritten for signed-in users
+only. The app also filters its profile list by the signed-in user.
 **Neither migration has been applied to a live database** (accounts mode has
 never been live). Apply both, in order, when accounts mode is switched on.
 

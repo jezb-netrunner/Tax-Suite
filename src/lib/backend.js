@@ -45,6 +45,24 @@ function newId() {
 
 const EXPORT_HEADER = { app: 'JEZ Tax Suite', format: 'jez-tax-suite-export', version: 1 }
 
+// L17: the most profiles one account may hold. The database enforces it
+// (supabase/migrations/0002); keep the two in step.
+export const PROFILE_LIMIT = 500
+
+// Database errors from saving a profile, in plain words. The server's own
+// text is never shown.
+function saveError(error) {
+  const code = error && error.code
+  const text = (error && error.message) || ''
+  if (code === '23514' && text.includes('taxpayer_profiles_data_size')) {
+    return new Error('This profile is too large to save. Clear figures you no longer need, or split it into two profiles.')
+  }
+  if (code === 'P0001' && text.includes('profile limit')) {
+    return new Error(`This account already has ${PROFILE_LIMIT} profiles, the most it can hold. Delete profiles you no longer need, then try again.`)
+  }
+  return new Error('The profile could not be saved. Please try again.')
+}
+
 export function createBackend({ client = null, storage } = {}) {
   const cloud = Boolean(client)
   const store = () => (storage !== undefined ? storage : globalThis.localStorage)
@@ -67,9 +85,12 @@ export function createBackend({ client = null, storage } = {}) {
 
   async function listProfiles(userId) {
     if (!cloud) return localLoad()
+    if (!userId) return []
+    // Filter by the signed-in user as well as relying on row-level security.
     const { data, error } = await client
       .from('taxpayer_profiles')
       .select('id, data, updated_at')
+      .eq('user_id', userId)
       .order('created_at', { ascending: true })
     if (error) throw error
     return data.map(r => ({ ...r.data, id: r.id }))
@@ -86,13 +107,15 @@ export function createBackend({ client = null, storage } = {}) {
     }
     const row = { user_id: userId, data: { ...profile, id: undefined } }
     if (profile.id) {
+      // The database stamps updated_at (0002), so only the data is sent.
       const { data, error } = await client
         .from('taxpayer_profiles')
-        .update({ data: row.data, updated_at: new Date().toISOString() })
+        .update({ data: row.data })
         .eq('id', profile.id)
+        .eq('user_id', userId)
         .select('id')
         .single()
-      if (error) throw error
+      if (error) throw saveError(error)
       return { ...profile, id: data.id }
     }
     const { data, error } = await client
@@ -100,7 +123,7 @@ export function createBackend({ client = null, storage } = {}) {
       .insert(row)
       .select('id')
       .single()
-    if (error) throw error
+    if (error) throw saveError(error)
     return { ...profile, id: data.id }
   }
 
