@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { FORMS_DATA, FORM_CATS } from '../data/forms.js'
 import attachments from '../data/rules/attachments.json'
 import { Seg } from '../components/ui.jsx'
+import { GLOSSARY } from '../data/glossary.js'
 
 const ATTACH_BY_FORM = Object.fromEntries(attachments.perReturn.value.map(r => [r.form, r.items]))
 
@@ -127,6 +128,21 @@ export default function FormsPage() {
           )
         })}
       </div>
+      {/* L15: the codes shown on calendar chips, in plain language. */}
+      <section className="card pad" style={{ marginTop: '22px' }} aria-labelledby="codes-h">
+        <h2 id="codes-h" className="sec-h">What the codes mean</h2>
+        <p style={{ fontSize: '13px', color: '#4a5a6a', marginTop: '6px', lineHeight: 1.55 }}>
+          Short names you will see on your calendar and on BIR, SSS, PhilHealth, Pag-IBIG and SEC pages.
+        </p>
+        <dl className="ref-fields" style={{ fontSize: '13px' }}>
+          {GLOSSARY.map(g => (
+            <React.Fragment key={g.code}>
+              <dt className="mono">{g.code}</dt>
+              <dd><b>{g.name}</b>{`: ${g.meaning}`}</dd>
+            </React.Fragment>
+          ))}
+        </dl>
+      </section>
     </div>
   )
 }

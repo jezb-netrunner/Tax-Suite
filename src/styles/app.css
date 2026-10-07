@@ -303,6 +303,8 @@ a { color: inherit; }
 .dl-details-body { margin-top: 4px; color: #4a5a6a; line-height: 1.55; }
 .dl-details-body p + p { margin-top: 5px; }
 .dl-details-body .cite { color: #56667a; }
+/* L15: chip codes with a tooltip */
+.code-abbr { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
 /* References: rule values */
 .ref-val { font-size: 13px; margin-top: 6px; color: var(--ink); line-height: 1.5; }
 .ref-scroll { position: relative; overflow-x: auto; margin-top: 8px; border: 1px solid var(--line2); border-radius: 9px; max-width: 100%; }

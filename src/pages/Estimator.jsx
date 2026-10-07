@@ -761,7 +761,7 @@ export default function Estimator() {
     individual: 'Which regime saves you the most?',
     mixed: 'Your combined tax picture',
     employee: 'Your pay, your tax, your take-home',
-    corporation: 'RCIT or MCIT: what will you owe?',
+    corporation: 'Regular corporate income tax (RCIT) or minimum corporate income tax (MCIT): what will you owe?',
     payroll: 'What withholding an employee costs',
   }
 

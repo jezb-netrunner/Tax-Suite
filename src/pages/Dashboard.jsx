@@ -12,6 +12,7 @@ import { useManilaToday } from '../lib/useManilaToday.js'
 import { useProfileMarks } from '../lib/useProfileMarks.js'
 import { AgencyTag } from '../components/ui.jsx'
 import { ItemBadge, DeadlineDetails } from '../components/Confidence.jsx'
+import { FormCode } from '../components/FormCode.jsx'
 import { PROFILE_TYPES } from '../engine/profile.js'
 
 const CATLABEL = { income: 'Income tax', business: 'Business tax', withholding: 'Withholding', payroll: 'Payroll & contributions', admin: 'Admin', registration: 'Registration' }
@@ -181,7 +182,7 @@ export default function Dashboard() {
                       <p style={{ fontSize: '14px', lineHeight: 1.55, color: '#cdddea', marginTop: '10px' }}>{hero.obligation.desc}</p>
                       <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
                         {hero.obligation.form && hero.obligation.form !== '—' && (
-                          <span style={{ padding: '5px 10px', borderRadius: '7px', background: 'rgba(255,255,255,.12)', fontSize: '12px', fontWeight: 600, color: '#e4eef6' }}>{hero.obligation.form}</span>
+                          <FormCode form={hero.obligation.form} className={null} style={{ padding: '5px 10px', borderRadius: '7px', background: 'rgba(255,255,255,.12)', fontSize: '12px', fontWeight: 600, color: '#e4eef6' }} />
                         )}
                         <span style={{ padding: '5px 10px', borderRadius: '7px', background: 'rgba(255,255,255,.12)', fontSize: '12px', fontWeight: 600, color: '#e4eef6' }}>{hero.obligation.agency}</span>
                         {hero.label && <span style={{ padding: '5px 10px', borderRadius: '7px', background: 'rgba(255,255,255,.12)', fontSize: '12px', fontWeight: 600, color: '#e4eef6' }}>{hero.label}</span>}
@@ -280,7 +281,7 @@ export default function Dashboard() {
                             {isUnconfirmed(d) && <div style={{ marginTop: '5px' }}><ItemBadge item={d} /></div>}
                             <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>{d.obligation.desc}</div>
                             <div style={{ display: 'flex', gap: '8px', marginTop: '9px', alignItems: 'center' }}>
-                              {d.obligation.form && d.obligation.form !== '—' && <span className="boxcode">{d.obligation.form}</span>}
+                              {d.obligation.form && d.obligation.form !== '—' && <FormCode form={d.obligation.form} />}
                               <AgencyTag agency={d.obligation.agency} />
                               {d.shifted && <span style={{ fontSize: '11.5px', color: 'var(--dim)' }}>moved from {fmtDate(d.rawDate)}</span>}
                             </div>
@@ -297,7 +298,7 @@ export default function Dashboard() {
             )}
 
             {view === 'table' && (
-              <div className="list-card" style={{ overflowX: 'auto' }}>
+              <div className="list-card" style={{ overflowX: 'auto', position: 'relative' }}>
                 <table className="tbl">
                   <thead>
                     <tr><th>Date</th><th>Obligation</th><th>Form</th><th>Agency</th><th>Type</th><th>Period</th></tr>
@@ -311,7 +312,7 @@ export default function Dashboard() {
                           {d.extended && <div style={{ fontSize: '12px', fontWeight: 400, color: 'var(--mut)' }}>Extended by {d.extended.basis}</div>}
                           {isUnconfirmed(d) && <div style={{ marginTop: '4px', fontWeight: 400 }}><ItemBadge item={d} /></div>}
                         </td>
-                        <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}>{d.obligation.form || '—'}</td>
+                        <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}><FormCode form={d.obligation.form || '—'} className={null} /></td>
                         <td><AgencyTag agency={d.obligation.agency} /></td>
                         <td style={{ color: 'var(--mut)' }}>{CATLABEL[d.obligation.category] || ''}</td>
                         <td className="mono" style={{ fontSize: '12px', color: 'var(--dim)', whiteSpace: 'nowrap' }}>{d.label || '—'}</td>
@@ -613,7 +614,7 @@ function DeadlineRow({ d, showFreq }) {
         </div>
         {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}
         <AgencyTag agency={d.obligation.agency} />
-        {d.obligation.form && d.obligation.form !== '—' && <span className="boxcode">{d.obligation.form}</span>}
+        {d.obligation.form && d.obligation.form !== '—' && <FormCode form={d.obligation.form} />}
       </div>
       {/* Full width under the title, so the notes stay readable on phones. */}
       <div style={{ paddingLeft: '60px' }}><DeadlineDetails d={d} /></div>
