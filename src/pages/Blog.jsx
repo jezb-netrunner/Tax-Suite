@@ -61,7 +61,10 @@ export default function BlogPage() {
       <button className="linkbtn" style={{ fontSize: '13.5px', color: 'var(--mut)', marginBottom: '24px' }} onClick={() => nav('/blog')}>← All articles</button>
       <div style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--acc)' }}>{p.cat}</div>
       <h1 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.1, marginTop: '12px' }}>{p.title}</h1>
-      <div className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '14px', paddingBottom: '24px', borderBottom: '1px solid var(--line)' }}>{p.read} · {p.date}</div>
+      <div className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '14px', paddingBottom: '24px', borderBottom: '1px solid var(--line)' }}>
+        {p.read} · {p.date}
+        {p.reviewed && <div style={{ marginTop: '6px', color: '#4a5a6a' }}>{`Last reviewed: ${p.reviewed}`}</div>}
+      </div>
       <div style={{ marginTop: '8px' }}>
         {(p.body || []).map((b, i) => (
           <div key={i}>
