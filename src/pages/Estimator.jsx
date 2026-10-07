@@ -9,7 +9,10 @@ import { selfEmployedMonthlyContributions } from '../engine/estimators/contribut
 import { NumField, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
 
-function Rows({ rows }) {
+// fmt 'peso': return figures in whole pesos (BIR form lines);
+// fmt 'centavo': payslip and contribution figures to the centavo.
+function Rows({ rows, fmt = 'peso' }) {
+  const f = fmt === 'centavo' ? money2 : money
   return (
     <div style={{ marginTop: '8px' }}>
       {rows.map((x, i) => (
@@ -17,7 +20,7 @@ function Rows({ rows }) {
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '16px', padding: '9px 0', borderTop: x.rule ? '1px solid var(--line)' : undefined, marginTop: x.rule ? '2px' : undefined }}>
             <span style={{ fontSize: '13.5px', color: x.strong ? 'var(--ink)' : 'var(--mut)', fontWeight: x.strong ? 600 : 400 }}>{x.label}</span>
             <span className="mono" style={{ fontSize: '14px', fontWeight: x.strong ? 700 : 500 }}>
-              {x.value == null ? '—' : x.value < 0 ? `(${money2(-x.value)})` : money2(x.value)}
+              {x.value == null ? '—' : x.value < 0 ? `(${f(-x.value)})` : f(x.value)}
             </span>
           </div>
           {x.sub && <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '-3px', paddingBottom: '6px', fontStyle: 'italic' }}>{x.sub}</div>}
@@ -205,7 +208,7 @@ function SelfContributionsCard({ monthly }) {
       <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px' }}>
         Based on average monthly income of {money(monthly)}. SSS, PhilHealth, and Pag-IBIG are separate from your taxes.
       </p>
-      <Rows rows={[
+      <Rows fmt="centavo" rows={[
         { label: 'SSS (self-employed, incl. EC)', value: c.sss },
         { label: 'PhilHealth (direct contributor)', value: c.philhealth },
         { label: 'Pag-IBIG savings', value: c.pagibig },
@@ -233,11 +236,11 @@ function EmployeeEstimator({ app }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
         <div className="card pad">
           <h3 className="sec-h">Your monthly payslip</h3>
-          <Rows rows={r.rows} />
+          <Rows fmt="centavo" rows={r.rows} />
         </div>
         <div className="card pad">
           <h3 className="sec-h">Your year, annualized</h3>
-          <Rows rows={r.annualRows} />
+          <Rows fmt="centavo" rows={r.annualRows} />
           <BasisNote refs={r.references} />
         </div>
       </div>
@@ -297,7 +300,7 @@ function PayrollEstimator({ app }) {
       </div>
       <div className="card pad" style={{ marginTop: '20px' }}>
         <h3 className="sec-h">Withholding &amp; true cost for this employee</h3>
-        <Rows rows={r.rows} />
+        <Rows fmt="centavo" rows={r.rows} />
         <BasisNote refs={r.references} />
       </div>
     </>

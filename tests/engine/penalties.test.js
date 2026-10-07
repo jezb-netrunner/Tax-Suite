@@ -7,21 +7,21 @@ import { estimatePenalty, compromiseFor } from '../../src/engine/estimators/pena
 describe('late-filing penalty', () => {
   it('regular taxpayer', () => {
     const r = estimatePenalty({ taxDue: 50000, daysLate: 60, microSmall: false })
-    expect(r.surcharge).toBeCloseTo(12500)
-    expect(r.interest).toBeCloseTo(986.30, 1)
+    expect(r.surcharge).toBe(12500)
+    expect(r.interest).toBe(986.3)
     expect(r.compromise).toBe(10000)
-    expect(r.total).toBeCloseTo(73486.30, 1)
+    expect(r.total).toBe(73486.3)
   })
   it('micro/small taxpayer under EOPT', () => {
     const r = estimatePenalty({ taxDue: 50000, daysLate: 60, microSmall: true })
-    expect(r.surcharge).toBeCloseTo(5000)
-    expect(r.interest).toBeCloseTo(493.15, 1)
+    expect(r.surcharge).toBe(5000)
+    expect(r.interest).toBe(493.15)
     expect(r.compromise).toBe(5000)
-    expect(r.total).toBeCloseTo(60493.15, 1)
+    expect(r.total).toBe(60493.15)
   })
   it('willful neglect surcharge is 50%', () => {
     const r = estimatePenalty({ taxDue: 100000, daysLate: 30, willful: true })
-    expect(r.surcharge).toBeCloseTo(50000)
+    expect(r.surcharge).toBe(50000)
   })
   it('compromise tiers', () => {
     expect(compromiseFor(4000)).toBe(1000)

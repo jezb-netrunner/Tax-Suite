@@ -75,6 +75,6 @@ describe('corporation — 25% standard rate cases', () => {
   it('non-VAT small corp pays 3% percentage tax', () => {
     const r = estimateCorporation({ grossSales: 2000000, costOfSales: 500000, opex: 500000, totalAssets: 5000000 })
     expect(r.vat).toBe(false)
-    expect(r.pct).toBeCloseTo(60000)
+    expect(r.pct).toBe(60000)
   })
 })

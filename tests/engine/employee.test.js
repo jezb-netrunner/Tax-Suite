@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { estimateEmployee } from '../../src/engine/estimators/employee.js'
 import { employeeMandatoryDeductions, sssEmployee, philhealthMonthly, pagibigMonthly } from '../../src/engine/estimators/contributions.js'
 import wcomp from '../../src/data/rules/withholding-compensation.json'
+import { toCentavos, mulRate } from '../../src/lib/money.js'
 
 // Hand-worked: ₱30,000/month employee, 13th month ₱30,000 (fully excluded, < ₱90k cap)
 //   SSS EE:        MSC 30,000 × 5%  = 1,500
@@ -13,25 +14,27 @@ import wcomp from '../../src/data/rules/withholding-compensation.json'
 describe('employee estimator — ₱30k/month hand-worked', () => {
   const r = estimateEmployee({ monthlyBasic: 30000, monthlyAllowances: 0, bonusesAnnual: 30000 })
   it('mandatory deductions', () => {
-    expect(r.deductions.sss).toBeCloseTo(1500)
-    expect(r.deductions.philhealth).toBeCloseTo(750)
-    expect(r.deductions.pagibig).toBeCloseTo(200)
-    expect(r.deductions.total).toBeCloseTo(2450)
+    expect(r.deductions.sss).toBe(1500)
+    expect(r.deductions.philhealth).toBe(750)
+    expect(r.deductions.pagibig).toBe(200)
+    expect(r.deductions.total).toBe(2450)
   })
   it('monthly taxable and withholding', () => {
-    expect(r.monthlyTaxable).toBeCloseTo(27550)
-    expect(r.monthlyWithholding).toBeCloseTo(1007.55, 1)
+    expect(r.monthlyTaxable).toBe(27550)
+    expect(r.monthlyWithholding).toBe(1007.55)
   })
   it('annualization matches the graduated table', () => {
-    expect(r.annualTaxable).toBeCloseTo(330600)
-    expect(r.annualTax).toBeCloseTo(12090)
-    // withholding tracks annual tax to within a peso × 12 rounding
-    expect(Math.abs(r.yearEndDifference)).toBeLessThan(5)
+    expect(r.annualTaxable).toBe(330600)
+    expect(r.annualTax).toBe(12090)
+    // 12 × ₱1,007.55 = ₱12,090.60 withheld, so ₱0.60 is refunded at year end
+    expect(r.annualRows.find(x => x.label === 'Total withheld over 12 months').value).toBe(12090.6)
+    expect(r.yearEndDifference).toBe(-0.6)
   })
   it('bonus above the ₱90k cap becomes taxable', () => {
     const r2 = estimateEmployee({ monthlyBasic: 100000, bonusesAnnual: 150000 })
-    // taxable bonus = 60,000
-    expect(r2.annualTaxable).toBeCloseTo(r2.monthlyTaxable * 12 + 60000)
+    // taxable bonus = 60,000; monthly taxable 100,000 − (1,750 + 2,500 + 200) = 95,550
+    expect(r2.monthlyTaxable).toBe(95550)
+    expect(r2.annualTaxable).toBe(95550 * 12 + 60000)
   })
   it('minimum-wage-level pay withholds nothing', () => {
     const r3 = estimateEmployee({ monthlyBasic: 15000 })
@@ -47,8 +50,8 @@ describe('withholding tables are continuous at every bracket boundary', () => {
     it(`${period} table`, () => {
       for (let i = 1; i < rows.length; i++) {
         const prev = rows[i - 1], cur = rows[i]
-        const implied = prev.base + prev.rate * (cur.over - prev.over)
-        expect(implied, `${period} bracket over ${cur.over}`).toBeCloseTo(cur.base, 2)
+        const implied = toCentavos(prev.base) + mulRate(toCentavos(cur.over - prev.over), prev.rate)
+        expect(implied, `${period} bracket over ${cur.over}`).toBe(toCentavos(cur.base))
       }
     })
   }
@@ -61,20 +64,20 @@ describe('contribution primitives', () => {
   })
   it('SSS employer share includes EC', () => {
     const s = sssEmployee(30000)
-    expect(s.employer).toBeCloseTo(3000 + 30)
+    expect(s.employer).toBe(3000 + 30)
     const low = sssEmployee(10000)
     expect(low.ec).toBe(10)
   })
   it('PhilHealth clamps to ₱10k–₱100k income band', () => {
-    expect(philhealthMonthly(5000).premium).toBeCloseTo(500)
-    expect(philhealthMonthly(200000).premium).toBeCloseTo(5000)
+    expect(philhealthMonthly(5000).premium).toBe(500)
+    expect(philhealthMonthly(200000).premium).toBe(5000)
   })
   it('Pag-IBIG caps fund salary at ₱10,000', () => {
-    expect(pagibigMonthly(30000).employee).toBeCloseTo(200)
-    expect(pagibigMonthly(30000).employer).toBeCloseTo(200)
-    expect(pagibigMonthly(1200).employee).toBeCloseTo(12) // 1% below ₱1,500
+    expect(pagibigMonthly(30000).employee).toBe(200)
+    expect(pagibigMonthly(30000).employer).toBe(200)
+    expect(pagibigMonthly(1200).employee).toBe(12) // 1% below ₱1,500
   })
   it('aggregate deductions', () => {
-    expect(employeeMandatoryDeductions(30000).total).toBeCloseTo(2450)
+    expect(employeeMandatoryDeductions(30000).total).toBe(2450)
   })
 })

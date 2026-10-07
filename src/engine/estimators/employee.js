@@ -1,10 +1,16 @@
 // Employee-side estimator: annualized income tax, monthly withholding, and
 // take-home pay, mirroring the employer's year-end annualization (Sec 79(H)).
+//
+// Rounding: payslip and withholding lines are rounded half-up to the centavo
+// (owner decision; the BIR rule for 1601-C/2316 is unconfirmed, needs_review).
+// Everything is computed in whole centavos, so the payslip foots and the
+// 12-month total is exactly 12 × the rounded monthly withholding.
 
 import incomeTax from '../../data/rules/income-tax.json'
 import wcomp from '../../data/rules/withholding-compensation.json'
-import { bracketTax } from '../tax.js'
+import { bracketTaxCentavos } from '../tax.js'
 import { employeeMandatoryDeductions } from './contributions.js'
+import { toCentavos, fromCentavos } from '../../lib/money.js'
 
 const BR = incomeTax.graduatedBrackets.value
 const CAP13 = incomeTax.thirteenthMonthExclusionCap.value
@@ -19,21 +25,26 @@ const TABLES = wcomp.tables.value
  */
 export function estimateEmployee(in_) {
   const { monthlyBasic = 0, monthlyAllowances = 0, bonusesAnnual = 0 } = in_
+  const C = toCentavos
+  const P = fromCentavos
 
   const ded = employeeMandatoryDeductions(monthlyBasic)
-  const monthlyTaxable = Math.max(0, monthlyBasic + monthlyAllowances - ded.total)
+  const payC = C(monthlyBasic) + C(monthlyAllowances)
+  const monthlyTaxableC = Math.max(0, payC - C(ded.total))
 
-  const bonusTaxable = Math.max(0, bonusesAnnual - CAP13)
-  const annualTaxable = monthlyTaxable * 12 + bonusTaxable
-  const annualTax = bracketTax(BR, annualTaxable)
+  const bonusTaxableC = Math.max(0, C(bonusesAnnual) - C(CAP13))
+  const annualTaxableC = monthlyTaxableC * 12 + bonusTaxableC
+  const annualTaxC = bracketTaxCentavos(BR, annualTaxableC)
 
   // Withholding per the monthly table on this month's taxable pay.
-  const monthlyWithholding = bracketTax(
-    TABLES.monthly.map(b => ({ over: b.over, base: b.base, rate: b.rate })),
-    monthlyTaxable
-  )
+  const monthlyWithholdingC = bracketTaxCentavos(TABLES.monthly, monthlyTaxableC)
+  const withheld12C = monthlyWithholdingC * 12
 
-  const monthlyTakeHome = monthlyBasic + monthlyAllowances - ded.total - monthlyWithholding
+  const monthlyTaxable = P(monthlyTaxableC)
+  const monthlyWithholding = P(monthlyWithholdingC)
+  const monthlyTakeHome = P(payC - C(ded.total) - monthlyWithholdingC)
+  const annualTaxable = P(annualTaxableC)
+  const annualTax = P(annualTaxC)
 
   const rows = []
   const r = (label, value, o = {}) => rows.push({ label, value, ...o })
@@ -48,13 +59,13 @@ export function estimateEmployee(in_) {
 
   const annualRows = []
   const a = (label, value, o = {}) => annualRows.push({ label, value, ...o })
-  a('Annualized taxable compensation (×12)', monthlyTaxable * 12)
+  a('Annualized taxable compensation (×12)', P(monthlyTaxableC * 12))
   a('13th month & other benefits', bonusesAnnual)
-  a(`Less: exclusion cap (₱${CAP13.toLocaleString('en-US')})`, -Math.min(bonusesAnnual, CAP13))
+  a(`Less: exclusion cap (₱${CAP13.toLocaleString('en-US')})`, -P(Math.min(C(bonusesAnnual), C(CAP13))))
   a('Annual taxable income', annualTaxable, { rule: true })
   a('Annual income tax (graduated table)', annualTax, { strong: true, sub: 'Your employer trues this up in December: extra tax is withheld or over-withholding refunded (NIRC Sec 79(H)).' })
-  a('Total withheld over 12 months', monthlyWithholding * 12)
-  const diff = annualTax - monthlyWithholding * 12
+  a('Total withheld over 12 months', P(withheld12C))
+  const diff = P(annualTaxC - withheld12C)
   if (Math.abs(diff) >= 1) {
     a(diff > 0 ? 'Year-end adjustment: extra withholding due' : 'Year-end adjustment: refund due to you', Math.abs(diff), { strong: true })
   }

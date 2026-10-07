@@ -1,8 +1,13 @@
 // Domestic-corporation estimator: RCIT (25% / 20% small-corp) vs 2% MCIT,
 // with the 4th-year MCIT rule and a transparent breakdown.
+//
+// Rounding: BIR Form 1702 lines are whole pesos (49 centavos or less drop,
+// 50 or more round up); each line is rounded and later lines are computed
+// from the rounded ones.
 
 import corp from '../../data/rules/corporate.json'
 import businessTax from '../../data/rules/business-tax.json'
+import { toCentavos, fromCentavos, toWholePesos, mulRate } from '../../lib/money.js'
 
 const RCIT = corp.rcit.value
 const MCIT = corp.mcit.value
@@ -21,26 +26,45 @@ const PCT_RATE = businessTax.percentageTaxRate.value
  *   vatRegistered
  */
 export function estimateCorporation(in_) {
-  const { grossSales = 0, costOfSales = 0, opex = 0, totalAssets = 0, cwt = 0,
-    registrationYear = null, taxYear = new Date().getFullYear(), vatRegistered = false } = in_
+  const { totalAssets = 0, registrationYear = null, vatRegistered = false } = in_
+  const taxYear = in_.taxYear ?? new Date().getFullYear()
+  const line = pesos => toWholePesos(toCentavos(pesos || 0))
+  const P = fromCentavos
 
-  const grossIncome = Math.max(0, grossSales - costOfSales)
-  const taxableIncome = Math.max(0, grossIncome - opex)
+  const grossSalesC = line(in_.grossSales)
+  const costOfSalesC = line(in_.costOfSales)
+  const opexC = line(in_.opex)
+  const cwtC = line(in_.cwt)
+  const grossIncomeC = Math.max(0, grossSalesC - costOfSalesC)
+  const taxableIncomeC = Math.max(0, grossIncomeC - opexC)
+
+  const grossSales = P(grossSalesC)
+  const costOfSales = P(costOfSalesC)
+  const opex = P(opexC)
+  const cwt = P(cwtC)
+  const grossIncome = P(grossIncomeC)
+  const taxableIncome = P(taxableIncomeC)
 
   const smallCorp = taxableIncome <= RCIT.smallCorpTaxableIncomeCeiling && totalAssets <= RCIT.smallCorpAssetCeiling
   const rcitRate = smallCorp ? RCIT.smallCorpRate : RCIT.standardRate
-  const rcit = taxableIncome * rcitRate
+  const rcitC = toWholePesos(mulRate(taxableIncomeC, rcitRate))
 
   // MCIT applies beginning the 4th taxable year immediately following the
   // year operations commenced (e.g. began 2022 → MCIT from TY 2026).
   const mcitApplies = registrationYear != null && taxYear >= registrationYear + 4
-  const mcit = mcitApplies ? grossIncome * MCIT.rate : 0
-  const usesMcit = mcitApplies && mcit > rcit
-  const incomeTaxDue = Math.max(rcit, mcit)
+  const mcitC = mcitApplies ? toWholePesos(mulRate(grossIncomeC, MCIT.rate)) : 0
+  const usesMcit = mcitApplies && mcitC > rcitC
+  const incomeTaxDueC = Math.max(rcitC, mcitC)
 
-  const overThreshold = grossSales > VAT_THRESHOLD
+  // The ₱3M test uses the actual sales, not the rounded line.
+  const overThreshold = toCentavos(in_.grossSales || 0) > toCentavos(VAT_THRESHOLD)
   const vat = vatRegistered || overThreshold
-  const pct = vat ? 0 : grossSales * PCT_RATE
+  const pctC = vat ? 0 : toWholePesos(mulRate(grossSalesC, PCT_RATE))
+
+  const rcit = P(rcitC)
+  const mcit = P(mcitC)
+  const incomeTaxDue = P(incomeTaxDueC)
+  const pct = P(pctC)
 
   const rows = []
   const r = (label, value, o = {}) => rows.push({ label, value, ...o })
@@ -76,7 +100,7 @@ export function estimateCorporation(in_) {
   if (vat) r('Value-added tax', null, { sub: 'VAT (12%) is computed separately on sales less creditable input VAT.' })
   if (cwt > 0) {
     r('Less: creditable tax withheld (2307s)', -cwt)
-    const net = incomeTaxDue - cwt
+    const net = P(incomeTaxDueC - cwtC)
     if (net >= 0) r('Income tax still payable', net, { strong: true })
     else r('Overpayment: refund or carry over', -net, { strong: true, sub: 'The carry-over election, once made on the annual return, is irrevocable (NIRC Sec 76).' })
   }
@@ -94,8 +118,8 @@ export function estimateCorporation(in_) {
     pct,
     vat,
     overThreshold,
-    netPayable: incomeTaxDue - cwt,
-    totalAnnualTax: incomeTaxDue + pct,
+    netPayable: P(incomeTaxDueC - cwtC),
+    totalAnnualTax: P(incomeTaxDueC + pctC),
     rows,
     references: [...corp.rcit.legalBasis, ...corp.mcit.legalBasis],
   }

@@ -6,6 +6,7 @@ import businessTax from '../data/rules/business-tax.json'
 import incomeTax from '../data/rules/income-tax.json'
 import { NumField, Seg, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
+import { toCentavos, fromCentavos } from '../lib/money.js'
 
 const VAT_THRESHOLD = businessTax.vatThreshold.value
 const EIGHT = incomeTax.eightPercent.value
@@ -25,7 +26,7 @@ export default function ToolsPage() {
   const whTaxable = useMemo(() => {
     if (whGrossMode === 'taxable') return whComp
     const ded = employeeMandatoryDeductions(whComp)
-    return Math.max(0, whComp - ded.total)
+    return fromCentavos(Math.max(0, toCentavos(whComp) - toCentavos(ded.total)))
   }, [whComp, whGrossMode])
   const whTax = useMemo(() => withholdingForPeriod(whTaxable, 'monthly'), [whTaxable])
   const whRate = whTaxable > 0 ? (whTax / whTaxable * 100) : 0
@@ -60,7 +61,7 @@ export default function ToolsPage() {
         </div>
         <div style={{ marginTop: '18px', borderTop: '1px solid var(--line2)', paddingTop: '6px' }}>
           {[
-            { label: 'Basic tax due', value: money(penDue) },
+            { label: 'Basic tax due', value: money2(penDue) },
             { label: `Surcharge (${Math.round(pen.surRate * 100)}%, NIRC Sec 248${penEopt ? ', reduced by EOPT' : ''})`, value: money2(pen.surcharge) },
             { label: `Interest · ${penDays} days @ ${Math.round(pen.intRate * 100)}%/yr (NIRC Sec 249)`, value: money2(pen.interest) },
             { label: `Compromise penalty (RMO 7-2015 schedule${penEopt ? ', 50% off' : ''})`, value: money2(pen.compromise) },

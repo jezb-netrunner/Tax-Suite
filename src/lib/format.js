@@ -11,15 +11,18 @@
 //   formatMoneyInput(pesos)  -> '480,000' / '4,800.50' / '' (text shown after the box loses focus)
 //   formatIntegerInput(n)    -> '3,650' / ''
 
+import { toCentavos, formatPesos, formatCentavos, groupThousands } from './money.js'
+
+// Display of peso Numbers (engine outputs). Both go through whole centavos
+// first, so a value is never rounded twice in different directions.
+//   money(n)   whole pesos, half-up (return figures):        2.5 -> '₱3', −2.5 -> '−₱3'
+//   money2(n)  to the centavo (payslips, withholding, penalties): 3.2 -> '₱3.20'
 export function money(n) {
-  const v = Math.round(n)
-  const sign = v < 0 ? '−' : ''
-  return sign + '₱' + Math.abs(v).toLocaleString('en-US')
+  return formatPesos(toCentavos(n))
 }
 
 export function money2(n) {
-  const sign = n < 0 ? '−' : ''
-  return sign + '₱' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return formatCentavos(toCentavos(n))
 }
 
 export function pct(n, digits = 0) {
@@ -99,9 +102,7 @@ export function parseIntegerInput(raw, { min = 0, max = 999999999 } = {}) {
 }
 
 // 1234567 -> '1,234,567' (no locale dependence).
-export function groupDigits(n) {
-  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
+export const groupDigits = groupThousands
 
 export function formatMoneyInput(value) {
   if (value === null || value === undefined || value === '') return ''

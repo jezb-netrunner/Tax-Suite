@@ -72,6 +72,12 @@
     "confidence": "verified",
     "notes": "On the last payroll of the year (or on termination), the employer computes tax on the full year's taxable compensation (including pay from a previous employer within the year) using the annual graduated table, and withholds or refunds the difference so total withheld equals annual tax due. Refunds of over-withholding are due to employees not later than January 25 of the following year."
   },
+  "payslipRounding": {
+    "value": { "unit": "centavo", "method": "half-up" },
+    "legalBasis": ["Owner decision 3, Oct 7, 2026 (REVIEW.md 4.3); the rounding instruction on BIR Forms 1601-C and 2316 was not confirmed"],
+    "confidence": "needs_review",
+    "notes": "Payslip, withholding and contribution lines are rounded half-up to the centavo (₱3.195 -> ₱3.20), computed exactly in whole centavos, and 12-month totals are 12 × the rounded monthly figure. Confirm against the current 1601-C and 2316 instructions."
+  },
   "mweExempt": {
     "value": true,
     "legalBasis": ["NIRC Sec 24(A)(2), as amended by RA 9504", "RR 10-2008"],

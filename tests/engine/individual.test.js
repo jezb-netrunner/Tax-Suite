@@ -14,28 +14,28 @@ describe('self-employed three-way comparison', () => {
   })
   it('graduated + OSD', () => {
     const o = r.options.find(o => o.key === 'osd')
-    expect(o.incomeTax).toBeCloseTo(5700)
-    expect(o.businessTax.amount).toBeCloseTo(14400)
-    expect(o.total).toBeCloseTo(20100)
+    expect(o.incomeTax).toBe(5700)
+    expect(o.businessTax.amount).toBe(14400)
+    expect(o.total).toBe(20100)
   })
   it('graduated + itemized', () => {
     const o = r.options.find(o => o.key === 'itemized')
-    expect(o.total).toBeCloseTo(21900)
+    expect(o.total).toBe(21900)
   })
   it('picks 8% as best, saving 1,700', () => {
     expect(r.best.key).toBe('8pct')
-    expect(r.savingsVsNext).toBeCloseTo(1700)
+    expect(r.savingsVsNext).toBe(1700)
   })
 })
 
 describe('CWT crediting and overpayment', () => {
   it('credits reduce net payable', () => {
     const r = estimateIndividual({ gross: 480000, expenses: 0, cwt: 10000 })
-    expect(r.netPayable).toBeCloseTo(8400)
+    expect(r.netPayable).toBe(8400)
   })
   it('overpayment goes negative', () => {
     const r = estimateIndividual({ gross: 480000, expenses: 0, cwt: 25000 })
-    expect(r.netPayable).toBeCloseTo(-6600)
+    expect(r.netPayable).toBe(-6600)
   })
 })
 
@@ -66,15 +66,15 @@ describe('mixed-income earner', () => {
   })
   it('8% side has no 250k allowance and adds graduated comp tax', () => {
     const o = r.options.find(o => o.key === '8pct')
-    expect(o.total).toBeCloseTo(94500)
+    expect(o.total).toBe(94500)
   })
   it('graduated aggregates compensation and business net', () => {
     const o = r.options.find(o => o.key === 'osd')
-    expect(o.incomeTax).toBeCloseTo(112500)
-    expect(o.total).toBeCloseTo(124500)
+    expect(o.incomeTax).toBe(112500)
+    expect(o.total).toBe(124500)
   })
   it('employer withholding credits against the total', () => {
     expect(r.best.key).toBe('8pct')
-    expect(r.netPayable).toBeCloseTo(94500 - 62500)
+    expect(r.netPayable).toBe(94500 - 62500)
   })
 })
