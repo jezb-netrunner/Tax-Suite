@@ -121,6 +121,14 @@ function IndividualEstimator({ app, mixed }) {
         </p>
       </div>
 
+      {p.vatRegistered && (
+        <div className="mini-warn" role="note" style={{ marginTop: '16px' }}>
+          <b>VAT not included.</b> As a VAT-registered taxpayer you file VAT every quarter on Form 2550Q
+          (12% of sales less creditable input VAT). This estimate does not compute VAT: every total below is
+          income tax and percentage tax only.
+        </div>
+      )}
+
       {r.crossing && (
         <div className="card pad" style={{ marginTop: '16px' }}>
           <h3 className="sec-h">Your sales passed ₱3,000,000 this year</h3>
@@ -163,7 +171,7 @@ function IndividualEstimator({ app, mixed }) {
                 {!c.eligible && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: '#eef3f8', color: 'var(--mut)' }}>N/A</span>}
               </div>
               <div className="mono" style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-.01em', marginTop: '10px', color: isBest ? 'var(--accInk)' : 'var(--ink)' }}>{c.eligible ? money(c.total) : '—'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '3px' }}>{c.eligible ? 'estimated annual tax' : c.reason}</div>
+              <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '3px' }}>{!c.eligible ? c.reason : c.vatNotIncluded ? r.vatNote : 'estimated annual tax'}</div>
               <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--line2)', display: 'flex', flexDirection: 'column', gap: '7px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '12.5px', color: 'var(--mut)' }}>Income tax</span>
@@ -172,9 +180,12 @@ function IndividualEstimator({ app, mixed }) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '12.5px', color: 'var(--mut)' }}>Business tax</span>
                   <span className="mono" style={{ fontSize: '12.5px', fontWeight: 600 }}>
-                    {!c.eligible ? '—' : c.businessTax.kind === 'vat' ? 'VAT 12%' : c.businessTax.kind === 'pct' ? money(c.businessTax.amount) : '₱0'}
+                    {!c.eligible || c.businessTax.kind === 'vat' ? '—' : c.businessTax.kind === 'pct' ? money(c.businessTax.amount) : '₱0'}
                   </span>
                 </div>
+                {c.eligible && c.businessTax.kind === 'vat' && (
+                  <div style={{ fontSize: '11.5px', color: 'var(--mut)' }}>VAT (2550Q) not included.</div>
+                )}
                 {c.eligible && c.businessTax.vatFrom && (
                   <div style={{ fontSize: '11.5px', color: 'var(--mut)' }}>Percentage tax to {r.crossing.monthName}; VAT from {c.businessTax.vatFrom} not included.</div>
                 )}
@@ -190,6 +201,7 @@ function IndividualEstimator({ app, mixed }) {
         <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
           {r.best.name} is the cheapest eligible option at {money(r.best.total)}
           {r.savingsVsNext > 0 ? `, saving ${money(r.savingsVsNext)} versus the next best.` : '.'}
+          {r.vatNotIncluded && <>{' '}{r.vatNote}</>}
           {' '}{regimeNote}
         </span>
       </div>
@@ -229,7 +241,7 @@ function FormPreview({ r }) {
   const separate = []
   if (best.businessTax.kind === 'pct') separate.push({ label: 'Percentage tax: paid quarterly on 2551Q, not with the annual return', value: money(ar.percentageTax) })
   if (best.businessTax.vatFrom) separate.push({ label: `VAT from ${best.businessTax.vatFrom} (2550Q): not included in this estimate`, value: '—' })
-  if (best.businessTax.kind === 'vat') separate.push({ label: 'Business tax (VAT, separate 2550Q)', value: 'VAT 12%' })
+  if (best.businessTax.kind === 'vat') separate.push({ label: 'VAT (2550Q): not included in this estimate', value: '—' })
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
       <div style={{ background: '#f3f7fb', borderBottom: '1px solid var(--line)', padding: '15px 18px' }}>
@@ -340,6 +352,7 @@ function CorporationEstimator({ app }) {
             ? <>The 2% MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
             : <>Income tax due: {money(r.incomeTaxDue)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitApplies ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
           {!r.vat && r.pct > 0 && <> Plus {money(r.pct)} percentage tax (non-VAT).</>}
+          {r.vatNotIncluded && <> {r.vatNote}</>}
         </span>
       </div>
       <div className="card pad" style={{ marginTop: '20px' }}>

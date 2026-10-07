@@ -21,6 +21,9 @@ const VAT_THRESHOLD = businessTax.vatThreshold.value
 const PCT_RATE = businessTax.percentageTaxRate.value
 export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const pesoText = c => '₱' + groupThousands(Math.round(c / 100))
+// H05 (owner decision 4): VAT is never computed; every VAT-case total says so.
+export const VAT_NOTE = 'Income tax and percentage tax only; VAT not included.'
+export const VAT_ROW_NOTE = 'Not included in this estimate. VAT (12% of sales less creditable input VAT) is filed quarterly on Form 2550Q.'
 
 export function gradTax(taxable) {
   return bracketTax(BR, taxable)
@@ -191,6 +194,8 @@ export function estimateIndividual(in_) {
     : crossing ? { kind: 'pct', amount: pct, vatFrom: crossing.vatFrom }
       : { kind: 'pct', amount: pct }
   const businessForms = vatRegistered ? ' + 2550Q' : crossing ? ' + 2551Q + 2550Q' : ' + 2551Q'
+  // VAT applies for all (registered) or part (crossing ₱3M) of the year.
+  const vatNotIncluded = vatRegistered || crossing != null
   const businessBasis = vatRegistered ? ['NIRC Sec 106/108'] : crossing ? ['NIRC Sec 116', 'NIRC Sec 106/108'] : ['NIRC Sec 116']
 
   const options = [
@@ -201,6 +206,7 @@ export function estimateIndividual(in_) {
       reason: eligible8Reason,
       incomeTax: inc8,
       businessTax: { kind: 'none', amount: 0 },
+      vatNotIncluded: false,
       total: inc8,
       forms: mixed ? '1701Q + 1701' : '1701Q + 1701A',
       returnForm: mixed ? '1701' : '1701A',
@@ -213,6 +219,7 @@ export function estimateIndividual(in_) {
       eligible: true,
       incomeTax: incOsd,
       businessTax: gradBusinessTax,
+      vatNotIncluded,
       total: P(incOsdC + pctC),
       forms: (mixed ? '1701Q + 1701' : '1701Q + 1701A') + businessForms,
       returnForm: mixed ? '1701' : '1701A',
@@ -225,6 +232,7 @@ export function estimateIndividual(in_) {
       eligible: true,
       incomeTax: incItem,
       businessTax: gradBusinessTax,
+      vatNotIncluded,
       total: P(incItemC + pctC),
       forms: '1701Q + 1701' + businessForms,
       returnForm: '1701',
@@ -298,9 +306,9 @@ export function estimateIndividual(in_) {
       r(`Percentage tax (3% of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116. Percentage tax: paid quarterly on Form 2551Q, not with the annual return.' })
     }
     if (opt.businessTax.kind === 'vat') {
-      r('Value-added tax', null, { sub: 'VAT (12%) is computed separately on sales less creditable input VAT; see the VAT panel.' })
+      r('Value-added tax', null, { sub: VAT_ROW_NOTE })
     }
-    r('Total annual tax', opt.total, { strong: true, rule: true })
+    r('Total annual tax', opt.total, { strong: true, rule: true, ...(opt.vatNotIncluded ? { sub: VAT_NOTE } : {}) })
     const ar = annualReturnFor(opt)
     if (ar.credits > 0 || ar.percentageTax > 0) {
       r(`Income tax due on the annual return (${ar.form})`, ar.incomeTaxDue, { rule: true })
@@ -318,6 +326,8 @@ export function estimateIndividual(in_) {
     vatRegistered,
     overThreshold,
     crossing,
+    vatNotIncluded,
+    vatNote: vatNotIncluded ? VAT_NOTE : null,
     options,
     best,
     savingsVsNext: runnersUp.length ? diff(runnersUp[0], best.total) : null,

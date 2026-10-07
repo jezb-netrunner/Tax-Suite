@@ -110,7 +110,8 @@ export function estimateCorporation(in_) {
   }
   r('Income tax due', incomeTaxDue, { strong: true, rule: true })
   if (!vat && pct > 0) r('Percentage tax (3% of gross)', pct, { strong: true, sub: 'Non-VAT corporation under the ₱3M threshold (Form 2551Q).' })
-  if (vat) r('Value-added tax', null, { sub: 'VAT (12%) is computed separately on sales less creditable input VAT.' })
+  // H05 (owner decision 4): VAT is not computed here.
+  if (vat) r('Value-added tax', null, { sub: 'Not included in this estimate. VAT (12% of sales less creditable input VAT) is filed quarterly on Form 2550Q.' })
   if (creditsC > 0) {
     for (const x of creditItems) r(x.label, -P(x.c))
     const net = P(incomeTaxDueC - creditsC)
@@ -131,6 +132,8 @@ export function estimateCorporation(in_) {
     pct,
     vat,
     overThreshold,
+    vatNotIncluded: vat,
+    vatNote: vat ? 'Income tax and percentage tax only; VAT not included.' : null,
     credits: P(creditsC),
     netPayable: P(incomeTaxDueC - creditsC),
     totalAnnualTax: P(incomeTaxDueC + pctC),
