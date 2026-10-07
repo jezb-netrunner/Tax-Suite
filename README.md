@@ -53,6 +53,31 @@ under **Settings → Pages → Source: GitHub Actions**. To publish with cloud
 accounts enabled, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as
 repository secrets; without them the published site runs in local-device mode.
 
+## Hosting
+
+**Owner action: give the app a web address of its own.** The site is served at
+`jezb-netrunner.github.io/Tax-Suite/`. Browsers keep saved data per *host*
+(`jezb-netrunner.github.io`), not per folder, so every GitHub Pages site
+published under the same account shares this app's browser storage. Any of
+those sites could read the client names and income figures saved in local
+mode and, in accounts mode, the sign-in session (which would let it act as the
+user). There is no exposure while the account publishes no other Pages site.
+
+Choose one:
+
+1. **Serve the app from a dedicated domain or subdomain** (recommended), for
+   example `tax.example.ph`: add it under Settings → Pages → Custom domain and
+   turn on "Enforce HTTPS". Nothing else may be published on that host. A
+   GitHub user or organization whose only Pages site is this app also works.
+2. **Or publish no other GitHub Pages site under the `jezb-netrunner`
+   account**, including a `jezb-netrunner.github.io` user site, for as long as
+   the app is served from `jezb-netrunner.github.io`.
+
+After a move, profiles saved in local mode stay behind on the old address and
+the new address starts empty, so tell users to keep a copy with "Download my
+data" (Profiles page) before the switch. In accounts mode, also change the
+Supabase Site URL and redirect allow-list to the new address.
+
 ## Where the tax rules live, and how to update them
 
 **All rates, thresholds, deadlines, forms, and holidays are data, not code**, in
