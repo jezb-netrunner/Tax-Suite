@@ -1,35 +1,42 @@
 name: Deploy to GitHub Pages
 
-# Publishes the built app so there is a real, always-current website.
+# Checks every pull request and publishes the built app from main.
 # Owner action: Settings → Pages → Source must be "GitHub Actions". With
 # "Deploy from a branch", GitHub also publishes the raw branch and whichever
 # finishes last is live (REVIEW.md M29).
+#
+# Every action is pinned to a full commit SHA (the tag is in the comment), so
+# a moved tag cannot change what runs here. To update one, look up the new
+# tag's commit with `git ls-remote https://github.com/actions/<name> refs/tags/<tag>`.
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Nothing by default; each job asks for what it needs.
+permissions: {}
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       # True when the optional accounts secrets are set (secrets cannot be
       # read in an `if:` directly).
       HAS_ACCOUNTS: ${{ secrets.VITE_SUPABASE_URL != '' && secrets.VITE_SUPABASE_ANON_KEY != '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 20
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm test
@@ -46,23 +53,29 @@ jobs:
       # repository secrets set, publish dist/ with accounts mode on. Without
       # them the site runs in local-device mode.
       - name: Rebuild dist/ with accounts mode
-        if: env.HAS_ACCOUNTS == 'true'
+        if: env.HAS_ACCOUNTS == 'true' && github.event_name != 'pull_request'
         run: npm run build
         env:
           JEZ_ENABLE_ACCOUNTS: '1'
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
 
   deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+    # Only this job may publish to Pages.
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
