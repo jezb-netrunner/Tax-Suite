@@ -77,6 +77,53 @@ function ProfileMenu() {
   )
 }
 
+// M17: on wide screens the six pages sit in one row. On narrower screens
+// (see .nav-toggle in app.css) a "Menu" button opens the full list instead of
+// hiding pages off-screen. It closes on a page change, a click outside, when
+// focus leaves it, and on Escape (focus goes back to the button).
+function MainNav({ links }) {
+  const [open, setOpen] = useState(false)
+  const location = useLocation()
+  const wrapRef = useRef(null)
+  const btnRef = useRef(null)
+
+  useEffect(() => { setOpen(false) }, [location.pathname])
+  useEffect(() => {
+    if (!open) return undefined
+    function onDoc(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('pointerdown', onDoc)
+    return () => document.removeEventListener('pointerdown', onDoc)
+  }, [open])
+
+  function onKeyDown(e) {
+    if (e.key === 'Escape' && open) {
+      setOpen(false)
+      if (btnRef.current) btnRef.current.focus()
+    }
+  }
+  function onBlur(e) {
+    if (open && wrapRef.current && e.relatedTarget && !wrapRef.current.contains(e.relatedTarget)) setOpen(false)
+  }
+
+  return (
+    <div className="nav-wrap" ref={wrapRef} onKeyDown={onKeyDown} onBlur={onBlur}>
+      <button ref={btnRef} type="button" className="nav-toggle" aria-expanded={open} aria-controls="main-nav"
+        onClick={() => setOpen(o => !o)}>
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          {open ? <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" /> : <path d="M2.5 4h11M2.5 8h11M2.5 12h11" />}
+        </svg>
+        Menu
+      </button>
+      <nav id="main-nav" className={'nav' + (open ? ' open' : '')} aria-label="Main">
+        {links.map(([to, label]) => (
+          <NavLink key={to} to={to} end={to === '/'} onClick={() => setOpen(false)}
+            className={({ isActive }) => (isActive ? 'active' : '')}>{label}</NavLink>
+        ))}
+      </nav>
+    </div>
+  )
+}
+
 export default function App() {
   const app = useApp()
   const location = useLocation()
@@ -124,12 +171,7 @@ export default function App() {
             <div className="brand-mark">₱</div>
             <span className="brand-name">JEZ Tax Suite</span>
           </div>
-          <nav className="nav" aria-label="Main">
-            {links.map(([to, label]) => (
-              <NavLink key={to} to={to} end={to === '/'}
-                className={({ isActive }) => (isActive ? 'active' : '')}>{label}</NavLink>
-            ))}
-          </nav>
+          <MainNav links={links} />
         </div>
         <ProfileMenu />
       </header>
