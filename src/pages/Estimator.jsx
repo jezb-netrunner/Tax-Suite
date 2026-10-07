@@ -163,7 +163,7 @@ function IndividualEstimator({ app, mixed }) {
           <Rows rows={r.rows} />
           <BasisNote refs={r.references} />
         </div>
-        <FormPreview r={r} mixed={mixed} />
+        <FormPreview r={r} />
       </div>
       <SelfContributionsCard monthly={Math.round(v.gross / 12)} />
     </>
@@ -171,30 +171,48 @@ function IndividualEstimator({ app, mixed }) {
 }
 
 // How the winning option lands on the annual return — the v1 "form preview".
-function FormPreview({ r, mixed }) {
+// The annual return (1701 / 1701A) carries income tax only: income tax due
+// less income-tax credits. Percentage tax is paid on the quarterly 2551Q and
+// is shown below the return lines, never netted against the credits.
+function FormPreview({ r }) {
   const best = r.best
-  const formTitle = (mixed || best.key === 'itemized') ? 'BIR Form 1701' : 'BIR Form 1701A'
-  const taxableLabel = best.key === '8pct' ? 'Taxable base (gross less allowance)' : 'Net taxable income'
+  const ar = r.annualReturn
   const rows = [
-    { label: taxableLabel, value: null },
-    { label: 'Income tax due', value: money(best.incomeTax) },
-    { label: best.businessTax.kind === 'vat' ? 'Business tax (VAT, separate 2550Q)' : 'Percentage tax (separate 2551Q)', value: best.businessTax.kind === 'vat' ? 'VAT 12%' : best.businessTax.kind === 'pct' ? money(best.businessTax.amount) : '—' },
-    { label: 'Less: creditable withholding', value: r.credits > 0 ? `(${money(r.credits)})` : '—' },
-    { label: r.netPayable >= 0 ? 'Tax payable with the annual return' : 'Overpayment (refund / carry-over)', value: money(Math.abs(r.netPayable)) },
+    ...ar.taxable.map(t => ({ label: t.label, value: money(t.value) })),
+    { label: 'Income tax due', value: money(ar.incomeTaxDue) },
+    ...(ar.creditLines.length
+      ? ar.creditLines.map(c => ({ label: c.label, value: `(${money(c.value)})` }))
+      : [{ label: 'Less: tax credits', value: '—' }]),
+    {
+      label: ar.netPayable >= 0 ? 'Income tax payable with the annual return' : 'Overpayment (refund / carry-over)',
+      value: money(Math.abs(ar.netPayable)),
+      strong: true,
+    },
   ]
+  const separate = best.businessTax.kind === 'pct'
+    ? { label: 'Percentage tax: paid quarterly on 2551Q, not with the annual return', value: money(ar.percentageTax) }
+    : best.businessTax.kind === 'vat'
+      ? { label: 'Business tax (VAT, separate 2550Q)', value: 'VAT 12%' }
+      : null
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
       <div style={{ background: '#f3f7fb', borderBottom: '1px solid var(--line)', padding: '15px 18px' }}>
         <div className="mono" style={{ fontSize: '11px', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--mut)' }}>Where it lands on the return</div>
-        <div style={{ fontWeight: 700, fontSize: '14.5px', marginTop: '3px' }}>{formTitle}</div>
+        <div style={{ fontWeight: 700, fontSize: '14.5px', marginTop: '3px' }}>BIR Form {ar.form}</div>
       </div>
       <div style={{ padding: '6px 18px 16px' }}>
-        {rows.filter(x => x.value != null).map((f, i) => (
+        {rows.map((f, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 0', borderTop: i ? '1px solid var(--line2)' : 'none' }}>
-            <span style={{ flex: 1, fontSize: '13px', color: 'var(--mut)' }}>{f.label}</span>
-            <span className="mono" style={{ fontSize: '13.5px', fontWeight: 600 }}>{f.value}</span>
+            <span style={{ flex: 1, fontSize: '13px', color: f.strong ? 'var(--ink)' : 'var(--mut)', fontWeight: f.strong ? 600 : 400 }}>{f.label}</span>
+            <span className="mono" style={{ fontSize: '13.5px', fontWeight: f.strong ? 700 : 600 }}>{f.value}</span>
           </div>
         ))}
+        {separate && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 0', marginTop: '6px', borderTop: '1px dashed var(--line)' }}>
+            <span style={{ flex: 1, fontSize: '13px', color: 'var(--mut)' }}>{separate.label}</span>
+            <span className="mono" style={{ fontSize: '13.5px', fontWeight: 600 }}>{separate.value}</span>
+          </div>
+        )}
         <p className="cite" style={{ marginTop: '10px' }}>Line numbering varies by form revision, so amounts are labeled by meaning rather than box number.</p>
       </div>
     </div>

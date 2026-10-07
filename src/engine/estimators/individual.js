@@ -79,7 +79,16 @@ export function estimateIndividual(in_) {
   const incOsdC = gradIncomeTaxOn(osdNetC)
   const incItemC = gradIncomeTaxOn(itemNetC)
 
-  const creditsC = line(in_.cwt) + (mixed ? line(in_.compensationWithheld) : 0)
+  // Income-tax credits (C02): only these reduce the annual return (1701/1701A).
+  // Percentage tax is paid quarterly on Form 2551Q and never netted against them.
+  const cwtC = line(in_.cwt)
+  const compWithheldC = mixed ? line(in_.compensationWithheld) : 0
+  const creditItems = [
+    { label: 'Less: tax withheld by clients (2307s)', c: cwtC },
+    { label: 'Less: tax withheld by employer', c: compWithheldC },
+  ].filter(x => x.c > 0)
+  const creditsC = creditItems.reduce((t, x) => t + x.c, 0)
+  const creditLines = creditItems.map(x => ({ label: x.label, value: P(x.c) }))
 
   const compTax = P(compTaxC)
   const base8 = P(base8C)
@@ -93,6 +102,22 @@ export function estimateIndividual(in_) {
   const incItem = P(incItemC)
   const credits = P(creditsC)
 
+  // Taxable-income lines as they appear on the annual return.
+  const taxable8 = mixed
+    ? [
+        { label: 'Taxable compensation (graduated rates)', value: compensationTaxable },
+        { label: 'Business income taxed at 8% (gross sales)', value: base8 },
+      ]
+    : [{ label: 'Taxable base (gross sales less ₱250,000)', value: base8 }]
+  const taxableOsd = [{
+    label: mixed ? 'Taxable income (compensation + business after the 40% OSD)' : 'Taxable income (after the 40% OSD)',
+    value: P(compC + osdNetC),
+  }]
+  const taxableItem = [{
+    label: mixed ? 'Taxable income (compensation + business after itemized deductions)' : 'Taxable income (after itemized deductions)',
+    value: P(compC + itemNetC),
+  }]
+
   const options = [
     {
       key: '8pct',
@@ -102,6 +127,8 @@ export function estimateIndividual(in_) {
       businessTax: { kind: 'none', amount: 0 },
       total: inc8,
       forms: mixed ? '1701Q + 1701' : '1701Q + 1701A',
+      returnForm: mixed ? '1701' : '1701A',
+      taxable: taxable8,
       basis: ['NIRC Sec 24(A)(2)(b); RR 8-2018'],
     },
     {
@@ -112,6 +139,8 @@ export function estimateIndividual(in_) {
       businessTax: vat ? { kind: 'vat', amount: null } : { kind: 'pct', amount: pct },
       total: P(incOsdC + (vat ? 0 : pctC)),
       forms: (mixed ? '1701Q + 1701' : '1701Q + 1701A') + (vat ? ' + 2550Q' : ' + 2551Q'),
+      returnForm: mixed ? '1701' : '1701A',
+      taxable: taxableOsd,
       basis: ['NIRC Sec 24(A)(2)(a); Sec 34(L)', vat ? 'NIRC Sec 106/108' : 'NIRC Sec 116'],
     },
     {
@@ -122,6 +151,8 @@ export function estimateIndividual(in_) {
       businessTax: vat ? { kind: 'vat', amount: null } : { kind: 'pct', amount: pct },
       total: P(incItemC + (vat ? 0 : pctC)),
       forms: '1701Q + 1701' + (vat ? ' + 2550Q' : ' + 2551Q'),
+      returnForm: '1701',
+      taxable: taxableItem,
       basis: ['NIRC Sec 24(A)(2)(a); Sec 34(A)', vat ? 'NIRC Sec 106/108' : 'NIRC Sec 116'],
     },
   ]
@@ -131,6 +162,22 @@ export function estimateIndividual(in_) {
   const runnersUp = eligibleOptions.filter(o => o !== best).map(o => o.total).sort((a, b) => a - b)
   // Option totals are whole pesos, so these differences are exact.
   const diff = (a, b) => P(toCentavos(a) - toCentavos(b))
+
+  // What goes on the annual income tax return (1701 / 1701A) for an option:
+  // income tax due less income-tax credits. Percentage tax is reported
+  // alongside for information only; it is paid on the quarterly 2551Q.
+  function annualReturnFor(opt) {
+    const percentageTax = opt.businessTax.kind === 'pct' ? opt.businessTax.amount : 0
+    return {
+      form: opt.returnForm,
+      taxable: opt.taxable,
+      incomeTaxDue: opt.incomeTax,
+      creditLines,
+      credits,
+      netPayable: diff(opt.incomeTax, credits),
+      percentageTax,
+    }
+  }
 
   // Transparent breakdown for the chosen option.
   function rowsFor(opt) {
@@ -165,21 +212,23 @@ export function estimateIndividual(in_) {
       r('Graduated income tax', incItem, { strong: true })
     }
     if (opt.businessTax.kind === 'pct') {
-      r(`Percentage tax (3% of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116, filed quarterly on Form 2551Q.' })
+      r(`Percentage tax (3% of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116. Percentage tax: paid quarterly on Form 2551Q, not with the annual return.' })
     }
     if (opt.businessTax.kind === 'vat') {
       r('Value-added tax', null, { sub: 'VAT (12%) is computed separately on sales less creditable input VAT; see the VAT panel.' })
     }
     r('Total annual tax', opt.total, { strong: true, rule: true })
-    if (credits > 0) {
-      r('Less: creditable tax withheld' + (mixed ? ' (2307s + employer withholding)' : ' (2307s)'), -credits)
-      const net = diff(opt.total, credits)
-      if (net >= 0) r('Tax still payable', net, { strong: true })
-      else r('Overpayment: refund or carry over', -net, { strong: true, sub: 'Excess credits can be refunded or carried forward to next year\'s returns.' })
+    const ar = annualReturnFor(opt)
+    if (ar.credits > 0 || ar.percentageTax > 0) {
+      r(`Income tax due on the annual return (${ar.form})`, ar.incomeTaxDue, { rule: true })
+      for (const c of ar.creditLines) r(c.label, -c.value)
+      if (ar.netPayable >= 0) r('Income tax payable with the annual return', ar.netPayable, { strong: true })
+      else r('Overpayment: refund or carry over', -ar.netPayable, { strong: true, sub: 'Excess credits can be refunded or carried forward to next year\'s returns.' })
     }
     return rows
   }
 
+  const annualReturn = annualReturnFor(best)
   return {
     vat,
     overThreshold,
@@ -188,8 +237,15 @@ export function estimateIndividual(in_) {
     savingsVsNext: runnersUp.length ? diff(runnersUp[0], best.total) : null,
     rows: rowsFor(best),
     rowsFor,
+    annualReturn,
+    annualReturnFor,
     credits,
-    netPayable: diff(best.total, credits),
+    creditLines,
+    // Annual return (1701/1701A): income tax due less income-tax credits.
+    // Negative = overpayment.
+    netPayable: annualReturn.netPayable,
+    // Paid quarterly on 2551Q, separately from the annual return.
+    percentageTax: annualReturn.percentageTax,
     references: [
       ...incomeTax.graduatedBrackets.legalBasis,
       ...incomeTax.eightPercent.legalBasis,
