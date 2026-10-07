@@ -4,7 +4,9 @@
 // In local mode there is no sign-in; profiles persist in this browser only.
 
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react'
-import { hasCloud, supabase, listProfiles, saveProfile, deleteProfile } from '../lib/backend.js'
+import {
+  hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
+} from '../lib/backend.js'
 
 const Ctx = createContext(null)
 
@@ -20,6 +22,8 @@ export function AppStateProvider({ children }) {
   const [profiles, setProfiles] = useState([])
   const [profilesReady, setProfilesReady] = useState(false)
   const [loadError, setLoadError] = useState(null)
+  // A one-off message for the sign-in screen (e.g. after deleting the account).
+  const [notice, setNotice] = useState(null)
   const [activeId, setActiveId] = useState(() => {
     try { return localStorage.getItem(ACTIVE_KEY) || null } catch { return null }
   })
@@ -101,7 +105,28 @@ export function AppStateProvider({ children }) {
     async signOut() {
       if (hasCloud) await supabase.auth.signOut()
     },
-  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles])
+    userEmail: session?.user?.email || null,
+    notice,
+    clearNotice() { setNotice(null) },
+    // M25 "Download my data": every profile and saved figure as one object.
+    exportData() {
+      return exportData({ userId, email: session?.user?.email || null })
+    },
+    // M25 "Erase all data on this device" (local mode).
+    async eraseAllData() {
+      eraseLocalData()
+      setActiveId(null)
+      await refreshProfiles()
+    },
+    // M25 "Delete my account" (accounts mode): the server deletes the login
+    // and its profiles; this device is signed out.
+    async deleteAccount() {
+      await deleteOwnAccount()
+      setActiveId(null)
+      setNotice('Your account and every profile saved in it were deleted.')
+      setSession(null)
+    },
+  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/backend.js'
 import { signUp } from '../lib/auth.js'
+import { useApp } from '../state/AppState.jsx'
 
 // Opens the Privacy Notice in a new tab so a half-filled form is not lost.
 function PrivacyLink({ children = 'Privacy Notice' }) {
@@ -13,6 +14,7 @@ function PrivacyLink({ children = 'Privacy Notice' }) {
 }
 
 export default function AuthPage() {
+  const app = useApp()
   const [mode, setMode] = useState('signin') // 'signin' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -50,6 +52,7 @@ export default function AuthPage() {
             Your tax calendar, estimates, and checklists, saved to your account, for every business you manage.
           </p>
         </div>
+        {app.notice && <div className="form-ok" role="status" style={{ marginBottom: '14px' }}>{app.notice}</div>}
         <form className="card pad" onSubmit={submit}>
           <div className="field" style={{ marginTop: 0 }}>
             <label className="lbl" htmlFor="auth-email">Email</label>

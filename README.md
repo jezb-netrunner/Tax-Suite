@@ -87,6 +87,15 @@ VITE_SUPABASE_ANON_KEY=…
 
 Schema: [`supabase/migrations/0001_taxpayer_profiles.sql`](supabase/migrations/0001_taxpayer_profiles.sql):
 one table, JSONB profile data, RLS restricting every row to its owner.
+[`supabase/migrations/0002_account_privacy_and_limits.sql`](supabase/migrations/0002_account_privacy_and_limits.sql)
+adds `delete_own_account()`, the server function behind "Delete my account"
+(a signed-in user deletes their own login; their profiles go with it).
+**Neither migration has been applied to a live database** (accounts mode has
+never been live). Apply both, in order, when accounts mode is switched on.
+
+Users can download all their data as JSON and erase it ("Erase all data on
+this device" in local mode, "Delete my account" in accounts mode) from the
+Profiles page.
 
 ## Privacy
 
