@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FORMS_DATA, FORM_CATS } from '../data/forms.js'
 import attachments from '../data/rules/attachments.json'
 import { Seg } from '../components/ui.jsx'
@@ -10,9 +11,24 @@ const ATTACH_BY_FORM = Object.fromEntries(attachments.perReturn.value.map(r => [
 // employer / withholding-agent / corporate forms. Per-form attachment
 // requirements come from src/data/rules/attachments.json.
 export default function FormsPage() {
+  // L10: #/forms?open=1601-C opens that form (from the calendar's "Read the
+  // form guide"), scrolled into view and focused; otherwise 1701Q is open.
+  const [params] = useSearchParams()
+  const requested = FORMS_DATA.some(f => f.code === params.get('open')) ? params.get('open') : null
   const [formQuery, setFormQuery] = useState('')
   const [formCat, setFormCat] = useState('all')
-  const [openForm, setOpenForm] = useState('1701Q')
+  const [openForm, setOpenForm] = useState(requested || '1701Q')
+  const rowRefs = useRef({})
+  useEffect(() => {
+    if (!requested) return undefined
+    setOpenForm(requested); setFormCat('all'); setFormQuery('')
+    // After the page heading takes focus on arrival (App), move to the form.
+    const id = requestAnimationFrame(() => {
+      const el = rowRefs.current[requested]
+      if (el) { el.scrollIntoView({ block: 'start' }); el.focus({ preventScroll: true }) }
+    })
+    return () => cancelAnimationFrame(id)
+  }, [requested])
   const [showEafs, setShowEafs] = useState(false)
   const q = formQuery.toLowerCase()
 
@@ -82,7 +98,7 @@ export default function FormsPage() {
             <div key={f.code} className={isOpen ? undefined : 'click'} style={{ border: `1.5px solid ${isOpen ? 'var(--acc)' : 'var(--line)'}`, borderRadius: '13px', background: 'var(--sf)', overflow: 'hidden', transition: 'border-color .15s, box-shadow .2s' }}>
               {/* H15: below 720 px the code and the +/– sit on top, then the
                   name and who files it, then the due-date text (it wraps). */}
-              <div role="button" tabIndex={0} aria-expanded={isOpen} className="form-row-head"
+              <div role="button" tabIndex={0} aria-expanded={isOpen} className="form-row-head" ref={el => { rowRefs.current[f.code] = el }}
                 onClick={() => setOpenForm(isOpen ? null : f.code)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenForm(isOpen ? null : f.code) } }}>
                 <span className="formcode">{f.code}</span>

@@ -4,6 +4,8 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
+/* Keep scrolled-to and focused items clear of the sticky header (L10; WCAG 2.4.11). */
+html { scroll-padding-top: 76px; }
 :root {
   --bg: #f5f8fb;
   --sf: #ffffff;

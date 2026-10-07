@@ -16,6 +16,7 @@ import { FormCode } from '../components/FormCode.jsx'
 import { PROFILE_TYPES } from '../engine/profile.js'
 import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
 import { deadlineCsv, deadlineCsvFileName, downloadText } from '../lib/exports.js'
+import { formGuideCode, formGuidePath } from '../lib/formGuide.js'
 
 const CATLABEL = { income: 'Income tax', business: 'Business tax', withholding: 'Withholding', payroll: 'Payroll & contributions', admin: 'Admin', registration: 'Registration' }
 
@@ -199,7 +200,12 @@ export default function Dashboard() {
                         {hero.label && <span style={{ padding: '5px 10px', borderRadius: '7px', background: 'rgba(255,255,255,.12)', fontSize: '12px', fontWeight: 600, color: '#e4eef6' }}>{hero.label}</span>}
                       </div>
                       {isUnconfirmed(hero) && <div style={{ marginTop: '12px' }}><ItemBadge item={hero} onDark /></div>}
-                      <button className="btn-light" onClick={() => nav('/forms')}>Read the form guide →</button>
+                      {/* L10: open this deadline's own form; no button when the Forms page has no guide for it. */}
+                      {formGuidePath(hero.obligation.form) && (
+                        <Link className="btn-light no-print" to={formGuidePath(hero.obligation.form)} style={{ display: 'inline-block', textDecoration: 'none' }}>
+                          {formGuideCode(hero.obligation.form).includes('/') ? 'Read the form guide →' : `Read the ${formGuideCode(hero.obligation.form)} form guide →`}
+                        </Link>
+                      )}
                     </div>
                     <div className="hero-side">
                       {hero.daysAway === 0 ? (
