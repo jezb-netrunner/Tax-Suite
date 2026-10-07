@@ -56,7 +56,7 @@ export default function Checklist() {
         if (!inCat.length) return null
         return (
           <div key={cat} style={{ marginTop: '26px' }}>
-            <h3 className="sec-h" style={{ marginBottom: '12px' }}>{label}</h3>
+            <h2 className="sec-h" style={{ marginBottom: '12px' }}>{label}</h2>
             <div className="list-card">
               {inCat.map(ob => (
                 <div key={ob.id} className="check-row">

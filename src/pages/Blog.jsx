@@ -36,9 +36,9 @@ export default function BlogPage() {
           {rest.map(p => (
             <article key={p.id} className="card click blog-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--accInk)' }}>{p.cat}</span>
-              <h3 style={{ fontSize: '16.5px', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.25, marginTop: '10px' }}>
+              <h2 style={{ fontSize: '16.5px', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.25, marginTop: '10px' }}>
                 <Link to={`/blog/${p.id}`} className="card-link">{p.title}</Link>
-              </h3>
+              </h2>
               <p style={{ fontSize: '13.5px', color: 'var(--mut)', lineHeight: 1.55, marginTop: '9px', flex: 1 }}>{p.excerpt}</p>
               <div className="mono" style={{ fontSize: '11.5px', color: 'var(--dim)', marginTop: '14px' }}>{p.read} · {p.date}</div>
             </article>

@@ -207,7 +207,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
         <>
           {r.crossing && (
             <div className="card pad" style={{ marginTop: '16px' }}>
-              <h3 className="sec-h">Your sales passed ₱3,000,000 this year</h3>
+              <h2 className="sec-h">Your sales passed ₱3,000,000 this year</h2>
               <div className="mini-warn" role="note">
                 The whole year moves to graduated rates: the 8% option is not available this year, and any 8% income tax
                 already paid on your 1701Q is credited. The 3% percentage tax still applies to your sales from {r.crossing.span}.
@@ -294,7 +294,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
             <div className="card pad">
-              <h3 className="sec-h">How we got there: {r.best.name}</h3>
+              <h2 className="sec-h">How we got there: {r.best.name}</h2>
               <Rows rows={r.rows} />
               <BasisNote refs={r.references} />
             </div>
@@ -369,7 +369,7 @@ function SelfContributionsCard({ v, set }) {
   const noExpenses = !(Number(v.expenses) > 0)
   return (
     <div className="card pad" style={{ marginTop: '16px' }}>
-      <h3 className="sec-h">Monthly contributions on top (self-employed)</h3>
+      <h2 className="sec-h">Monthly contributions on top (self-employed)</h2>
       <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px', lineHeight: 1.5 }}>
         {e.basis === 'declared'
           ? <>Based on the monthly earnings you declared: {money2(e.monthly)}.</>
@@ -514,11 +514,11 @@ function EmployeeEstimator({ app }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
           <div className="card pad">
-            <h3 className="sec-h">Your monthly payslip</h3>
+            <h2 className="sec-h">Your monthly payslip</h2>
             <Rows fmt="centavo" rows={r.rows} />
           </div>
           <div className="card pad">
-            <h3 className="sec-h">Your year, annualized</h3>
+            <h2 className="sec-h">Your year, annualized</h2>
             <Rows fmt="centavo" rows={r.annualRows} />
             <BasisNote refs={r.references} />
           </div>
@@ -638,7 +638,7 @@ function CorporationEstimator({ app, onPrintYear }) {
             </span>
           </div>
           <div className="card pad" style={{ marginTop: '20px' }}>
-            <h3 className="sec-h">How we got there</h3>
+            <h2 className="sec-h">How we got there</h2>
             <Rows rows={r.rows} />
             <BasisNote refs={r.references} />
           </div>
@@ -669,7 +669,7 @@ function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
   }) : null), [hasFigures, quarter, v, p.registrationYear, taxYear, fy, excessMcit])
   return (
     <div className="card pad" style={{ marginTop: '20px' }}>
-      <h3 className="sec-h">Quarterly return (1702Q)</h3>
+      <h2 className="sec-h">Quarterly return (1702Q)</h2>
       <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px', lineHeight: 1.5 }}>
         Enter figures from the start of the taxable year to the end of the quarter, as the 1702Q asks. The regular tax and
         the MCIT are compared on those totals, and what you paid in earlier quarters is subtracted. The deduction method,
@@ -729,7 +729,7 @@ function PayrollEstimator({ app }) {
           : 'Start with the employee\'s monthly basic pay (more than ₱0). The withholding and true cost appear here as you type.'}</EnterFigures>
       ) : (
         <div className="card pad" style={{ marginTop: '20px' }}>
-          <h3 className="sec-h">Withholding &amp; true cost for this employee</h3>
+          <h2 className="sec-h">Withholding &amp; true cost for this employee</h2>
           <Rows fmt="centavo" rows={r.rows} />
           <BasisNote refs={r.references} />
         </div>

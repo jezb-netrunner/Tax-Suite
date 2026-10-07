@@ -26,9 +26,9 @@ function NoProfile() {
     <div className="page wrap" style={{ paddingTop: '48px', paddingBottom: '64px', maxWidth: '640px' }}>
       <div className="hero" style={{ display: 'block' }}>
         <div className="eyebrow">Welcome</div>
-        <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-.02em', marginTop: '11px', lineHeight: 1.2 }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-.02em', marginTop: '11px', lineHeight: 1.2 }}>
           Let's build your compliance calendar.
-        </h2>
+        </h1>
         <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: '#cdddea', marginTop: '11px', maxWidth: '480px' }}>
           Answer a few questions about the taxpayer (employee, freelancer, sole prop, or corporation) and
           JEZ Tax Suite lays out every BIR, LGU, SSS, PhilHealth, and Pag-IBIG date that applies, with the
@@ -243,7 +243,7 @@ export default function Dashboard() {
                 {monthItems.length > 0 && (
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '28px 0 12px' }}>
-                      <h3 className="sec-h">Also due this month</h3>
+                      <h2 className="sec-h">Also due this month</h2>
                       <span style={{ fontSize: '13px', color: 'var(--mut)' }}>{t.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
                     </div>
                     <div className="list-card">
@@ -255,7 +255,7 @@ export default function Dashboard() {
                 {laterItems.length > 0 && (
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '28px 0 12px' }}>
-                      <h3 className="sec-h">Coming up</h3>
+                      <h2 className="sec-h">Coming up</h2>
                       <span style={{ fontSize: '13px', color: 'var(--mut)' }}>next due date per obligation; recurring ones repeat</span>
                     </div>
                     <div className="list-card">

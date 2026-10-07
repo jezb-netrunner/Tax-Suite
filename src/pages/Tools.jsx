@@ -122,7 +122,7 @@ function PenaltyCard() {
 
   return (
     <div className="card pad" style={{ marginBottom: '16px' }}>
-      <h3 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Late-filing penalty estimator</h3>
+      <h2 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Late-filing penalty estimator</h2>
       <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '3px', lineHeight: 1.55 }}>
         Surcharge, interest and compromise penalty when a return is filed or paid late. Micro and small
         taxpayers (gross sales under {wholePesoMillions(SMALL_BELOW)}) pay a {pct(SUR.microSmall)} surcharge
@@ -266,7 +266,7 @@ function ProjectorCard() {
 
   return (
     <div className="card pad">
-      <h3 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Year-to-date projector</h3>
+      <h2 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Year-to-date projector</h2>
       <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '3px' }}>Where your gross sales and {pct(EIGHT.rate)} tax are heading.</p>
       {profileKind
         ? (
@@ -359,7 +359,7 @@ export default function ToolsPage() {
       {/* withholding + ytd */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '16px' }}>
         <div className="card pad">
-          <h3 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Compensation withholding</h3>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Compensation withholding</h2>
           <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '3px' }}>Tax to withhold per payday (revised tables effective 2023).</p>
           <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <SelectField label="Pay period" value={whPeriod} onChange={setWhPeriod} options={PAY_PERIODS} hint="Uses the matching BIR withholding table (RR 11-2018)." />
