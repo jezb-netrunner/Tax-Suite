@@ -4,7 +4,7 @@ import { useApp } from '../state/AppState.jsx'
 import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation, estimateCorporateQuarter, corporateTaxYears, taxablePeriod, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
-import { estimatePayroll, DEFAULT_PAY_FACTOR, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
+import { estimatePayroll, DEFAULT_PAY_FACTOR, PAY_PERIODS, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions, selfEmployedMonthlyEarnings } from '../engine/estimators/contributions.js'
 import { fromISO, taxableYearQuarters } from '../engine/dates.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
@@ -432,6 +432,32 @@ function MinimumWageFields({ v, set }) {
   )
 }
 
+// L08: pay period for the per-payday withholding; daily pay needs the paid
+// days a year (already asked in the minimum wage fields when that switch is on).
+function PayPeriodFields({ v, set, mwe }) {
+  const period = PAY_PERIODS.some(([k]) => k === v.payPeriod) ? v.payPeriod : 'monthly'
+  return (
+    <>
+      <SelectField
+        label="Pay period"
+        value={period}
+        onChange={x => set('payPeriod', x)}
+        options={PAY_PERIODS}
+        hint="How often pay is released. The withholding per payday uses the matching BIR table."
+      />
+      {period === 'daily' && !mwe && (
+        <SelectField
+          label="Paid days a year"
+          value={String(v.payFactor ?? DEFAULT_PAY_FACTOR)}
+          onChange={x => set('payFactor', Number(x))}
+          options={PAY_FACTOR_OPTIONS}
+          hint={PAY_FACTOR_HINT}
+        />
+      )}
+    </>
+  )
+}
+
 // C05: SSS counts regular pay; one-time or liquidated items are taxed but do
 // not count for SSS. The regular box keeps the old 'monthlyAllowances' key so
 // saved figures carry over.
@@ -465,6 +491,7 @@ function EmployeeEstimator({ app }) {
             : <NumField emptyValue={null} label="Monthly basic salary" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />}
           <AllowanceFields v={v} set={set} />
           <NumField emptyValue={null} label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint="First ₱90,000 is tax-exempt." />
+          <PayPeriodFields v={v} set={set} mwe={mwe} />
         </div>
         {p.type === 'mixed' && (
           <p className="cite" style={{ marginTop: '14px' }}>
@@ -683,6 +710,7 @@ function PayrollEstimator({ app }) {
             ? <MinimumWageFields v={v} set={set} />
             : <NumField emptyValue={null} label="Employee monthly basic pay" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />}
           <AllowanceFields v={v} set={set} />
+          <PayPeriodFields v={v} set={set} mwe={mwe} />
         </div>
       </div>
       {!hasFigures ? (

@@ -1,5 +1,7 @@
-// Employer-side payroll estimator: per-employee monthly withholding across all
-// pay periods, plus the employer's true monthly cost of employment.
+// Employer-side payroll estimator: per-employee withholding for the chosen pay
+// period (per payday and per month), plus the employer's true monthly cost of
+// employment. Also the shared pay helpers used by the Employee tab and the
+// Tools withholding calculator.
 //
 // Rounding: every payslip / withholding line is rounded half-up to the centavo
 // and computed in whole centavos (src/lib/money.js). Per-period taxable pay is
@@ -12,11 +14,10 @@ import { employeeMandatoryDeductions, employerContributions } from './contributi
 import { toCentavos, fromCentavos, mulFrac, formatCentavos } from '../../lib/money.js'
 
 const TABLES = wcomp.tables.value
-// Pay periods per month as exact fractions [numerator, denominator].
-const PERIODS_PER_MONTH = { monthly: [1, 1], semiMonthly: [2, 1], weekly: [52, 12], daily: [313, 12] }
 
 // C04: paid days a year for a minimum wage earner (owner decision 9):
 // 365 (paid every day, e.g. monthly-paid), 313 (six-day week), 261 (five-day week).
+// L08: daily-paid staff use the same factor.
 export const PAY_FACTORS = wcomp.mweExempt.value.payFactors
 export const DEFAULT_PAY_FACTOR = 313
 
@@ -25,6 +26,87 @@ export function payFactorOf(f) {
   const n = Number(f)
   if (!PAY_FACTORS.includes(n)) throw new RangeError(`Paid days a year must be ${PAY_FACTORS.join(', ')}; got ${f}`)
   return n
+}
+
+// L08: pay periods, in display order, with the RR 11-2018 table each uses.
+export const PAY_PERIODS = [
+  ['monthly', 'Monthly'],
+  ['semiMonthly', 'Semi-monthly (twice a month)'],
+  ['weekly', 'Weekly'],
+  ['daily', 'Daily'],
+]
+const PERIOD_NAMES = { monthly: 'monthly', semiMonthly: 'semi-monthly', weekly: 'weekly', daily: 'daily' }
+
+// Pay periods per month as exact fractions [numerator, denominator]; daily
+// uses the paid days a year (365 / 313 / 261) ÷ 12.
+function periodsPerMonth(payPeriod, factor) {
+  switch (payPeriod) {
+    case 'monthly': return [1, 1]
+    case 'semiMonthly': return [2, 1]
+    case 'weekly': return [52, 12]
+    case 'daily': return [factor, 12]
+    default: throw new Error(`Unknown pay period: ${payPeriod}`)
+  }
+}
+
+/**
+ * L08: withholding per payday from the matching table. Per-period taxable pay
+ * is the monthly figure ÷ paydays a month (rounded to the centavo); the
+ * month's figure is the per-period withholding × paydays a month (rounded
+ * once, an average for weekly and daily pay); the year's is per-period ×
+ * paydays a year (12, 24, 52, or the paid days).
+ */
+export function periodWithholding(monthlyTaxableC, payPeriod = 'monthly', payFactor) {
+  const factor = payFactorOf(payFactor)
+  const [num, den] = periodsPerMonth(payPeriod, factor)
+  const perPeriodTaxableC = mulFrac(monthlyTaxableC, den, num)
+  const perPeriodWithholdingC = bracketTaxCentavos(TABLES[payPeriod], perPeriodTaxableC)
+  const monthlyWithholdingC = mulFrac(perPeriodWithholdingC, num, den)
+  const periodsPerYear = (num * 12) / den
+  return {
+    payPeriod,
+    periodName: PERIOD_NAMES[payPeriod],
+    factor,
+    periodsPerYear,
+    perPeriodTaxableC,
+    perPeriodWithholdingC,
+    monthlyWithholdingC,
+    withheldYearC: perPeriodWithholdingC * periodsPerYear,
+  }
+}
+
+/**
+ * L08: the Tools withholding calculator.
+ *   amount     pay for ONE payday (taxable pay, or gross pay in 'gross' mode)
+ *   mode       'taxable' | 'gross' (gross: the employee's SSS / PhilHealth /
+ *              Pag-IBIG shares for the month, on the month's gross, are spread
+ *              evenly over the month's paydays and subtracted)
+ *   payPeriod  'monthly' | 'semiMonthly' | 'weekly' | 'daily'
+ *   payFactor  paid days a year for daily pay (365 / 313 / 261)
+ */
+export function withholdingCalculator({ amount = 0, mode = 'taxable', payPeriod = 'monthly', payFactor } = {}) {
+  const P = fromCentavos
+  const factor = payFactorOf(payFactor)
+  const [num, den] = periodsPerMonth(payPeriod, factor)
+  const amountC = toCentavos(amount || 0)
+  let perPeriodTaxableC = amountC
+  let deductionsPerPeriodC = 0
+  let monthlyGrossC = null
+  if (mode === 'gross') {
+    monthlyGrossC = mulFrac(amountC, num, den)
+    const ded = employeeMandatoryDeductions(P(monthlyGrossC))
+    deductionsPerPeriodC = mulFrac(toCentavos(ded.total), den, num)
+    perPeriodTaxableC = Math.max(0, amountC - deductionsPerPeriodC)
+  }
+  const perPeriodWithholdingC = bracketTaxCentavos(TABLES[payPeriod], perPeriodTaxableC)
+  return {
+    payPeriod,
+    periodName: PERIOD_NAMES[payPeriod],
+    monthlyGross: monthlyGrossC == null ? null : P(monthlyGrossC),
+    deductionsPerPeriod: P(deductionsPerPeriodC),
+    perPeriodTaxable: P(perPeriodTaxableC),
+    perPeriodWithholding: P(perPeriodWithholdingC),
+  }
 }
 
 // H10: the NCR rates quoted under the minimum wage earner's daily-rate box.
@@ -103,12 +185,30 @@ export function withholdingForPeriod(taxable, period = 'monthly') {
   return bracketTax(table, taxable)
 }
 
+// L08: the per-payday lines shown when pay is not monthly.
+export function perPaydayRows(r, pw) {
+  if (pw.payPeriod === 'monthly') return
+  r(`Taxable pay per payday (${pw.periodName})`, fromCentavos(pw.perPeriodTaxableC), {
+    sub: `Monthly taxable pay spread over ${pw.periodsPerYear} ${pw.payPeriod === 'daily' ? 'paid days' : 'paydays'} a year.`,
+  })
+  r(`Withholding per payday (${pw.periodName} table)`, fromCentavos(pw.perPeriodWithholdingC), {
+    strong: true,
+    sub: `RR 11-2018 ${pw.periodName} withholding table (effective 2023).`,
+  })
+}
+
+// 'average month' for weekly and daily pay, where the paydays in a month vary.
+export function monthLabel(pw) {
+  return pw.payPeriod === 'weekly' || pw.payPeriod === 'daily' ? ', average month' : ''
+}
+
 /**
  * Full monthly picture for one employee.
- * @param {Object} in_ { monthlyBasic, monthlyAllowances, period, mwe, mweDailyRate, payFactor, mweExtraPay }
+ * @param {Object} in_ { monthlyBasic, monthlyAllowances, monthlyOtherTaxable, payPeriod (or period),
+ *                       payFactor, mwe, mweDailyRate, mweExtraPay }
  */
 export function estimatePayroll(in_) {
-  const { period = 'monthly' } = in_
+  const payPeriod = in_.payPeriod ?? in_.period ?? 'monthly'
   const C = toCentavos
   const P = fromCentavos
   const pay = monthlyPay(in_)
@@ -116,12 +216,10 @@ export function estimatePayroll(in_) {
   const payC = pay.grossC
   const monthlyTaxableC = pay.taxableC
 
-  const table = TABLES[period]
-  if (!table) throw new Error(`Unknown pay period: ${period}`)
-  const [num, den] = PERIODS_PER_MONTH[period]
-  const perPeriodTaxableC = mulFrac(monthlyTaxableC, den, num)
-  const perPeriodWithholdingC = bracketTaxCentavos(table, perPeriodTaxableC)
-  const monthlyWithholdingC = mulFrac(perPeriodWithholdingC, num, den)
+  const pw = periodWithholding(monthlyTaxableC, payPeriod, in_.payFactor)
+  const perPeriodTaxableC = pw.perPeriodTaxableC
+  const perPeriodWithholdingC = pw.perPeriodWithholdingC
+  const monthlyWithholdingC = pw.monthlyWithholdingC
 
   const er = employerContributions(P(pay.basicC), pay.bases)
   // M12: the mandatory 13th-month pay accrues every month: 1/12 of basic (PD 851).
@@ -143,7 +241,8 @@ export function estimatePayroll(in_) {
     })
   }
   r('Monthly taxable compensation', monthlyTaxable, { rule: true })
-  r('Withholding tax to remit (1601-C)', monthlyWithholding, { strong: true, sub: 'Revised withholding table effective 2023; remit by the 10th of the following month (Jan 15 for December).' })
+  perPaydayRows(r, pw)
+  r(`Withholding tax to remit (1601-C)${monthLabel(pw)}`, monthlyWithholding, { strong: true, sub: 'Revised withholding table effective 2023; remit by the 10th of the following month (Jan 15 for December).' })
   r('Employer SSS share (incl. EC)', er.sss, { sub: sssBaseNote(ded.sssMsc) })
   r('Employer PhilHealth share', er.philhealth)
   r('Employer Pag-IBIG share', er.pagibig)
@@ -153,7 +252,9 @@ export function estimatePayroll(in_) {
   return {
     minimumWage: P(pay.minimumWageC),
     exemptPay: P(pay.exemptC),
+    payPeriod,
     monthlyTaxable,
+    perPeriodTaxable: P(perPeriodTaxableC),
     perPeriodWithholding,
     monthlyWithholding,
     employeeDeductions: ded,

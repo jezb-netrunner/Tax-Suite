@@ -2,14 +2,12 @@ import React, { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { estimatePenalty, parseISODate } from '../engine/estimators/penalties.js'
 import { projectYear, projectorKind, MONTHS_MIN, MONTHS_MAX } from '../engine/estimators/projector.js'
-import { withholdingForPeriod } from '../engine/estimators/payroll.js'
-import { employeeMandatoryDeductions } from '../engine/estimators/contributions.js'
+import { withholdingCalculator, PAY_PERIODS, PAY_FACTORS, DEFAULT_PAY_FACTOR } from '../engine/estimators/payroll.js'
 import businessTax from '../data/rules/business-tax.json'
 import incomeTax from '../data/rules/income-tax.json'
 import penaltyRules from '../data/rules/penalties.json'
-import { NumField, Seg, Switch, Disclaimer } from '../components/ui.jsx'
+import { NumField, Seg, Switch, SelectField, Disclaimer } from '../components/ui.jsx'
 import { money, money2, pct } from '../lib/format.js'
-import { toCentavos, fromCentavos } from '../lib/money.js'
 import { iso, fromISO } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { HOLIDAYS } from '../lib/deadlineData.js'
@@ -335,14 +333,19 @@ function ProjectorCard() {
 export default function ToolsPage() {
   const [whComp, setWhComp] = useState(50000)
   const [whGrossMode, setWhGrossMode] = useState('taxable')
+  // L08: pay period (and paid days a year for daily pay).
+  const [whPeriod, setWhPeriod] = useState('monthly')
+  const [whFactor, setWhFactor] = useState(DEFAULT_PAY_FACTOR)
 
-  const whTaxable = useMemo(() => {
-    if (whGrossMode === 'taxable') return whComp
-    const ded = employeeMandatoryDeductions(whComp)
-    return fromCentavos(Math.max(0, toCentavos(whComp) - toCentavos(ded.total)))
-  }, [whComp, whGrossMode])
-  const whTax = useMemo(() => withholdingForPeriod(whTaxable, 'monthly'), [whTaxable])
+  const wh = useMemo(
+    () => withholdingCalculator({ amount: whComp, mode: whGrossMode, payPeriod: whPeriod, payFactor: whFactor }),
+    [whComp, whGrossMode, whPeriod, whFactor],
+  )
+  const whTaxable = wh.perPeriodTaxable
+  const whTax = wh.perPeriodWithholding
   const whRate = whTaxable > 0 ? (whTax / whTaxable * 100) : 0
+  const payday = { monthly: 'each month', semiMonthly: 'each payday (twice a month)', weekly: 'each week', daily: 'each paid day' }[whPeriod]
+  const perWord = { monthly: 'Monthly', semiMonthly: 'Semi-monthly', weekly: 'Weekly', daily: 'Daily' }[whPeriod]
 
   return (
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px' }}>
@@ -357,18 +360,28 @@ export default function ToolsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '16px' }}>
         <div className="card pad">
           <h3 style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-.01em' }}>Compensation withholding</h3>
-          <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '3px' }}>Monthly tax to withhold (revised table effective 2023).</p>
+          <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '3px' }}>Tax to withhold per payday (revised tables effective 2023).</p>
           <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <NumField label={whGrossMode === 'taxable' ? 'Monthly taxable pay' : 'Monthly gross pay'} value={whComp} onChange={setWhComp} prefix="₱" />
+            <SelectField label="Pay period" value={whPeriod} onChange={setWhPeriod} options={PAY_PERIODS} hint="Uses the matching BIR withholding table (RR 11-2018)." />
+            {whPeriod === 'daily' && (
+              <SelectField
+                label="Paid days a year"
+                value={String(whFactor)}
+                onChange={x => setWhFactor(Number(x))}
+                options={PAY_FACTORS.map(f => [String(f), `${f}${f === 365 ? ' (paid every day)' : f === 313 ? ' (six-day week)' : ' (five-day week)'}`])}
+                hint="Used to spread the month's SSS, PhilHealth and Pag-IBIG shares over the paid days."
+              />
+            )}
+            <NumField label={`${perWord} ${whGrossMode === 'taxable' ? 'taxable' : 'gross'} pay`} value={whComp} onChange={setWhComp} prefix="₱" />
             <Seg options={[['taxable', 'I have taxable pay'], ['gross', 'Start from gross']]} value={whGrossMode} onChange={setWhGrossMode} ariaLabel="Input mode" />
           </div>
           <div style={{ marginTop: '18px', background: 'var(--accSoft)', borderRadius: '11px', padding: '16px' }}>
             {whGrossMode === 'gross' && (
               <div style={{ fontSize: '12.5px', color: 'var(--accInk)', marginBottom: '7px' }}>
-                Taxable after SSS/PhilHealth/Pag-IBIG employee shares: <b className="mono">{money2(whTaxable)}</b>
+                Taxable after SSS/PhilHealth/Pag-IBIG employee shares{whPeriod !== 'monthly' && <> ({money2(wh.deductionsPerPeriod)} {payday}, the month's shares spread evenly)</>}: <b className="mono">{money2(whTaxable)}</b>
               </div>
             )}
-            <div style={{ fontSize: '12px', color: 'var(--accInk)', fontWeight: 600 }}>Tax to withhold each month</div>
+            <div style={{ fontSize: '12px', color: 'var(--accInk)', fontWeight: 600 }}>Tax to withhold {payday}</div>
             <div className="mono" style={{ fontSize: '24px', fontWeight: 600, color: 'var(--accInk)', marginTop: '5px' }}>{money2(whTax)}</div>
             <div style={{ fontSize: '12.5px', color: 'var(--accInk)', opacity: .8, marginTop: '3px' }}>Effective rate {whRate.toFixed(1)}% of taxable pay</div>
           </div>
