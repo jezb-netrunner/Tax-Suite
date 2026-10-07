@@ -59,6 +59,18 @@ describe('L16 heading outline', () => {
     expectGoodOutline(headings('Dashboard', '/'))
   })
 
+  // Follow-up: the Estimator and Checklist before any profile exists (reachable
+  // from the menu) also have a main heading, which focusMainHeading focuses.
+  it.each([
+    ['estimator, no profile yet', 'Estimator', '/estimator', 'Estimator'],
+    ['checklist, no profile yet', 'Checklist', '/checklist', 'Compliance checklist'],
+  ])('%s', (_, page, path, title) => {
+    state.profiles = []
+    expectGoodOutline(headings(page, path))
+    const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [path] }, h(Routes, null, h(Route, { path, element: h(pages[page]) }))))
+    expect(html).toMatch(new RegExp(`<h1 class="pg-h1"[^>]*>${title}</h1>`))
+  })
+
   it.each([
     ['calendar, self-employed', 'Dashboard', '/', [maria]],
     ['calendar, employee', 'Dashboard', '/', [juan]],

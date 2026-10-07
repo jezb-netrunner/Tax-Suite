@@ -798,7 +798,9 @@ export default function Estimator() {
   if (!app.profilesReady) return null
   if (!p) {
     return (
-      <div className="page wrap" style={{ paddingTop: '40px', paddingBottom: '64px' }}>
+      <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px' }}>
+        {/* L16: every page has a main heading (focused after navigation). */}
+        <h1 className="pg-h1" style={{ marginBottom: '16px' }}>Estimator</h1>
         <div className="card pad empty-note">
           Set up a taxpayer profile first. The estimator adapts to the profile's regime and registrations.
           <div style={{ marginTop: '14px' }}><button className="btn" onClick={() => nav('/profiles/new')}>Create a profile</button></div>
