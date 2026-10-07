@@ -114,7 +114,7 @@ export default function References() {
       <h1 className="pg-h1">References &amp; legal basis</h1>
       <p className="pg-sub">
         Every rate, threshold, and deadline in this app maps to the law or issuance it comes from.
-        Rules last verified: <b>{meta.verifiedDate}</b>.
+        Rules as of <b>{meta.verifiedDate}</b>.
       </p>
       <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '8px', lineHeight: 1.6, maxWidth: '760px' }}>
         Each rule below shows its value, its legal basis and how sure we are of it. <b>“Verified”</b> means it was

@@ -144,10 +144,10 @@ export default function App() {
       <footer className="ftr">
         <p>
           <b>JEZ Tax Suite</b> provides estimates and reminders, not tax or legal advice, and does not replace
-          review by a CPA. Rules follow Philippine tax law as amended by {statuteListText()}, plus current
-          BIR, SSS, PhilHealth, Pag-IBIG, SEC, and LGU issuances. Every figure's legal basis and verification
-          date is on the <NavLink to="/references" style={{ color: 'var(--accInk)', fontWeight: 600 }}>References</NavLink> page
-          (rules last verified {meta.verifiedDate}). Always confirm dates and amounts with the agency before filing.
+          review by a CPA. Rules follow Philippine tax law as amended by {statuteListText()}, plus
+          BIR, SSS, PhilHealth, Pag-IBIG, SEC, and LGU issuances, with rules as of {meta.verifiedDate}. Every
+          figure's legal basis and confidence is on the <NavLink to="/references" style={{ color: 'var(--accInk)', fontWeight: 600 }}>References</NavLink> page.
+          Always confirm dates and amounts with the agency before filing.
         </p>
       </footer>
     </div>

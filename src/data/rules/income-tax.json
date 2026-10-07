@@ -11,7 +11,7 @@
     ],
     "legalBasis": ["NIRC Sec 24(A)(2)(a), as amended by RA 10963 (TRAIN); rates effective Jan 1, 2023 onward"],
     "confidence": "verified",
-    "notes": "Base is the tax on the bracket floor; rate applies to the excess over the floor. Watch: the post-SONA 2026 package would change this table from TY2027 if enacted: HB 10345 (₱350k zero bracket) cleared the House Ways & Means committee Aug 10, 2026; Senate counterparts SB 2338 (₱350k) and SB 1685 (₱500k) pending. Nothing enacted as of Aug 26, 2026; re-verify before the 2027 tax year."
+    "notes": "Base is the tax on the bracket floor; rate applies to the excess over the floor. Watch: the post-SONA 2026 package would change this table from TY2027 if enacted: HB 10345 (₱350k zero bracket) cleared the House Ways & Means committee Aug 10, 2026; Senate counterparts SB 2338 (₱350k) and SB 1685 (₱500k) pending. Not enacted as of the October 7, 2026 review (latest report Oct 1, 2026); re-verify before the 2027 tax year."
   },
   "eightPercent": {
     "value": {
@@ -46,7 +46,7 @@
     "value": 90000,
     "legalBasis": ["NIRC Sec 32(B)(7)(e), as amended by RA 10963"],
     "confidence": "verified",
-    "notes": "13th month pay and other benefits excluded from gross income up to ₱90,000 per year, unchanged through 2026 (excess de minimis counts toward this cap). Watch: a House committee proposal would raise it to ₱120,000 alongside the TY2027 bracket package; committee stage only as of Aug 2026."
+    "notes": "13th month pay and other benefits excluded from gross income up to ₱90,000 per year, unchanged through 2026 (excess de minimis counts toward this cap). Watch: a House committee proposal would raise it to ₱120,000 alongside the TY2027 bracket package; not enacted as of the October 7, 2026 review."
   },
   "annualITRInstallment": {
     "value": { "secondInstallmentDue": "October 15" },
