@@ -9,6 +9,7 @@
 
 import corp from '../../data/rules/corporate.json'
 import businessTax from '../../data/rules/business-tax.json'
+import incomeTax from '../../data/rules/income-tax.json'
 import { toCentavos, fromCentavos, toWholePesos, mulRate, formatPesos } from '../../lib/money.js'
 import { manilaToday, mkDate, lastDayOfMonth, shiftToBusinessDay, iso, addDays, taxableYearQuarters } from '../dates.js'
 import { HOLIDAY_SET, OBLIGATIONS } from '../../lib/deadlineData.js'
@@ -103,6 +104,9 @@ export function corporateTaxYears({ today = manilaToday(), fiscalYearEndMonth = 
 
 const OSD_RATE = corp.osdCorporate.value.rate
 const CARRY_YEARS = MCIT.excessCarryForwardYears
+// M04: net operating loss carry-over (income-tax.json, needs_review).
+const NOLCO_RULE = incomeTax.netOperatingLossCarryOver
+const NOLCO_YEARS = NOLCO_RULE.value.carryOverYears
 
 // Whole-peso return line from a peso input (49 centavos down, 50 up).
 const line = pesos => toWholePesos(toCentavos(pesos || 0))
@@ -117,18 +121,29 @@ function mcitStatusFor(registrationYear, taxYear) {
 // 1702Q (RR 12-2007: the quarterly MCIT uses cumulative gross income).
 // M11: deduction 'osd' takes 40% of gross income (sales less cost of sales)
 // instead of the operating expenses (NIRC Sec 34(L); RR 16-2008).
-function taxCore({ grossSalesC, costOfSalesC, opexC, deduction, totalAssets, mcitStatus }) {
-  const grossIncomeC = Math.max(0, grossSalesC - costOfSalesC)
+// M04: with itemized deductions, costs above sales are a net operating loss
+// (NOLCO, NIRC Sec 34(D)(3)), and NOLCO from prior years (nolcoPriorC)
+// reduces taxable income only: never the MCIT, which is on gross income, and
+// never in an OSD year (RR 16-2008).
+function taxCore({ grossSalesC, costOfSalesC, opexC, deduction, totalAssets, mcitStatus, nolcoPriorC = 0 }) {
+  const grossResultC = grossSalesC - costOfSalesC
+  const grossIncomeC = Math.max(0, grossResultC)
   const osd = deduction === 'osd'
   const deductionC = osd ? toWholePesos(mulRate(grossIncomeC, OSD_RATE)) : opexC
-  const taxableIncomeC = Math.max(0, grossIncomeC - deductionC)
+  const netC = (osd ? grossIncomeC : grossResultC) - deductionC
+  const netLossC = osd ? 0 : Math.max(0, -netC)
+  const nolcoAppliedC = osd ? 0 : Math.min(nolcoPriorC, Math.max(0, netC))
+  const taxableIncomeC = Math.max(0, netC) - nolcoAppliedC
   const smallCorp = taxableIncomeC <= toCentavos(RCIT.smallCorpTaxableIncomeCeiling) && totalAssets <= RCIT.smallCorpAssetCeiling
   const rcitRate = smallCorp ? RCIT.smallCorpRate : RCIT.standardRate
   const rcitC = toWholePesos(mulRate(taxableIncomeC, rcitRate))
   const mcitCounts = mcitStatus !== 'notYet'
   const mcitC = mcitCounts ? toWholePesos(mulRate(grossIncomeC, MCIT.rate)) : 0
   const usesMcit = mcitCounts && mcitC > rcitC
-  return { grossSalesC, costOfSalesC, grossIncomeC, osd, deductionC, taxableIncomeC, smallCorp, rcitRate, rcitC, mcitC, usesMcit, dueC: Math.max(rcitC, mcitC) }
+  return {
+    grossSalesC, costOfSalesC, grossResultC, grossIncomeC, osd, deductionC, netC, netLossC, nolcoPriorC, nolcoAppliedC,
+    taxableIncomeC, smallCorp, rcitRate, rcitC, mcitC, usesMcit, dueC: Math.max(rcitC, mcitC),
+  }
 }
 
 /**
@@ -184,11 +199,11 @@ function rcitRow(r, core, toDate = '') {
   })
 }
 
-function incomeRows(r, core, toDate = '') {
+function incomeRows(r, core, toDate = '', lossSub) {
   const P = fromCentavos
   r(`Gross sales / revenue${toDate}`, P(core.grossSalesC))
   r('Less: cost of sales / services', -P(core.costOfSalesC))
-  r(`Gross income${toDate}`, P(core.grossIncomeC), { rule: true })
+  r(`Gross income${toDate}`, P(core.osd ? core.grossIncomeC : core.grossResultC), { rule: true })
   if (core.osd) {
     r(`Less: optional standard deduction (${RT.corpOsdRate} of gross income)`, -P(core.deductionC), {
       sub: 'NIRC Sec 34(L); RR 16-2008. Chosen on the first quarterly return and kept for the whole year; the financial statements still go with the annual return.',
@@ -196,7 +211,16 @@ function incomeRows(r, core, toDate = '') {
   } else {
     r('Less: operating expenses', -P(core.deductionC))
   }
-  r(`Net taxable income${toDate}`, P(core.taxableIncomeC), { rule: true })
+  const leftC = core.nolcoPriorC - core.nolcoAppliedC
+  if (core.netLossC > 0) {
+    r(`Net loss${toDate}`, P(core.netLossC), { rule: true, ...(lossSub ? { sub: lossSub } : {}) })
+  } else if (core.nolcoAppliedC > 0) {
+    r('Net income before NOLCO', P(core.netC), { rule: true })
+    r('Less: NOLCO from prior years', -P(core.nolcoAppliedC), leftC > 0
+      ? { sub: `${formatPesos(leftC)} of NOLCO is left for later years, within its ${NOLCO_YEARS}-year limit.` }
+      : {})
+  }
+  r(`Net taxable income${toDate}`, P(core.taxableIncomeC), { rule: core.netLossC === 0 && core.nolcoAppliedC === 0 })
 }
 
 /**
@@ -243,9 +267,29 @@ export function estimateCorporation(in_) {
   const mcitStatus = mcitStatusFor(registrationYear, taxYear)
   const core = taxCore({
     grossSalesC: line(in_.grossSales), costOfSalesC: line(in_.costOfSales), opexC: line(in_.opex),
-    deduction, totalAssets, mcitStatus,
+    deduction, totalAssets, mcitStatus, nolcoPriorC: line(in_.nolcoPrior),
   })
   const { grossSalesC, rcitC, mcitC, usesMcit } = core
+  // M04: the net loss becomes NOLCO for the next 3 taxable years.
+  const yearName = y => taxablePeriod(y, fiscalYearEndMonth).name
+  const nolcoYears = `${yearName(taxYear + 1)} to ${yearName(taxYear + NOLCO_YEARS)}`
+  const nolco = {
+    createdAmount: P(core.netLossC),
+    usableFrom: taxYear + 1,
+    usableTo: taxYear + NOLCO_YEARS,
+    priorEntered: P(core.nolcoPriorC),
+    applied: P(core.nolcoAppliedC),
+    left: P(core.nolcoPriorC - core.nolcoAppliedC),
+    note: core.netLossC > 0
+      ? `Net loss ${formatPesos(core.netLossC)}. This net operating loss (NOLCO) can be deducted from taxable income in the next ` +
+        `${NOLCO_YEARS} taxable years (${nolcoYears}), but only in years the corporation itemizes deductions. It cannot be used ` +
+        `in a year on the ${RT.corpOsdRate} OSD, and those years still count toward the ${NOLCO_YEARS}. It never reduces the MCIT, which is on gross income.`
+      : null,
+    shortNote: core.netLossC > 0 ? `Becomes NOLCO: deductible from taxable income in ${nolcoYears}, in years the corporation itemizes.` : null,
+    osdNote: core.osd && core.nolcoPriorC > 0
+      ? `NOLCO from prior years can't be used in a year on the ${RT.corpOsdRate} OSD, and this year still counts toward its ${NOLCO_YEARS} years.`
+      : null,
+  }
   const mcitApplies = mcitStatus === 'applies'
   const incomeTaxDueC = core.dueC
   const mcitWarning = mcitStatus !== 'unknown'
@@ -292,7 +336,7 @@ export function estimateCorporation(in_) {
 
   const rows = []
   const r = (label, value, o = {}) => rows.push({ label, value, ...o })
-  incomeRows(r, core)
+  incomeRows(r, core, '', nolco.shortNote)
   rcitRow(r, core)
   if (mcitApplies) {
     r(`Minimum corporate income tax @ ${RT.mcitRate} of gross income`, mcit, {
@@ -342,6 +386,8 @@ export function estimateCorporation(in_) {
     osd: core.osd ? P(core.deductionC) : null,
     grossIncome: P(core.grossIncomeC),
     taxableIncome: P(core.taxableIncomeC),
+    netLoss: P(core.netLossC),
+    nolco,
     smallCorp: core.smallCorp,
     rcitRate: core.rcitRate,
     rcit,
@@ -370,7 +416,10 @@ export function estimateCorporation(in_) {
     credits: P(creditsC),
     netPayable: P(incomeTaxDueC - creditsC),
     rows,
-    references: [...corp.rcit.legalBasis, ...corp.mcit.legalBasis, ...(core.osd ? corp.osdCorporate.legalBasis : [])],
+    references: [
+      ...corp.rcit.legalBasis, ...corp.mcit.legalBasis, ...(core.osd ? corp.osdCorporate.legalBasis : []),
+      ...(core.netLossC > 0 || core.nolcoAppliedC > 0 ? NOLCO_RULE.legalBasis : []),
+    ],
   }
 }
 

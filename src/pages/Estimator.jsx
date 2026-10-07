@@ -600,6 +600,12 @@ function CorporationEstimator({ app, onPrintYear }) {
             hint={`The optional standard deduction is ${RT.corpOsdRate} of gross income (sales less cost of sales). The choice is made on the first quarterly return and kept for the year.`}
           />
           <NumField emptyValue={null} label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" hint={osd ? `Not used with the ${RT.corpOsdRate} OSD.` : undefined} />
+          <NumField
+            emptyValue={null} label="NOLCO from prior years" value={v.nolcoPrior} onChange={x => set('nolcoPrior', x)} prefix="₱"
+            hint={osd
+              ? `Not used with the ${RT.corpOsdRate} OSD.`
+              : `Unused net operating losses from the last ${RT.nolcoYears}. Used only with itemized deductions, against taxable income (never the MCIT). Losses from ${RT.nolcoPandemicLossYears} may carry over for ${RT.nolcoPandemicYears} (RA 11494); check with your CPA.`}
+          />
           <NumField emptyValue={null} label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint={`For the ${RT.rcitSmall} small-corporation test. A blank box counts as ₱0.`} />
           <NumField emptyValue={null} label="Creditable tax withheld (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
           <NumField emptyValue={null} label="Income tax already paid on this year's quarterly returns (1702Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
@@ -639,6 +645,8 @@ function CorporationEstimator({ app, onPrintYear }) {
           <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
             <b style={{ color: 'var(--ink)' }}>{r.period.label}.</b> Annual return (1702-RT) due {fmtISO(r.period.annualDue)}.
           </p>
+          {r.nolco.note && <div className="mini-warn" role="note" style={{ marginTop: '10px' }}>{r.nolco.note}</div>}
+          {r.nolco.osdNote && <div className="mini-warn" role="note" style={{ marginTop: '10px' }}>{r.nolco.osdNote}</div>}
           {r.mcitWarning && (
             <div className="mini-warn" role="note" style={{ marginTop: '10px' }}>
               <b>Check the MCIT.</b> {r.mcitWarning}
