@@ -46,6 +46,8 @@ button, input, select { font-family: inherit; }
 ::placeholder { color: var(--dim); opacity: 1; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: 6px; }
+/* M21: page headings take focus after a page change; they are not controls, so no ring. */
+main h1[tabindex="-1"]:focus { outline: none; }
 .mono { font-family: 'IBM Plex Mono', monospace; }
 
 /* layout */

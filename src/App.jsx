@@ -15,6 +15,17 @@ import Privacy from './pages/Privacy.jsx'
 import SaveNotice from './components/SaveNotice.jsx'
 import meta from './data/rules/meta.json'
 import { statuteListText } from './data/statutes.js'
+import { pageTitle } from './lib/pageTitle.js'
+
+// M21: after a page change, focus the new page's main heading so screen
+// readers announce it (the heading gets tabindex -1 so it can take focus).
+function focusMainHeading() {
+  const h = document.querySelector('main h1')
+  if (!h) return false
+  if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1')
+  h.focus({ preventScroll: true })
+  return true
+}
 
 function ProfileMenu() {
   const app = useApp()
@@ -128,7 +139,24 @@ export default function App() {
   const app = useApp()
   const location = useLocation()
 
-  useEffect(() => { window.scrollTo(0, 0) }, [location.pathname])
+  // M21: each page has its own tab title ("Estimator · JEZ Tax Suite").
+  const signedOut = app.hasCloud && !app.signedIn
+  useEffect(() => {
+    document.title = pageTitle(location.pathname, { signedOut, recovery: Boolean(app.recovery) })
+  }, [location.pathname, signedOut, app.recovery])
+
+  // Scroll to the top and move focus to the new page's heading on a page
+  // change (not on the first load, where the browser starts at the top).
+  const shownPath = useRef(location.pathname)
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (shownPath.current === location.pathname) return undefined
+    shownPath.current = location.pathname
+    if (focusMainHeading()) return undefined
+    // A page that waits for data renders its heading a moment later.
+    const id = requestAnimationFrame(() => { focusMainHeading() })
+    return () => cancelAnimationFrame(id)
+  }, [location.pathname])
 
   if (!app.authReady) return null
 
