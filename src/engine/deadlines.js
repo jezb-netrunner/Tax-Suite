@@ -189,6 +189,23 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
   return out
 }
 
+// Deadlines (already in date order) grouped by calendar month of the due date:
+// [{ key: 'YYYY-MM', label: 'October 2026', items: [...] }]. Used by the
+// calendar's Timeline view, which shows every deadline in the window.
+export function groupByMonth(list) {
+  const groups = []
+  for (const d of list) {
+    const key = iso(d.date).slice(0, 7)
+    let g = groups[groups.length - 1]
+    if (!g || g.key !== key) {
+      g = { key, label: d.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), items: [] }
+      groups.push(g)
+    }
+    g.items.push(d)
+  }
+  return groups
+}
+
 // ---------------------------------------------------------------------------
 // Filed / overdue state (M09). Marks are saved on the profile:
 //   profile.filed          { [filedKey]: 'YYYY-MM-DD' marked }  dated deadlines

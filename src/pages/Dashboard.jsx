@@ -4,7 +4,7 @@ import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS, HOLIDAY_SET } from '../lib/deadlineData.js'
 import {
   generateDeadlines, unproclaimedYears, holidayGapNote, overdueDeadlines, OVERDUE_DAYS,
-  filedKey, filedStatus, withFiled, withFiledMany, railStatus,
+  filedKey, filedStatus, withFiled, withFiledMany, railStatus, groupByMonth,
 } from '../engine/deadlines.js'
 import { profileFlags } from '../engine/profile.js'
 import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
@@ -253,29 +253,40 @@ export default function Dashboard() {
 
             {view === 'timeline' && (
               <div style={{ position: 'relative', paddingLeft: '8px' }}>
-                <div style={{ position: 'absolute', left: '14px', top: '8px', bottom: '8px', width: '2px', background: 'var(--line)' }}></div>
-                {deadlines.slice(0, 40).map(d => {
-                  const st = d.daysAway <= 30 ? { s: 'Due soon', c: 'var(--warn)', soft: 'var(--warnSoft)' } : { s: 'Upcoming', c: 'var(--accInk)', soft: 'var(--accSoft)' }
-                  return (
-                    <div key={d.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '14px', position: 'relative' }}>
-                      <span style={{ width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0, marginTop: '14px', background: st.c, boxShadow: `0 0 0 3px var(--bg),0 0 0 4px ${st.c}`, position: 'relative', zIndex: 1, display: 'block' }}></span>
-                      <div className="card" style={{ flex: 1, minWidth: 0, borderRadius: '12px', padding: '14px 17px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '11.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '100px', color: st.c, background: st.soft }}>{st.s}</span>
-                          <span className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}>{fmtDate(d.date)}{d.label ? ` · ${d.label}` : ''}</span>
+                <p style={{ fontSize: '13px', color: 'var(--mut)', margin: '0 0 6px' }}>
+                  All {deadlines.length} deadlines in the next 13 months, by month.
+                </p>
+                <div style={{ position: 'absolute', left: '14px', top: '34px', bottom: '8px', width: '2px', background: 'var(--line)' }}></div>
+                {groupByMonth(deadlines).map(g => (
+                  <section key={g.key} aria-labelledby={`tl-${g.key}`}>
+                    <h2 id={`tl-${g.key}`} style={{ fontSize: '14.5px', fontWeight: 700, margin: '16px 0 10px 30px', position: 'relative' }}>
+                      {g.label} <span style={{ fontWeight: 500, color: 'var(--mut)', fontSize: '13px' }}>({g.items.length})</span>
+                    </h2>
+                    {g.items.map(d => {
+                      const st = d.daysAway === 0 ? { s: 'Due today', c: 'var(--warn)', soft: 'var(--warnSoft)' }
+                        : d.daysAway <= 30 ? { s: 'Due soon', c: 'var(--warn)', soft: 'var(--warnSoft)' } : { s: 'Upcoming', c: 'var(--accInk)', soft: 'var(--accSoft)' }
+                      return (
+                        <div key={d.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '14px', position: 'relative' }}>
+                          <span style={{ width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0, marginTop: '14px', background: st.c, boxShadow: `0 0 0 3px var(--bg),0 0 0 4px ${st.c}`, position: 'relative', zIndex: 1, display: 'block' }}></span>
+                          <div className="card" style={{ flex: 1, minWidth: 0, borderRadius: '12px', padding: '14px 17px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '11.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '100px', color: st.c, background: st.soft }}>{st.s}</span>
+                              <span className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}>{fmtDate(d.date)}{d.label ? ` · ${d.label}` : ''}</span>
+                            </div>
+                            <div style={{ fontWeight: 600, fontSize: '14.5px', marginTop: '7px' }}>{d.obligation.title}</div>
+                            <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>{d.obligation.desc}</div>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '9px', alignItems: 'center' }}>
+                              {d.obligation.form && d.obligation.form !== '—' && <span className="boxcode">{d.obligation.form}</span>}
+                              <AgencyTag agency={d.obligation.agency} />
+                              {d.shifted && <span style={{ fontSize: '11.5px', color: 'var(--dim)' }}>moved from {fmtDate(d.rawDate)}</span>}
+                            </div>
+                            <RollNote d={d} />
+                          </div>
                         </div>
-                        <div style={{ fontWeight: 600, fontSize: '14.5px', marginTop: '7px' }}>{d.obligation.title}</div>
-                        <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>{d.obligation.desc}</div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '9px', alignItems: 'center' }}>
-                          {d.obligation.form && d.obligation.form !== '—' && <span className="boxcode">{d.obligation.form}</span>}
-                          <AgencyTag agency={d.obligation.agency} />
-                          {d.shifted && <span style={{ fontSize: '11.5px', color: 'var(--dim)' }}>moved from {fmtDate(d.rawDate)}</span>}
-                        </div>
-                        <RollNote d={d} />
-                      </div>
-                    </div>
-                  )
-                })}
+                      )
+                    })}
+                  </section>
+                ))}
               </div>
             )}
 
