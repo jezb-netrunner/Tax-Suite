@@ -42,10 +42,10 @@ function BasisNote({ refs }) {
 
 // M05: every mode starts with empty boxes; until the main figure is typed the
 // results area shows this prompt instead of made-up sample figures.
-function EnterFigures({ children }) {
+function EnterFigures({ children, title = 'Enter your figures.' }) {
   return (
     <div className="card pad empty-note" style={{ marginTop: '16px' }}>
-      <b style={{ color: 'var(--ink)' }}>Enter your figures.</b> {children} Nothing is saved to this profile until you type a figure.
+      <b style={{ color: 'var(--ink)' }}>{title}</b> {children} Nothing is saved to this profile until you type a figure.
     </div>
   )
 }
@@ -501,9 +501,10 @@ function EmployeeEstimator({ app }) {
         )}
       </div>
       {!hasFigures ? (
-        <EnterFigures>{mwe
+        // L09: a blank or ₱0 salary computes nothing (no contributions, no negative take-home).
+        <EnterFigures title={mwe ? 'Enter the daily minimum wage.' : 'Enter a salary.'}>{mwe
           ? 'Start with the statutory daily minimum wage. Your payslip and annual tax appear here as you type.'
-          : 'Start with your monthly basic salary. Your payslip and annual tax appear here as you type.'}</EnterFigures>
+          : 'Start with your monthly basic salary (more than ₱0). Your payslip and annual tax appear here as you type.'}</EnterFigures>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
           <div className="card pad">
@@ -714,9 +715,9 @@ function PayrollEstimator({ app }) {
         </div>
       </div>
       {!hasFigures ? (
-        <EnterFigures>{mwe
+        <EnterFigures title={mwe ? 'Enter the daily minimum wage.' : 'Enter a salary.'}>{mwe
           ? 'Start with the statutory daily minimum wage. The withholding and true cost appear here as you type.'
-          : 'Start with the employee\'s monthly basic pay. The withholding and true cost appear here as you type.'}</EnterFigures>
+          : 'Start with the employee\'s monthly basic pay (more than ₱0). The withholding and true cost appear here as you type.'}</EnterFigures>
       ) : (
         <div className="card pad" style={{ marginTop: '20px' }}>
           <h3 className="sec-h">Withholding &amp; true cost for this employee</h3>

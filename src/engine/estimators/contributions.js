@@ -14,6 +14,7 @@ const P = fromCentavos
 const C = toCentavos
 
 function ecFor(mscC, ec) {
+  if (mscC <= 0) return 0 // L09: no pay, no SSS, no EC
   const t = ec.find(x => x.mscBelow === null || mscC < C(x.mscBelow)) || ec[ec.length - 1]
   return C(t.amount)
 }
@@ -58,6 +59,8 @@ export function sssSelfEmployed(declaredMonthlyIncome) {
 
 function philhealthC(monthlyBasic) {
   const { rate, incomeFloor, incomeCeiling, employeeShare } = contrib.philhealth.value
+  // L09: the ₱10,000 floor applies to real pay only; no salary, no premium.
+  if (C(monthlyBasic || 0) <= 0) return { baseC: 0, premiumC: 0, employeeC: 0, employerC: 0 }
   const baseC = Math.min(C(incomeCeiling), Math.max(C(incomeFloor), C(monthlyBasic)))
   const premiumC = mulRate(baseC, rate)
   const employeeC = mulRate(premiumC, employeeShare)
