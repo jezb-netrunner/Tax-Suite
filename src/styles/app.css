@@ -112,6 +112,13 @@ a { color: inherit; }
 .card.tight { padding: 18px; }
 .click { cursor: pointer; transition: border-color .15s, box-shadow .2s, transform .2s; }
 .click:hover { border-color: #cfdeeb; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+/* M18: a card whose title link covers the whole card (blog). */
+.blog-card { position: relative; }
+.card-link { color: inherit; text-decoration: none; }
+.card-link::after { content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: 1; }
+.card-link:focus-visible { outline: none; }
+.card-link:focus-visible::after { outline: 3px solid var(--acc); outline-offset: -3px; border-radius: 14px; }
+.blog-card:hover .card-link { text-decoration: underline; text-underline-offset: 3px; }
 .list-card { border: 1px solid var(--line); border-radius: 13px; background: var(--sf); overflow: hidden; box-shadow: var(--shadow-sm); }
 .frow { display: flex; align-items: center; gap: 16px; padding: 15px 18px; }
 .frow + .frow { border-top: 1px solid var(--line2); }
