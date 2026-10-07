@@ -12,6 +12,7 @@ import AuthPage, { SetNewPassword, ChangePassword } from './pages/Auth.jsx'
 import ProfileWizard from './pages/ProfileWizard.jsx'
 import ProfilesPage, { LocalLeftovers, SHARED_COMPUTER_WARNING } from './pages/Profiles.jsx'
 import Privacy from './pages/Privacy.jsx'
+import SaveNotice from './components/SaveNotice.jsx'
 import meta from './data/rules/meta.json'
 import { statuteListText } from './data/statutes.js'
 
@@ -135,6 +136,7 @@ export default function App() {
 
       <main style={{ flex: 1 }}>
         <LocalLeftovers />
+        <SaveNotice />
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/estimator" element={<Estimator />} />

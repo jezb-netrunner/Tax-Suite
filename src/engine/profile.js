@@ -60,6 +60,14 @@ export function defaultProfile(type = 'individual') {
   return base
 }
 
+// C07: a copy of the profile with the estimator figures of one tab (key:
+// 'individual', 'mixed', 'employee', 'corporation' or 'payroll') replaced and
+// every other part kept. Applied to the newest stored profile when saving, so
+// a tab never writes back its old copy of the rest of the profile.
+export function withInputs(profile, key, values) {
+  return { ...profile, inputs: { ...(profile.inputs || {}), [key]: values } }
+}
+
 // Flags consumed by obligation `appliesTo` predicates.
 export function profileFlags(p) {
   const f = new Set()

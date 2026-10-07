@@ -7,6 +7,11 @@
 // `profile` is the active profile with any not-yet-saved marks applied, so a
 // click shows at once. Saves run one after another, each built on the newest
 // marks, so two quick clicks never undo each other.
+//
+// C07: each save applies the change to the newest STORED profile
+// (app.updateProfile), not to this tab's copy, so figures typed or settings
+// changed in another tab are never undone, and a profile deleted there is not
+// re-created.
 
 import { useCallback, useRef, useState } from 'react'
 
@@ -28,7 +33,7 @@ export function useProfileMarks(app) {
     setPending(pendingRef.current)
     setError(null)
     chain.current = chain.current
-      .then(() => app.save(next))
+      .then(() => app.updateProfile(cur.id, change))
       .then(() => {
         if (pendingRef.current && pendingRef.current.profile === next) {
           pendingRef.current = null

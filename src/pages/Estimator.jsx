@@ -7,6 +7,7 @@ import { estimateCorporation, estimateCorporateQuarter, corporateTaxYears, taxab
 import { estimatePayroll, DEFAULT_PAY_FACTOR, PAY_PERIODS, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions, selfEmployedMonthlyEarnings } from '../engine/estimators/contributions.js'
 import { fromISO, taxableYearQuarters } from '../engine/dates.js'
+import { withInputs } from '../engine/profile.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
@@ -59,8 +60,10 @@ const NOTE_STYLE = { marginTop: '12px', fontSize: '12.5px', color: 'var(--ink)',
 //  - Seed from the profile these inputs belong to. The estimator subtree is
 //    keyed by profile id (see Estimator below), so switching clients remounts
 //    and re-seeds rather than showing the previous client's figures.
-//  - Merge into the LATEST profile at flush time, not the copy captured on the
-//    keystroke, so a debounced write can't revert edits made meanwhile.
+//  - C07: change only inputs[key] on the newest STORED profile (re-read at
+//    save time), never write back this tab's copy of the whole profile: that
+//    undid renames and settings saved in another tab, and re-created profiles
+//    deleted there.
 //  - Flush a pending write on unmount instead of dropping it.
 function useInputs(app, key, defaults) {
   const profileId = app.active?.id ?? null
@@ -69,16 +72,12 @@ function useInputs(app, key, defaults) {
   const timer = React.useRef(null)
   const pending = React.useRef(null)
 
-  // Always read the newest profile when the timer fires.
-  const activeRef = React.useRef(app.active)
-  activeRef.current = app.active
-
   const flush = React.useCallback(() => {
     const inputs = pending.current
     pending.current = null
-    const current = activeRef.current
-    if (!inputs || !current || current.id !== profileId) return
-    app.save({ ...current, inputs: { ...(current.inputs || {}), [key]: inputs } }).catch(() => {})
+    if (!inputs || !profileId) return
+    app.updateProfile(profileId, p => withInputs(p, key, inputs))
+      .catch(e => app.reportSaveProblem(e))
   }, [app, key, profileId])
 
   function update(k, v) {

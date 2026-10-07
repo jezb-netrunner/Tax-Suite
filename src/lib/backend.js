@@ -63,6 +63,47 @@ function saveError(error) {
   return new Error('The profile could not be saved. Please try again.')
 }
 
+// C07: a save never re-creates a profile that another window (or device)
+// deleted, and never writes over a newer version of it.
+export const PROFILE_GONE_MESSAGE = 'This profile was deleted in another window.'
+export const PROFILE_CONFLICT_MESSAGE =
+  'This profile was changed in another window or on another device at the same time, so this change was not saved. Please try again.'
+
+function goneError() {
+  const e = new Error(PROFILE_GONE_MESSAGE)
+  e.code = 'profile-gone'
+  return e
+}
+
+function conflictError() {
+  const e = new Error(PROFILE_CONFLICT_MESSAGE)
+  e.code = 'profile-conflict'
+  return e
+}
+
+// How many times an accounts-mode update re-reads the row when another
+// window or device saved it between the read and the write.
+const UPDATE_ATTEMPTS = 3
+
+// C07: calls onChange when the saved profiles may have been changed elsewhere,
+// so this tab never keeps working on an old copy. Local mode: the browser's
+// "storage" event, which fires in every other tab of this site when one tab
+// writes the profile list (key null = storage cleared). Accounts mode: the tab
+// becoming visible again (other devices do not fire storage events).
+// Returns a function that stops watching.
+export function watchProfileChanges(onChange, { cloud = hasCloud, win = globalThis.window, doc = globalThis.document } = {}) {
+  if (!cloud) {
+    if (!win || typeof win.addEventListener !== 'function') return () => {}
+    const onStorage = e => { if (e.key === LS_KEY || e.key === null) onChange() }
+    win.addEventListener('storage', onStorage)
+    return () => win.removeEventListener('storage', onStorage)
+  }
+  if (!doc || typeof doc.addEventListener !== 'function') return () => {}
+  const onVisible = () => { if (doc.visibilityState === 'visible') onChange() }
+  doc.addEventListener('visibilitychange', onVisible)
+  return () => doc.removeEventListener('visibilitychange', onVisible)
+}
+
 export function createBackend({ client = null, storage } = {}) {
   const cloud = Boolean(client)
   const store = () => (storage !== undefined ? storage : globalThis.localStorage)
@@ -96,12 +137,21 @@ export function createBackend({ client = null, storage } = {}) {
     return data.map(r => ({ ...r.data, id: r.id }))
   }
 
+  // Saves a whole profile: a new one (no id) is created; an existing one is
+  // replaced. To change part of a saved profile use updateProfile, which
+  // starts from the newest stored copy instead of this tab's.
   async function saveProfile(userId, profile) {
     if (!cloud) {
       const all = localLoad()
-      if (!profile.id) profile = { ...profile, id: newId() }
-      const i = all.findIndex(p => p.id === profile.id)
-      if (i >= 0) all[i] = profile; else all.push(profile)
+      if (!profile.id) {
+        profile = { ...profile, id: newId() }
+        all.push(profile)
+      } else {
+        const i = all.findIndex(p => p && p.id === profile.id)
+        // C07: deleted in another tab. Saving must not bring it back.
+        if (i < 0) throw goneError()
+        all[i] = profile
+      }
       localSave(all)
       return profile
     }
@@ -115,6 +165,8 @@ export function createBackend({ client = null, storage } = {}) {
         .eq('user_id', userId)
         .select('id')
         .single()
+      // PGRST116: no row matched, so the profile was deleted elsewhere.
+      if (error && error.code === 'PGRST116') throw goneError()
       if (error) throw saveError(error)
       return { ...profile, id: data.id }
     }
@@ -125,6 +177,51 @@ export function createBackend({ client = null, storage } = {}) {
       .single()
     if (error) throw saveError(error)
     return { ...profile, id: data.id }
+  }
+
+  // C07: changes one saved profile without writing back an old copy of it.
+  // change(latest) receives the newest stored version and returns the new
+  // one, so figures, filed marks and registration answers saved from other
+  // windows are kept. Refuses (PROFILE_GONE_MESSAGE) if the profile was
+  // deleted elsewhere: it is never re-created. In accounts mode the write is
+  // made only if the row's updated_at is still the one read (optimistic
+  // concurrency); otherwise the row is read again and the change re-applied,
+  // and after UPDATE_ATTEMPTS tries the save is refused with a message.
+  async function updateProfile(userId, id, change) {
+    if (!id) throw new Error('updateProfile needs the id of a saved profile.')
+    if (!cloud) {
+      // Read, change and write in one go (no await in between), so no other
+      // tab can save in the middle.
+      const all = localLoad()
+      const i = all.findIndex(p => p && p.id === id)
+      if (i < 0) throw goneError()
+      const next = { ...change(all[i]), id }
+      all[i] = next
+      localSave(all)
+      return next
+    }
+    for (let attempt = 0; attempt < UPDATE_ATTEMPTS; attempt++) {
+      const { data: rows, error } = await client
+        .from('taxpayer_profiles')
+        .select('id, data, updated_at')
+        .eq('id', id)
+        .eq('user_id', userId)
+      if (error) throw saveError(error)
+      if (!rows || !rows.length) throw goneError()
+      const row = rows[0]
+      const next = { ...change({ ...row.data, id }), id }
+      const { data: written, error: writeError } = await client
+        .from('taxpayer_profiles')
+        .update({ data: { ...next, id: undefined } })
+        .eq('id', id)
+        .eq('user_id', userId)
+        .eq('updated_at', row.updated_at)
+        .select('id, updated_at')
+      if (writeError) throw saveError(writeError)
+      if (written && written.length) return next
+      // Nothing written: saved (or deleted) elsewhere since the read. Try again.
+    }
+    throw conflictError()
   }
 
   async function deleteProfile(userId, id) {
@@ -226,7 +323,7 @@ export function createBackend({ client = null, storage } = {}) {
   }
 
   return {
-    hasCloud: cloud, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
+    hasCloud: cloud, listProfiles, saveProfile, updateProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
     localLeftovers, importLocalProfiles, eraseLocalLeftovers,
   }
 }
@@ -235,6 +332,7 @@ const app = createBackend({ client: supabase })
 
 export const listProfiles = (...a) => app.listProfiles(...a)
 export const saveProfile = (...a) => app.saveProfile(...a)
+export const updateProfile = (...a) => app.updateProfile(...a)
 export const deleteProfile = (...a) => app.deleteProfile(...a)
 export const exportData = (...a) => app.exportData(...a)
 export const eraseLocalData = (...a) => app.eraseLocalData(...a)

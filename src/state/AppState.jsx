@@ -7,6 +7,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState, useCall
 import {
   hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
   localLeftovers, importLocalProfiles, eraseLocalLeftovers, openedFromRecoveryLink, emailLinkError,
+  updateProfile as updateStoredProfile, watchProfileChanges,
 } from '../lib/backend.js'
 
 const Ctx = createContext(null)
@@ -25,6 +26,9 @@ export function AppStateProvider({ children }) {
   const [loadError, setLoadError] = useState(null)
   // A one-off message for the sign-in screen (e.g. after deleting the account).
   const [notice, setNotice] = useState(null)
+  // C07: the last background save that failed (figures, filed marks), shown
+  // by <SaveNotice /> until dismissed. An Error; its message is shown.
+  const [saveProblem, setSaveProblem] = useState(null)
   // M27: profiles this browser saved in local mode, found after signing in.
   const [leftovers, setLeftovers] = useState([])
   // M28: true while the user, back from a "reset your password" email link,
@@ -56,28 +60,45 @@ export function AppStateProvider({ children }) {
   // a slow response from a previous session could paint another account's
   // profiles over this one's.
   const reqToken = useRef(0)
+  // The user whose profile list is on screen (null in local mode; undefined
+  // before the first successful load).
+  const loadedFor = useRef(undefined)
 
-  const refreshProfiles = useCallback(async () => {
+  // { background: true }: a check for changes made elsewhere (C07). If it
+  // fails, the list already on screen for this user stays; nothing was lost.
+  const refreshProfiles = useCallback(async (opts) => {
+    const background = Boolean(opts && opts.background)
     const token = ++reqToken.current
     const forUser = userId
-    setLoadError(null)
+    if (!background) setLoadError(null)
     if (hasCloud && !forUser) { setProfiles([]); setProfilesReady(true); return }
     try {
       const list = await listProfiles(forUser)
       if (token !== reqToken.current) return
       setProfiles(list)
+      setLoadError(null)
+      loadedFor.current = forUser
     } catch (e) {
       if (token !== reqToken.current) return
       console.error('Failed to load profiles', e)
+      if (background && loadedFor.current === forUser) return
       // Don't render a failed fetch as "no profiles yet" — that reads as data
       // loss to someone who has clients saved.
       setLoadError(e)
       setProfiles([])
+      loadedFor.current = undefined
     }
     if (token === reqToken.current) setProfilesReady(true)
   }, [userId])
 
   useEffect(() => { if (authReady) refreshProfiles() }, [authReady, refreshProfiles])
+
+  // C07: profiles changed in another tab (or, in accounts mode, on another
+  // device) are reloaded, so this tab never keeps working on an old copy.
+  useEffect(() => {
+    if (!authReady) return undefined
+    return watchProfileChanges(() => { refreshProfiles({ background: true }) })
+  }, [authReady, refreshProfiles])
 
   useEffect(() => { setLeftovers(hasCloud && userId ? localLeftovers() : []) }, [userId])
 
@@ -94,7 +115,7 @@ export function AppStateProvider({ children }) {
     profiles,
     profilesReady,
     loadError,
-    retryLoad: refreshProfiles,
+    retryLoad: () => refreshProfiles(),
     active,
     setActive(id) {
       setActiveId(id)
@@ -109,6 +130,21 @@ export function AppStateProvider({ children }) {
       }
       return saved
     },
+    // C07: changes part of a saved profile. change(latest) gets the newest
+    // stored copy (not this tab's) and returns the new profile. A profile
+    // deleted in another window is never re-created: the promise rejects with
+    // "This profile was deleted in another window." The list is reloaded
+    // either way.
+    async updateProfile(id, change) {
+      try {
+        return await updateStoredProfile(userId, id, change)
+      } finally {
+        await refreshProfiles({ background: true })
+      }
+    },
+    saveProblem,
+    reportSaveProblem(e) { setSaveProblem(e || null) },
+    clearSaveProblem() { setSaveProblem(null) },
     async remove(id) {
       await deleteProfile(userId, id)
       await refreshProfiles()
@@ -153,7 +189,7 @@ export function AppStateProvider({ children }) {
       setNotice('Your account and every profile saved in it were deleted.')
       setSession(null)
     },
-  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers, recovery])
+  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers, recovery, saveProblem])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }
