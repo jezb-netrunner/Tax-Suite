@@ -40,7 +40,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      # Tests with a coverage table in the job log (M30).
+      - run: npm run test:coverage
       # Local-mode build. It also regenerates the committed single-file
       # index.html, which must match the source exactly.
       - run: npm run build

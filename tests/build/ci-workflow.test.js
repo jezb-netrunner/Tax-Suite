@@ -54,7 +54,18 @@ describe('lint (L22)', () => {
   })
   it('CI runs the linter before the tests', () => {
     const build = jobText('build')
-    expect(build).toMatch(/- run: npm run lint\n\s+- run: npm test/)
+    expect(build).toMatch(/- run: npm run lint\n(\s+#.*\n)*\s+- run: npm run test:coverage/)
+  })
+})
+
+describe('coverage (M30)', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
+  it('has a test:coverage script with the v8 provider matching vitest', () => {
+    expect(pkg.scripts['test:coverage']).toBe('vitest run --coverage')
+    expect(pkg.devDependencies['@vitest/coverage-v8']).toBe(pkg.devDependencies.vitest)
+  })
+  it('CI prints coverage in the build job', () => {
+    expect(jobText('build')).toContain('- run: npm run test:coverage')
   })
 })
 

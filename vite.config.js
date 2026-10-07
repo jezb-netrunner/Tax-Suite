@@ -43,6 +43,13 @@ export default defineConfig(({ command, mode }) => {
     test: {
       environment: 'node',
       include: ['tests/**/*.test.js'],
+      // M30: `npm run test:coverage` (CI prints the table in the job log).
+      coverage: {
+        provider: 'v8',
+        include: ['src/**/*.{js,jsx}'],
+        reporter: ['text', 'text-summary'],
+        reportsDirectory: 'coverage',
+      },
     },
   }
 })
