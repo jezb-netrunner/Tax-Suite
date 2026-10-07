@@ -1,7 +1,16 @@
-// Bridges the data layer to the UI: pre-parsed holiday set + obligation list.
+// Bridges the data layer to the UI: holiday calendar + obligation list.
 import obligationsData from '../data/rules/obligations.json'
 import holidaysData from '../data/rules/holidays.json'
+import { makeHolidayCalendar } from '../engine/dates.js'
 
 export const OBLIGATIONS = obligationsData.obligations
-export const HOLIDAY_SET = new Set(holidaysData.holidays.map(h => h.date))
+
+// The holiday calendar used to move deadlines, for any year: the proclaimed
+// list where the rulebook has one, otherwise the holidays fixed by law.
+// has(iso) / get(iso) / forYear(y) / isProclaimed(y) (see makeHolidayCalendar).
+// Kept under its old name because the deadline engine and the penalty
+// calculator take it wherever a Set of ISO dates used to go.
+export const HOLIDAY_SET = makeHolidayCalendar(holidaysData.holidays, holidaysData.fixedByLaw.value)
+
+// The proclaimed rows exactly as listed in the rulebook (References page).
 export const HOLIDAYS = holidaysData.holidays

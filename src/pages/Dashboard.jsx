@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS, HOLIDAY_SET } from '../lib/deadlineData.js'
-import { generateDeadlines } from '../engine/deadlines.js'
+import { generateDeadlines, unproclaimedYears, holidayGapNote } from '../engine/deadlines.js'
 import { profileFlags } from '../engine/profile.js'
 import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
@@ -39,12 +39,16 @@ export default function Dashboard() {
 
   // Today in Manila; refreshes at Manila midnight and when the tab comes back.
   const t = useManilaToday()
+  const windowEnd = addDays(t, 400)
   const deadlines = useMemo(() => {
     if (!p) return []
     return generateDeadlines(OBLIGATIONS, p, {
       from: t, to: addDays(t, 400), holidays: HOLIDAY_SET, refDate: t,
     })
   }, [p, t])
+  // Years in the window whose holidays are not yet proclaimed (M07).
+  const gapYears = unproclaimedYears(HOLIDAY_SET, t, windowEnd)
+  const gapNote = holidayGapNote(gapYears)
 
   if (!app.profilesReady) return null
   if (!p && app.loadError) {
@@ -119,6 +123,12 @@ export default function Dashboard() {
           <div>
             <h1 className="pg-h1">Your compliance calendar</h1>
             <p className="pg-sub">{summary}</p>
+            {gapNote && (
+              <p className="mini-warn" role="note" style={{ maxWidth: '640px' }}>
+                <b>{gapNote}</b> Dates in {gapYears.join(' and ')} skip weekends and the holidays fixed by law
+                (such as May 1 and June 12) only; check the official list once it is out.
+              </p>
+            )}
           </div>
           <div className="seg" role="group" aria-label="View">
             {[['feed', 'Feed'], ['timeline', 'Timeline'], ['table', 'Table']].map(([k, l]) => (

@@ -12,6 +12,27 @@
     "2027": "verified"
   },
   "confidenceNote": "2026 dates are verified against Proclamation No. 1006 s.2025 and the Eid proclamations. 2027 dates are verified against Proclamation No. 1427 s.2026 as reported by the PCO, GMA News and Philstar (the Official Gazette text could not be opened here). The 2027 Eid'l Fitr and Eid'l Adha dates are not yet proclaimed and are not in the list, so a deadline next to them may still move one more day.",
+  "fixedByLaw": {
+    "value": [
+      { "rule": "date", "month": 1, "day": 1, "name": "New Year's Day", "type": "regular" },
+      { "rule": "easter", "offsetDays": -3, "name": "Maundy Thursday", "type": "regular" },
+      { "rule": "easter", "offsetDays": -2, "name": "Good Friday", "type": "regular" },
+      { "rule": "date", "month": 4, "day": 9, "name": "Araw ng Kagitingan", "type": "regular" },
+      { "rule": "date", "month": 5, "day": 1, "name": "Labor Day", "type": "regular" },
+      { "rule": "date", "month": 6, "day": 12, "name": "Independence Day", "type": "regular" },
+      { "rule": "lastWeekday", "month": 8, "weekday": 1, "name": "National Heroes Day", "type": "regular" },
+      { "rule": "date", "month": 11, "day": 30, "name": "Bonifacio Day", "type": "regular" },
+      { "rule": "date", "month": 12, "day": 25, "name": "Christmas Day", "type": "regular" },
+      { "rule": "date", "month": 12, "day": 30, "name": "Rizal Day", "type": "regular" },
+      { "rule": "date", "month": 8, "day": 21, "name": "Ninoy Aquino Day", "type": "special_non_working" },
+      { "rule": "date", "month": 11, "day": 1, "name": "All Saints' Day", "type": "special_non_working" },
+      { "rule": "date", "month": 12, "day": 8, "name": "Feast of the Immaculate Conception", "type": "special_non_working" },
+      { "rule": "date", "month": 12, "day": 31, "name": "Last Day of the Year", "type": "special_non_working" }
+    ],
+    "legalBasis": ["EO 292 (Administrative Code of 1987) Book I Sec 26, as amended by RA 9492", "RA 9256 (Ninoy Aquino Day, Aug 21)", "RA 10966 (Feast of the Immaculate Conception, Dec 8)"],
+    "confidence": "needs_review",
+    "notes": "The holidays fixed by law, computed for any year that has no proclaimed list below (a proclaimed list replaces them for its year). Maundy Thursday and Good Friday are the Thursday and Friday before Easter Sunday; National Heroes Day is the last Monday of August. Not included because a proclamation sets them: Eid'l Fitr and Eid'l Adha, Chinese New Year, Black Saturday, Nov 2, Dec 24, election days and other special days. A proclamation may also move a holiday under RA 9492, so until a year's list is proclaimed a deadline may move one or more days later than shown."
+  },
   "holidays": [
     { "date": "2026-01-01", "name": "New Year's Day", "type": "regular" },
     { "date": "2026-02-17", "name": "Chinese New Year", "type": "special_non_working" },

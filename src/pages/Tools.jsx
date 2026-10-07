@@ -10,7 +10,7 @@ import { NumField, Seg, Switch, SelectField, Disclaimer } from '../components/ui
 import { money, money2, pct } from '../lib/format.js'
 import { iso, fromISO } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
-import { HOLIDAYS } from '../lib/deadlineData.js'
+import { HOLIDAY_SET } from '../lib/deadlineData.js'
 import { useApp } from '../state/AppState.jsx'
 
 const VAT_RATE = businessTax.vatRate.value
@@ -109,7 +109,7 @@ function PenaltyCard() {
   const reducedFrom = fmtShort(SUR.microSmallFrom)
   const notes = []
   if (pen && pen.dueDateMoved) {
-    const holiday = HOLIDAYS.find(h => h.date === pen.dueDate)
+    const holiday = HOLIDAY_SET.get(pen.dueDate)
     const why = pen.movedBecause === 'weekend'
       ? `${fmtShort(pen.dueDate)} is a ${fromISO(pen.dueDate).toLocaleDateString('en-US', { weekday: 'long' })}`
       : `${fmtShort(pen.dueDate)} is a holiday${holiday ? ` (${holiday.name})` : ''}`
@@ -117,7 +117,7 @@ function PenaltyCard() {
   }
   if (pen && pen.holidayListMissing) {
     const year = pen.dueDate.slice(0, 4)
-    notes.push(<>The app has no holiday list for {year}, so only weekends were skipped. If the due date fell on a holiday, enter the next working day as the original due date.</>)
+    notes.push(<>The app does not have the proclaimed holiday list for {year}, so only weekends and the holidays fixed by law (such as May 1 and June 12) were skipped. If the due date fell on another holiday, enter the next working day as the original due date.</>)
   }
 
   return (

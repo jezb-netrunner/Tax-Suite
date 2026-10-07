@@ -162,6 +162,27 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
   return out
 }
 
+// Years in [from, to] whose holidays are not yet proclaimed in the rulebook
+// (their dates skip weekends and the holidays fixed by law only). `calendar`
+// is a holiday calendar from makeHolidayCalendar; a plain Set has no
+// proclamation data, so nothing is reported for it.
+export function unproclaimedYears(calendar, from, to) {
+  if (!calendar || typeof calendar.isProclaimed !== 'function') return []
+  const out = []
+  for (let y = from.getFullYear(); y <= to.getFullYear(); y++) {
+    if (!calendar.isProclaimed(y)) out.push(y)
+  }
+  return out
+}
+
+// Calendar banner for those years, or null when there are none.
+export function holidayGapNote(years) {
+  if (!years || !years.length) return null
+  const names = years.length === 1 ? String(years[0])
+    : `${years.slice(0, -1).join(', ')} and ${years[years.length - 1]}`
+  return `${names} holidays not yet proclaimed: a deadline may move one or more days later.`
+}
+
 // Checklist = the ongoing/info obligations for this profile.
 export function generateChecklist(obligations, profile) {
   const flags = profileFlags(profile)

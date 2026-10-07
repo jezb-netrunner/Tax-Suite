@@ -82,7 +82,8 @@ export function isWeekend(d) {
 }
 
 // BIR practice: a deadline falling on a Saturday, Sunday, or holiday moves to
-// the next working day. `holidays` is a Set of ISO strings.
+// the next working day. `holidays` is anything with has(isoString): a Set of
+// ISO strings or a holiday calendar from makeHolidayCalendar.
 export function shiftToBusinessDay(d, holidays) {
   let out = d
   let guard = 0
@@ -91,6 +92,94 @@ export function shiftToBusinessDay(d, holidays) {
     guard++
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// Holidays.
+//
+// A year's holidays come from its proclamation when the rulebook has one
+// (holidays.json "holidays"); for any other year they are computed from the
+// holidays fixed by law (holidays.json "fixedByLaw"). A proclaimed list wins
+// for its whole year: it already contains the dates fixed by law, and it can
+// add special days or move a holiday.
+
+// Easter Sunday in the Gregorian calendar (anonymous Gregorian algorithm,
+// Meeus/Jones/Butcher).
+export function easterSunday(year) {
+  const a = year % 19
+  const b = Math.floor(year / 100)
+  const c = year % 100
+  const d = Math.floor(b / 4)
+  const e = b % 4
+  const f = Math.floor((b + 8) / 25)
+  const g = Math.floor((b - f + 1) / 3)
+  const h = (19 * a + b - d - g + 15) % 30
+  const i = Math.floor(c / 4)
+  const k = c % 4
+  const l = (32 + 2 * e + 2 * i - h - k) % 7
+  const m = Math.floor((a + 11 * h + 22 * l) / 451)
+  const month = Math.floor((h + l - 7 * m + 114) / 31)
+  const day = ((h + l - 7 * m + 114) % 31) + 1
+  return new Date(year, month - 1, day)
+}
+
+// The last given weekday (0 = Sunday ... 6 = Saturday) of a month (1-based).
+export function lastWeekdayOfMonth(year, month, weekday) {
+  const last = lastDayOfMonth(year, month)
+  return addDays(last, -((last.getDay() - weekday + 7) % 7))
+}
+
+// One fixedByLaw rule -> its date in `year`.
+//   { rule: 'date', month, day } | { rule: 'easter', offsetDays }
+//   | { rule: 'lastWeekday', month, weekday }
+function holidayRuleDate(rule, year) {
+  if (rule.rule === 'easter') return addDays(easterSunday(year), rule.offsetDays || 0)
+  if (rule.rule === 'lastWeekday') return lastWeekdayOfMonth(year, rule.month, rule.weekday)
+  return mkDate(year, rule.month, rule.day)
+}
+
+function byDateThenName(a, b) {
+  return a.date < b.date ? -1 : a.date > b.date ? 1 : a.name.localeCompare(b.name)
+}
+
+/**
+ * Holiday calendar for any year.
+ * @param proclaimed  rows { date: 'YYYY-MM-DD', name, type } (holidays.json "holidays")
+ * @param rules       holidays fixed by law (holidays.json "fixedByLaw.value")
+ * @returns {
+ *   has(iso)          true when the date is a non-working holiday
+ *   get(iso)          the holiday row { date, name, type, source } or undefined
+ *   forYear(year)     that year's rows in date order
+ *   isProclaimed(year) true when the year's list comes from a proclamation
+ *   proclaimedYears   years with a proclaimed list, ascending
+ * }
+ * source is 'proclaimed' or 'fixed_by_law'. Works with shiftToBusinessDay.
+ */
+export function makeHolidayCalendar(proclaimed = [], rules = []) {
+  const listed = new Map() // year -> rows
+  for (const h of proclaimed) {
+    const y = Number(h.date.slice(0, 4))
+    if (!listed.has(y)) listed.set(y, [])
+    listed.get(y).push({ ...h, source: 'proclaimed' })
+  }
+  const cache = new Map() // year -> Map(iso -> row)
+  function yearMap(y) {
+    if (!cache.has(y)) {
+      const rows = listed.has(y)
+        ? listed.get(y)
+        : rules.map(r => ({ date: iso(holidayRuleDate(r, y)), name: r.name, type: r.type, source: 'fixed_by_law' }))
+      cache.set(y, new Map([...rows].sort(byDateThenName).map(r => [r.date, r])))
+    }
+    return cache.get(y)
+  }
+  const key = d => (typeof d === 'string' ? d : iso(d))
+  return {
+    has(d) { const s = key(d); return yearMap(Number(s.slice(0, 4))).has(s) },
+    get(d) { const s = key(d); return yearMap(Number(s.slice(0, 4))).get(s) },
+    forYear(year) { return [...yearMap(year).values()] },
+    isProclaimed(year) { return listed.has(Number(year)) },
+    proclaimedYears: [...listed.keys()].sort((a, b) => a - b),
+  }
 }
 
 // Quarters of a taxable year. For calendar-year taxpayers fyEndMonth = 12.

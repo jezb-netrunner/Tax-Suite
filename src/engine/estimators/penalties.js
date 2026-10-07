@@ -65,24 +65,27 @@ function requireDate(s, what) {
   return d
 }
 
-function yearsWithHolidayList(holidays) {
-  const years = new Set()
-  for (const h of holidays) years.add(String(h).slice(0, 4))
-  return years
+// Is there a proclaimed holiday list for `year`? The app's holiday calendar
+// (makeHolidayCalendar) knows; for a plain Set of ISO dates, a year counts as
+// listed when any of its dates is in the set.
+function hasProclaimedList(holidays, year) {
+  if (typeof holidays.isProclaimed === 'function') return holidays.isProclaimed(year)
+  for (const h of holidays) if (String(h).slice(0, 4) === String(year)) return true
+  return false
 }
 
 /**
  * Move a due date off a weekend or holiday to the next working day.
  * @returns { dueDate, rolledDueDate, moved, reason: 'weekend'|'holiday'|null,
  *            holidayListMissing } — holidayListMissing is true when the app has
- *            no holiday list for a year involved, so only weekends were skipped.
+ *            no proclaimed holiday list for a year involved, so only weekends
+ *            and the holidays fixed by law were skipped.
  */
 export function rollDueDate(dueDate, holidays = HOLIDAY_SET) {
   const due = requireDate(dueDate, 'due date')
   const rolled = shiftToBusinessDay(due, holidays)
   const moved = rolled.getTime() !== due.getTime()
-  const listed = yearsWithHolidayList(holidays)
-  const holidayListMissing = [due.getFullYear(), rolled.getFullYear()].some(y => !listed.has(String(y)))
+  const holidayListMissing = [due.getFullYear(), rolled.getFullYear()].some(y => !hasProclaimedList(holidays, y))
   return {
     dueDate: iso(due),
     rolledDueDate: iso(rolled),
