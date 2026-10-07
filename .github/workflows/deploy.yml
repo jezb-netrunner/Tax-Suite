@@ -1,7 +1,9 @@
 name: Deploy to GitHub Pages
 
 # Publishes the built app so there is a real, always-current website.
-# Enable once in the repo: Settings → Pages → Source: "GitHub Actions".
+# Owner action: Settings → Pages → Source must be "GitHub Actions". With
+# "Deploy from a branch", GitHub also publishes the raw branch and whichever
+# finishes last is live (REVIEW.md M29).
 on:
   push:
     branches: [main]
@@ -19,6 +21,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # True when the optional accounts secrets are set (secrets cannot be
+      # read in an `if:` directly).
+      HAS_ACCOUNTS: ${{ secrets.VITE_SUPABASE_URL != '' && secrets.VITE_SUPABASE_ANON_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,10 +33,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      # Local-mode build. It also regenerates the committed single-file
+      # index.html, which must match the source exactly.
       - run: npm run build
+      - name: Check that the committed index.html matches a fresh build
+        run: |
+          if ! git diff --exit-code --stat index.html; then
+            echo "::error file=index.html::index.html is out of date. Run 'npm run build' and commit index.html."
+            exit 1
+          fi
+      # Optional: with the VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+      # repository secrets set, publish dist/ with accounts mode on. Without
+      # them the site runs in local-device mode.
+      - name: Rebuild dist/ with accounts mode
+        if: env.HAS_ACCOUNTS == 'true'
+        run: npm run build
         env:
-          # Optional: set these repository secrets to publish with cloud accounts
-          # enabled. Without them the site runs in local-device mode.
+          JEZ_ENABLE_ACCOUNTS: '1'
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/configure-pages@v5

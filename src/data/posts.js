@@ -1,4 +1,5 @@
-// Blog content, ported from v1 (legacy/index.html) and reviewed in October 2026
+// Blog content, ported from v1 (legacy/index.html, now in the git tag
+// archive/pre-review-2026-10) and reviewed in October 2026
 // (H09: EOPT invoicing, eAFS timing, the 8% conditions). `reviewed` is shown
 // on each post as "Last reviewed"; update it whenever a post is re-checked.
 export const POSTS = [

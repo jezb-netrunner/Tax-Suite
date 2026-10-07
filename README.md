@@ -46,12 +46,30 @@ double-click it, email it, or serve it; no build step or web server needed.
 serves and `npm run build` compiles. The root `index.html` is *generated* by the
 build (see [`scripts/standalone-plugin.js`](scripts/standalone-plugin.js)) and is
 committed so the repo is directly openable. Edit `app.html`, never `index.html`.
+After changing anything under `src/` or `app.html`, run `npm run build` and
+commit the regenerated `index.html` with your change: CI rebuilds it and fails
+when the committed file differs from a fresh build.
+
+The committed `index.html` is always the **local-mode** app. `npm run build`
+ignores `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (from the shell or a
+`.env` file) unless you also set `JEZ_ENABLE_ACCOUNTS=1` in the shell:
+
+```bash
+JEZ_ENABLE_ACCOUNTS=1 VITE_SUPABASE_URL=… VITE_SUPABASE_ANON_KEY=… npm run build
+```
+
+Such an accounts build writes `dist/` only and leaves `index.html` unchanged.
+`npm run dev` reads the two keys as before.
 
 Pushing to `main` publishes the site via GitHub Actions
-([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)); enable it once
-under **Settings → Pages → Source: GitHub Actions**. To publish with cloud
-accounts enabled, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as
-repository secrets; without them the published site runs in local-device mode.
+([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)).
+**Owner action: Settings → Pages → Source must be "GitHub Actions".** With
+"Deploy from a branch", GitHub also publishes the raw branch on every push and
+whichever copy finishes last is live, so the tested build may not be the one
+people see. To publish with cloud accounts enabled, add `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` as repository secrets (the workflow then builds `dist/`
+with `JEZ_ENABLE_ACCOUNTS=1`); without them the published site runs in
+local-device mode.
 
 ## Hosting
 
@@ -109,6 +127,9 @@ Set env vars (see `.env.example`) to enable accounts + cloud-synced profiles:
 VITE_SUPABASE_URL=…
 VITE_SUPABASE_ANON_KEY=…
 ```
+
+`npm run dev` picks them up directly. A production build also needs
+`JEZ_ENABLE_ACCOUNTS=1` (see [Opening the app](#opening-the-app)).
 
 Schema: [`supabase/migrations/0001_taxpayer_profiles.sql`](supabase/migrations/0001_taxpayer_profiles.sql):
 one table, JSONB profile data, RLS restricting every row to its owner.
@@ -178,8 +199,10 @@ changes, update `PRIVACY_NOTICE_UPDATED` there and `PRIVACY_NOTICE_VERSION` in
 - `src/data/`: the rulebook (above), form reference content, blog posts
 - `src/pages/`, `src/components/`, `src/state/`: UI
 - `tests/engine/`: hand-worked examples with known-correct answers
-- `legacy/index.html`: the previous single-file app, kept for reference
-- `project/`: original design source bundle, kept for reference
+- The previous single-file app (`legacy/index.html`) and the original design
+  bundle (`project/`) were removed from the branch. They are archived under the
+  git tag `archive/pre-review-2026-10` (`git show archive/pre-review-2026-10:legacy/index.html`).
+  Their tax rules are out of date; do not publish them.
 
 > **Disclaimer:** JEZ Tax Suite provides estimates and reminders, not tax or legal advice,
 > and does not replace review by a CPA. Verify dates and amounts with the agency before

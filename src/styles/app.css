@@ -1,5 +1,6 @@
 /* ── JEZ Tax Suite design system ──────────────────────────────────────────
-   Ported unchanged from the v1 single-file app (legacy/index.html), then
+   Ported unchanged from the v1 single-file app (legacy/index.html, archived
+   under the git tag archive/pre-review-2026-10), then
    extended below the "v2 additions" marker for the SaaS surfaces. */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
