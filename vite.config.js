@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { standaloneHtml } from './scripts/standalone-plugin.js'
@@ -17,6 +18,13 @@ export default defineConfig(({ command, mode }) => {
     // index.html (see scripts/standalone-plugin.js), so the file people open by
     // instinct is the working app rather than un-compiled source.
     build: { rollupOptions: { input: 'app.html' } },
+    // M23: a local-mode build ships a two-line stand-in for the account
+    // library instead of the library itself (src/lib/supabaseStub.js).
+    resolve: {
+      alias: command === 'build' && !accounts
+        ? [{ find: /^@supabase\/supabase-js$/, replacement: fileURLToPath(new URL('./src/lib/supabaseStub.js', import.meta.url)) }]
+        : [],
+    },
     // A local-mode build compiles the Supabase keys out, whatever the env says.
     define: accounts
       ? {}
