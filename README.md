@@ -22,6 +22,12 @@ in-browser).
 - React 18 + Vite, plain CSS design system (`src/styles/app.css`)
 - Supabase (auth + Postgres with row-level security), optional; local mode otherwise
 - Vitest for the tax-engine test suite (`tests/engine/`)
+- React Router 6.30.6 or later on the v6 line. `npm audit` still lists two
+  moderate React Router advisories (GHSA-wrjc-x8rr-h8h6, GHSA-337j-9hxr-rhxg)
+  that are fixed only in 7.18+; every navigation in this app uses a fixed path
+  and there is no server rendering, so neither can be reached. Moving to React
+  Router 7.18+ is the long-term fix (the v7 future flags are already on in
+  `src/main.jsx`).
 
 ```bash
 npm install
