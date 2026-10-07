@@ -11,6 +11,7 @@ import { money, money2, pct } from '../lib/format.js'
 import { iso, fromISO } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { HOLIDAY_SET } from '../lib/deadlineData.js'
+import { RT, payFactorText, fixedHolidayExamples } from '../engine/ruleText.js'
 import { useApp } from '../state/AppState.jsx'
 
 const VAT_RATE = businessTax.vatRate.value
@@ -18,6 +19,7 @@ const EIGHT = incomeTax.eightPercent.value
 const SUR = penaltyRules.surcharge.value
 const INT = penaltyRules.interest.value
 const SMALL_BELOW = penaltyRules.classification.value.small.grossSalesBelow
+const DAYS_IN_YEAR = penaltyRules.interestDayCount.value.daysInYear
 
 // Dates the penalty calculator accepts (a sanity range for typed dates).
 const DATE_MIN = '2000-01-01'
@@ -117,7 +119,7 @@ function PenaltyCard() {
   }
   if (pen && pen.holidayListMissing) {
     const year = pen.dueDate.slice(0, 4)
-    notes.push(<>The app does not have the proclaimed holiday list for {year}, so only weekends and the holidays fixed by law (such as May 1 and June 12) were skipped. If the due date fell on another holiday, enter the next working day as the original due date.</>)
+    notes.push(<>The app does not have the proclaimed holiday list for {year}, so only weekends and the holidays fixed by law (such as {fixedHolidayExamples()}) were skipped. If the due date fell on another holiday, enter the next working day as the original due date.</>)
   }
 
   return (
@@ -148,7 +150,7 @@ function PenaltyCard() {
           on={willful}
           onChange={setWillful}
           title={`Willful neglect / false or fraudulent return (${pct(SUR.willfulNeglect)} surcharge)`}
-          desc={`NIRC Sec 248(B): for example, not filing on purpose, or understating sales by more than 30%. The ${pct(SUR.willfulNeglect)} is not reduced for micro and small taxpayers, and the standard compromise schedule does not cover fraud.`}
+          desc={`NIRC Sec 248(B): for example, not filing on purpose, or understating sales by more than ${RT.substantialUnderdeclaration}. The ${pct(SUR.willfulNeglect)} is not reduced for micro and small taxpayers, and the standard compromise schedule does not cover fraud.`}
         />
       </div>
 
@@ -223,7 +225,7 @@ function PenaltyCard() {
         )}
         <p className="cite" style={{ marginTop: '10px' }}>
           Compromise penalties are the BIR's standard settlement amounts and are technically negotiable; interest
-          accrues until actually paid. Interest counts actual days ÷ 365; the BIR's method for leap years is not yet
+          accrues until actually paid. Interest counts actual days ÷ {DAYS_IN_YEAR}; the BIR's method for leap years is not yet
           confirmed.
         </p>
       </div>
@@ -368,7 +370,7 @@ export default function ToolsPage() {
                 label="Paid days a year"
                 value={String(whFactor)}
                 onChange={x => setWhFactor(Number(x))}
-                options={PAY_FACTORS.map(f => [String(f), `${f}${f === 365 ? ' (paid every day)' : f === 313 ? ' (six-day week)' : ' (five-day week)'}`])}
+                options={PAY_FACTORS.map(f => [String(f), payFactorText(f)])}
                 hint="Used to spread the month's SSS, PhilHealth and Pag-IBIG shares over the paid days."
               />
             )}

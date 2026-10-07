@@ -7,6 +7,7 @@ import {
   filedKey, filedStatus, withFiled, withFiledMany, railStatus, groupByMonth, isUnconfirmed,
 } from '../engine/deadlines.js'
 import { profileFlags, PROFILE_TYPES, regimeLabel } from '../engine/profile.js'
+import { dueDayText, fixedHolidayExamples } from '../engine/ruleText.js'
 import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { useProfileMarks } from '../lib/useProfileMarks.js'
@@ -162,7 +163,7 @@ export default function Dashboard() {
             {gapNote && (
               <p className="mini-warn" role="note" style={{ maxWidth: '640px' }}>
                 <b>{gapNote}</b> Dates in {gapYears.join(' and ')} skip weekends and the holidays fixed by law
-                (such as May 1 and June 12) only; check the official list once it is out.
+                (such as {fixedHolidayExamples()}) only; check the official list once it is out.
               </p>
             )}
           </div>
@@ -233,7 +234,7 @@ export default function Dashboard() {
                     </h2>
                     <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: '#cdddea', marginTop: '11px', maxWidth: '520px' }}>
                       {isEmployee
-                        ? 'Your employer withholds tax from every payslip and files on your behalf. Watch for your BIR Form 2316 by January 31; it\'s your proof of tax paid for the year.'
+                        ? `Your employer withholds tax from every payslip and files on your behalf. Watch for your BIR Form 2316 by ${dueDayText('bir-2316-collect')}; it's your proof of tax paid for the year.`
                         : 'Everything on your calendar is either done or ongoing. Check the Checklist tab for the recurring obligations that keep you compliant.'}
                     </p>
                   </div>

@@ -9,10 +9,10 @@
 // withholding is the per-period amount × periods per month, rounded once.
 
 import wcomp from '../../data/rules/withholding-compensation.json'
-import contribRules from '../../data/rules/contributions.json'
 import { bracketTaxCentavos } from '../tax.js'
 import { employeeMandatoryDeductions, employerContributions, sssEmployee } from './contributions.js'
 import { toCentavos, fromCentavos, mulFrac, formatCentavos } from '../../lib/money.js'
+import { RT, pesoText, monthlyRemitText } from '../ruleText.js'
 
 const TABLES = wcomp.tables.value
 
@@ -20,7 +20,7 @@ const TABLES = wcomp.tables.value
 // 365 (paid every day, e.g. monthly-paid), 313 (six-day week), 261 (five-day week).
 // L08: daily-paid staff use the same factor.
 export const PAY_FACTORS = wcomp.mweExempt.value.payFactors
-export const DEFAULT_PAY_FACTOR = 313
+export const DEFAULT_PAY_FACTOR = wcomp.mweExempt.value.defaultPayFactor
 
 export function payFactorOf(f) {
   if (f === undefined || f === null || f === '') return DEFAULT_PAY_FACTOR
@@ -115,7 +115,7 @@ export function minimumWageReferenceNote() {
   const m = wcomp.minimumWageReference.value
   const [y, mo, d] = m.effective.split('-').map(Number)
   const from = new Date(y, mo - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  return `${m.region} (${m.order}, from ${from}): ₱${m.dailyNonAgriculture} a day for non-agriculture; ₱${m.dailyAgricultureAndSmall} for ${m.agricultureAndSmallCovers}. Other regions have their own wage orders.`
+  return `${m.region} (${m.order}, from ${from}): ${pesoText(m.dailyNonAgriculture)} a day for non-agriculture; ${pesoText(m.dailyAgricultureAndSmall)} for ${m.agricultureAndSmallCovers}. Other regions have their own wage orders.`
 }
 
 // '₱755' or '₱755.50' (no '.00' on a whole-peso daily rate).
@@ -177,10 +177,10 @@ export function monthlyPay(in_) {
 // part of the credit above the WISP threshold).
 export function sssBaseNote(msc) {
   const peso = c => formatCentavos(c).replace(/\.00$/, '')
-  let note = `Monthly salary credit ${peso(toCentavos(msc))}: basic pay plus regular allowances and commissions, up to ₱35,000 (RA 11199). One-time or liquidated items do not count.`
+  let note = `Monthly salary credit ${peso(toCentavos(msc))}: basic pay plus regular allowances and commissions, up to ${RT.sssMscCeiling} (RA 11199). One-time or liquidated items do not count.`
   const mpf = sssEmployee(msc).wispPortionOfTotal
   if (mpf > 0) {
-    note += ` Of the SSS contributions on this credit, ${peso(toCentavos(mpf))} (on the part above ${peso(toCentavos(contribRules.sss.value.wispThreshold))}) goes to the Mandatory Provident Fund (MPF).`
+    note += ` Of the SSS contributions on this credit, ${peso(toCentavos(mpf))} (on the part above ${RT.sssWispThreshold}) goes to the Mandatory Provident Fund (MPF).`
   }
   return note
 }
@@ -193,7 +193,7 @@ export function perPaydayRows(r, pw) {
   })
   r(`Withholding per payday (${pw.periodName} table)`, fromCentavos(pw.perPeriodWithholdingC), {
     strong: true,
-    sub: `RR 11-2018 ${pw.periodName} withholding table (effective 2023).`,
+    sub: `RR 11-2018 ${pw.periodName} withholding table (effective ${RT.withholdingTablesFrom}).`,
   })
 }
 
@@ -242,7 +242,7 @@ export function estimatePayroll(in_) {
   }
   r('Monthly taxable compensation', monthlyTaxable, { rule: true })
   perPaydayRows(r, pw)
-  r(`Withholding tax to remit (1601-C)${monthLabel(pw)}`, monthlyWithholding, { strong: true, sub: 'Revised withholding table effective 2023; remit by the 10th of the following month (Jan 15 for December).' })
+  r(`Withholding tax to remit (1601-C)${monthLabel(pw)}`, monthlyWithholding, { strong: true, sub: `Revised withholding table effective ${RT.withholdingTablesFrom}; remit ${monthlyRemitText('bir-1601c')}.` })
   r('Employer SSS share (incl. EC)', er.sss, { sub: sssBaseNote(ded.sssMsc) })
   r('Employer PhilHealth share', er.philhealth)
   r('Employer Pag-IBIG share', er.pagibig)

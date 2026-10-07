@@ -82,7 +82,10 @@ describe('profile field "Year registered with the BIR (for MCIT)"', () => {
     expect(registrationYearChoice(null)).toBe('')
   })
   it('rulebook: MCIT start counted from the year of BIR registration, citing RR 9-98', () => {
-    expect(corp.mcit.value.startsInTaxableYear).toBe('4th taxable year immediately following the year of registration with the BIR')
+    // H16: a number the estimator uses (4 = the 4th taxable year immediately
+    // following the year of registration), no longer a sentence nothing read.
+    expect(corp.mcit.value.startsInTaxableYear).toBe(4)
+    expect(corp.mcit.notes).toMatch(/4th taxable year immediately following the year of registration with the BIR/)
     expect(corp.mcit.legalBasis.join(' | ')).toMatch(/RR 9-98/)
   })
 })

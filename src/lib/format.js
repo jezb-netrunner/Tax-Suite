@@ -12,6 +12,7 @@
 //   formatIntegerInput(n)    -> '3,650' / ''
 
 import { toCentavos, formatPesos, formatCentavos, groupThousands } from './money.js'
+import { percentText } from '../engine/ruleText.js'
 
 // Display of peso Numbers (engine outputs). Both go through whole centavos
 // first, so a value is never rounded twice in different directions.
@@ -25,8 +26,10 @@ export function money2(n) {
   return formatCentavos(toCentavos(n))
 }
 
-export function pct(n, digits = 0) {
-  return (n * 100).toFixed(digits) + '%'
+// A rate as a percentage, exactly (0.125 -> '12.5%'; H16: no floating-point
+// rounding of rates shown next to tax figures).
+export function pct(n) {
+  return percentText(n)
 }
 
 // ₱999,999,999,999.99 in centavos: twelve peso digits plus two centavo digits.

@@ -13,6 +13,8 @@
 // hasEmployees / withholdsEwt facets of an individual, mixed, or corporate
 // profile, which switch on the full employer obligation set.
 
+import { RT } from './ruleText.js'
+
 export const PROFILE_TYPES = {
   employee: { name: 'Employee', desc: 'Pure compensation income from an employer' },
   individual: { name: 'Self-employed / Sole prop', desc: 'Freelancer, professional, or sole proprietorship' },
@@ -23,7 +25,7 @@ export const PROFILE_TYPES = {
 // The income-tax regime in a few words (profile cards and summaries). L21:
 // one copy instead of one per page.
 export function regimeLabel(regime) {
-  if (regime === '8pct') return '8% flat tax'
+  if (regime === '8pct') return `${RT.eightRate} flat tax`
   if (regime === 'graduated_osd') return 'Graduated + OSD'
   return 'Graduated + itemized'
 }

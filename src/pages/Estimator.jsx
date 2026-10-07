@@ -4,13 +4,15 @@ import { useApp } from '../state/AppState.jsx'
 import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation, estimateCorporateQuarter, corporateTaxYears, taxablePeriod, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
-import { estimatePayroll, DEFAULT_PAY_FACTOR, PAY_PERIODS, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
+import { estimatePayroll, DEFAULT_PAY_FACTOR, PAY_FACTORS, PAY_PERIODS, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions, selfEmployedMonthlyEarnings } from '../engine/estimators/contributions.js'
 import { fromISO, taxableYearQuarters } from '../engine/dates.js'
 import { withInputs } from '../engine/profile.js'
 import { createInputSaver } from '../lib/inputSaver.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
+import { RT, percentText, payFactorText } from '../engine/ruleText.js'
+import corporateRules from '../data/rules/corporate.json'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
 
@@ -129,12 +131,12 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
   // The profile's regime, unless the figures override it.
   const opt8 = r.options.find(o => o.key === '8pct')
   const regimeNote = p.regime === '8pct' && r.crossing
-    ? 'Your profile says the 8% option, but because sales passed ₱3,000,000 the whole year is taxed at graduated rates.'
+    ? `Your profile says the ${RT.eightRate} option, but because sales passed ${RT.vatThreshold} the whole year is taxed at graduated rates.`
     : p.regime === '8pct' && p.vatRegistered
-      ? 'Your profile says the 8% option, but it is not available to VAT-registered taxpayers.'
+      ? `Your profile says the ${RT.eightRate} option, but it is not available to VAT-registered taxpayers.`
       : p.regime === '8pct' && !opt8.eligible
-        ? `Your profile says the 8% option, but it is not available with these figures: ${opt8.reason.replace(/^Not available: /, '')}`
-        : `Note: the regime on this profile is ${p.regime === '8pct' ? 'the 8% option' : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
+        ? `Your profile says the ${RT.eightRate} option, but it is not available with these figures: ${opt8.reason.replace(/^Not available: /, '')}`
+        : `Note: the regime on this profile is ${p.regime === '8pct' ? `the ${RT.eightRate} option` : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
 
   return (
     <>
@@ -142,7 +144,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
           <NumField emptyValue={null} label="Business gross sales / receipts · year" value={v.gross} onChange={x => set('gross', x)} prefix="₱" lg />
           <NumField emptyValue={null} label="Itemized expenses" value={v.expenses} onChange={x => set('expenses', x)} prefix="₱" />
-          <NumField emptyValue={null} label="NOLCO from prior years" value={v.nolcoPrior} onChange={x => set('nolcoPrior', x)} prefix="₱" hint="Unused net operating losses from the last 3 years. Used only in the itemized option, and only against business income. Losses from 2020 and 2021 may carry over for 5 years (RA 11494); check with your CPA." />
+          <NumField emptyValue={null} label="NOLCO from prior years" value={v.nolcoPrior} onChange={x => set('nolcoPrior', x)} prefix="₱" hint={`Unused net operating losses from the last ${RT.nolcoYears}. Used only in the itemized option, and only against business income. Losses from ${RT.nolcoPandemicLossYears} may carry over for ${RT.nolcoPandemicYears} (RA 11494); check with your CPA.`} />
           <NumField emptyValue={null} label="Other non-operating income (not subject to final tax)" value={v.otherIncome} onChange={x => set('otherIncome', x)} prefix="₱" hint="Income outside your main business. Leave out bank interest and other income already taxed at a final rate." />
           <NumField emptyValue={null} label="Tax withheld by clients (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
           {showOwnComp && <NumField emptyValue={null} label="Taxable compensation · year" value={v.compensationTaxable} onChange={x => set('compensationTaxable', x)} prefix="₱" hint="Total taxable compensation for the year (BIR Form 2316 item 23; add every 2316 if you had more than one employer)." />}
@@ -176,12 +178,12 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
             value={v.otherPercentageTax === 'yes' ? 'yes' : 'no'}
             onChange={x => set('otherPercentageTax', x)}
             options={[['no', 'No'], ['yes', 'Yes']]}
-            hint="For example carriers, franchise holders, banks and finance companies, insurance, or amusement places. If yes, the 8% option is not available."
+            hint={`For example carriers, franchise holders, banks and finance companies, insurance, or amusement places. If yes, the ${RT.eightRate} option is not available.`}
           />
         </div>
         {v.otherPercentageTax === 'yes' && (
           <div className="mini-warn" role="note">
-            Other percentage taxes (NIRC Secs 117-127) are not computed here. The percentage tax shown is the general 3% (NIRC Sec 116); check with your CPA which applies to your sales.
+            Other percentage taxes (NIRC Secs 117-127) are not computed here. The percentage tax shown is the general {RT.percentageTaxRate} (NIRC Sec 116); check with your CPA which applies to your sales.
           </div>
         )}
         <p className="cite" style={{ marginTop: '14px' }}>
@@ -192,7 +194,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
       {p.vatRegistered && (
         <div className="mini-warn" role="note" style={{ marginTop: '16px' }}>
           <b>VAT not included.</b> As a VAT-registered taxpayer you file VAT every quarter on Form 2550Q
-          (12% of sales less creditable input VAT). This estimate does not compute VAT: every total below is
+          ({RT.vatRate} of sales less creditable input VAT). This estimate does not compute VAT: every total below is
           income tax and percentage tax only.
         </div>
       )}
@@ -207,16 +209,16 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
         <>
           {r.crossing && (
             <div className="card pad" style={{ marginTop: '16px' }}>
-              <h2 className="sec-h">Your sales passed ₱3,000,000 this year</h2>
+              <h2 className="sec-h">Your sales passed {RT.vatThreshold} this year</h2>
               <div className="mini-warn" role="note">
-                The whole year moves to graduated rates: the 8% option is not available this year, and any 8% income tax
-                already paid on your 1701Q is credited. The 3% percentage tax still applies to your sales from {r.crossing.span}.
+                The whole year moves to graduated rates: the {RT.eightRate} option is not available this year, and any {RT.eightRate} income tax
+                already paid on your 1701Q is credited. The {RT.percentageTaxRate} percentage tax still applies to your sales from {r.crossing.span}.
                 {' '}<b>VAT applies from {r.crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
-                registration) before the end of the month after the month your sales passed ₱3,000,000.
+                registration) before the end of the month after the month your sales passed {RT.vatThreshold}.
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
                 <SelectField
-                  label="Month your sales passed ₱3,000,000"
+                  label={`Month your sales passed ${RT.vatThreshold}`}
                   value={v.crossedMonth ? String(v.crossedMonth) : ''}
                   onChange={x => set('crossedMonth', x ? Number(x) : null)}
                   options={[
@@ -225,7 +227,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
                   ]}
                 />
                 <NumField emptyValue={null} label={`Sales from ${r.crossing.span}`} value={v.salesThroughCrossMonth} onChange={x => set('salesThroughCrossMonth', x)} prefix="₱" hint="Optional. If blank, the year's sales are spread evenly by month." />
-                <NumField emptyValue={null} label="8% income tax already paid on 1701Q this year" value={v.eightPercentPaid} onChange={x => set('eightPercentPaid', x)} prefix="₱" hint="Credited against this year's graduated income tax. Don't count it again in the quarterly-payments box above." />
+                <NumField emptyValue={null} label={`${RT.eightRate} income tax already paid on 1701Q this year`} value={v.eightPercentPaid} onChange={x => set('eightPercentPaid', x)} prefix="₱" hint="Credited against this year's graduated income tax. Don't count it again in the quarterly-payments box above." />
               </div>
               {r.crossing.warnings.map(w => <div key={w} className="mini-warn" role="alert">{w}</div>)}
             </div>
@@ -396,14 +398,14 @@ function SelfContributionsCard({ v, set }) {
   )
 }
 
+// M11 / H16: excess MCIT is usable for this many taxable years (corporate.json).
+const MCIT_CARRY_YEARS = corporateRules.mcit.value.excessCarryForwardYears
+
 // C04: minimum wage earner inputs (owner decision 9: the user enters the
 // statutory daily rate and the paid days a year).
-const PAY_FACTOR_OPTIONS = [
-  ['365', '365 (paid every day)'],
-  ['313', '313 (six-day week)'],
-  ['261', '261 (five-day week)'],
-]
-const PAY_FACTOR_HINT = '365 if paid for every day of the year, rest days included (most monthly-paid workers); 313 for a six-day week; 261 for a five-day week.'
+const PAY_FACTOR_OPTIONS = PAY_FACTORS.map(f => [String(f), payFactorText(f)])
+const [EVERY_DAY, SIX_DAY, FIVE_DAY] = PAY_FACTORS
+const PAY_FACTOR_HINT = `${EVERY_DAY} if paid for every day of the year, rest days included (most monthly-paid workers); ${SIX_DAY} for a six-day week; ${FIVE_DAY} for a five-day week.`
 
 function minimumWageHint() {
   return `Use the minimum wage for your region and industry. ${minimumWageReferenceNote()}`
@@ -416,7 +418,7 @@ function MinimumWageSwitch({ v, set, who }) {
         on={Boolean(v.mwe)}
         onChange={x => set('mwe', x)}
         title="Minimum wage earner"
-        desc={`Switch on if ${who} paid the statutory minimum wage. The minimum wage and holiday, overtime, night-differential and hazard pay are then tax-free; other pay and 13th-month pay and bonuses above ₱90,000 are still taxed.`}
+        desc={`Switch on if ${who} paid the statutory minimum wage. The minimum wage and holiday, overtime, night-differential and hazard pay are then tax-free; other pay and 13th-month pay and bonuses above ${RT.thirteenthMonthCap} are still taxed.`}
       />
     </div>
   )
@@ -496,7 +498,7 @@ function EmployeeEstimator({ app }) {
             ? <MinimumWageFields v={v} set={set} />
             : <NumField emptyValue={null} label="Monthly basic salary" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />}
           <AllowanceFields v={v} set={set} />
-          <NumField emptyValue={null} label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint="First ₱90,000 is tax-exempt." />
+          <NumField emptyValue={null} label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint={`First ${RT.thirteenthMonthCap} is tax-exempt.`} />
           <PayPeriodFields v={v} set={set} mwe={mwe} />
         </div>
         {p.type === 'mixed' && (
@@ -546,7 +548,7 @@ function CorporationEstimator({ app, onPrintYear }) {
   const earlier = choice === 'earlier'
   const dueNext = years.options.find(o => o.year === years.defaultYear)
   // M11: excess MCIT of the 3 taxable years before the chosen one, keyed by year.
-  const mcitYears = useMemo(() => (earlier ? [] : [choice - 1, choice - 2, choice - 3]), [earlier, choice])
+  const mcitYears = useMemo(() => (earlier ? [] : Array.from({ length: MCIT_CARRY_YEARS }, (_, i) => choice - 1 - i)), [earlier, choice])
   const excessMcit = useMemo(
     () => mcitYears.map(y => ({ year: y, amount: v.excessMcit?.[y] })).filter(x => Number(x.amount) > 0),
     [v.excessMcit, mcitYears],
@@ -582,22 +584,22 @@ function CorporationEstimator({ app, onPrintYear }) {
             label="Deductions"
             value={osd ? 'osd' : 'itemized'}
             onChange={x => set('deduction', x)}
-            options={[['itemized', 'Itemized expenses'], ['osd', 'OSD (40%)']]}
-            hint="The optional standard deduction is 40% of gross income (sales less cost of sales). The choice is made on the first quarterly return and kept for the year."
+            options={[['itemized', 'Itemized expenses'], ['osd', `OSD (${RT.corpOsdRate})`]]}
+            hint={`The optional standard deduction is ${RT.corpOsdRate} of gross income (sales less cost of sales). The choice is made on the first quarterly return and kept for the year.`}
           />
-          <NumField emptyValue={null} label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" hint={osd ? 'Not used with the 40% OSD.' : undefined} />
-          <NumField emptyValue={null} label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint="For the 20% small-corporation test. A blank box counts as ₱0." />
+          <NumField emptyValue={null} label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" hint={osd ? `Not used with the ${RT.corpOsdRate} OSD.` : undefined} />
+          <NumField emptyValue={null} label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint={`For the ${RT.rcitSmall} small-corporation test. A blank box counts as ₱0.`} />
           <NumField emptyValue={null} label="Creditable tax withheld (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
           <NumField emptyValue={null} label="Income tax already paid on this year's quarterly returns (1702Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
           <NumField emptyValue={null} label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
         {!earlier && (
           <details style={{ marginTop: '16px' }} open={excessMcit.length > 0 || undefined}>
-            <summary style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>Excess MCIT from the last 3 years (optional)</summary>
+            <summary style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>Excess MCIT from the last {RT.mcitCarryYears} (optional)</summary>
             <p className="cite" style={{ marginTop: '8px' }}>
               If MCIT was higher than the regular tax in an earlier year, the difference is credited against the regular tax
-              (never against the MCIT) for the next 3 taxable years. Enter what is not used yet. Excess MCIT
-              from {taxablePeriod(choice - 4, fy).name} or earlier has expired.
+              (never against the MCIT) for the next {MCIT_CARRY_YEARS} taxable years. Enter what is not used yet. Excess MCIT
+              from {taxablePeriod(choice - MCIT_CARRY_YEARS - 1, fy).name} or earlier has expired.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '10px' }}>
               {mcitYears.map(y => (
@@ -629,10 +631,10 @@ function CorporationEstimator({ app, onPrintYear }) {
           <div className="summary-banner" style={{ marginTop: '10px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
               {r.mcitStatus === 'unknown' && r.usesMcit
-                ? <>Income tax due: {money(r.incomeTaxDue)} if the 2% MCIT applies, or {money(r.rcit)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate if it does not apply yet.</>
+                ? <>Income tax due: {money(r.incomeTaxDue)} if the {RT.mcitRate} MCIT applies, or {money(r.rcit)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate if it does not apply yet.</>
                 : r.usesMcit
-                  ? <>The 2% MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
-                  : <>Income tax due: {money(r.incomeTaxDue)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitStatus !== 'notYet' ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
+                  ? <>The {RT.mcitRate} MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
+                  : <>Income tax due: {money(r.incomeTaxDue)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitStatus !== 'notYet' ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
               {!r.vat && r.pct > 0 && <> Plus {money(r.pct)} percentage tax (non-VAT).</>}
               {r.vatNotIncluded && <> {r.vatNote}</>}
             </span>

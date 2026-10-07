@@ -7,6 +7,7 @@ import { manilaToday } from '../engine/dates.js'
 import { registrationYearOptions, registrationYearChoice } from '../engine/estimators/corporation.js'
 import { regimeCardText, booksCardText } from '../engine/wizardText.js'
 import { OBLIGATIONS } from '../lib/deadlineData.js'
+import { RT, dueDayText, daysAfterEnd } from '../engine/ruleText.js'
 
 // C08: asked before the type of a saved profile changes.
 export const TYPE_CHANGE_CONFIRM =
@@ -187,7 +188,7 @@ function WizardForm({ app, editing }) {
             <div style={{ marginTop: '10px' }}>
               <Switch on={p.multipleEmployers} onChange={v => set('multipleEmployers', v)}
                 title="More than one employer this year (or switched jobs mid-year)"
-                desc="Two or more employers usually means substituted filing no longer applies, so you file BIR Form 1700 yourself by April 15." />
+                desc={`Two or more employers usually means substituted filing no longer applies, so you file BIR Form 1700 yourself by ${dueDayText('bir-1700-annual')}.`} />
               <Switch on={p.licensedProfessional} onChange={v => set('licensedProfessional', v)}
                 title="PRC-licensed professional"
                 desc="Licensed professionals renew a Professional Tax Receipt (PTR) with the LGU every January, even when purely employed." />
@@ -203,14 +204,14 @@ function WizardForm({ app, editing }) {
                 <div style={{ marginTop: '14px' }}>
                   <Switch on={p.vatRegistered} onChange={v => setVatRegistered(v)}
                     title="VAT-registered"
-                    desc="Required once gross sales pass the ₱3,000,000 threshold; optional below it. VAT registration removes the 8% option and the percentage tax." />
+                    desc={`Required once gross sales pass the ${RT.vatThreshold} threshold; optional below it. VAT registration removes the ${RT.eightRate} option and the percentage tax.`} />
                 </div>
                 {!p.vatRegistered && (
                   <fieldset className="opt-fieldset" style={{ marginTop: '16px' }}>
                     <legend className="lbl">Income tax regime</legend>
                     <div className="opt-grid" style={{ marginTop: '10px' }}>
                       <button type="button" className={'opt-card' + (p.regime === '8pct' ? ' on' : '')} aria-pressed={p.regime === '8pct'} onClick={() => set('regime', '8pct')}>
-                        <div className="t">8% flat tax</div>
+                        <div className="t">{regimeLabel('8pct')}</div>
                         <div className="d">{regimeText['8pct']}</div>
                       </button>
                       <button type="button" className={'opt-card' + (p.regime === 'graduated_osd' ? ' on' : '')} aria-pressed={p.regime === 'graduated_osd'} onClick={() => set('regime', 'graduated_osd')}>
@@ -246,7 +247,7 @@ function WizardForm({ app, editing }) {
                 <div style={{ marginTop: '14px' }}>
                   <Switch on={p.vatRegistered} onChange={v => set('vatRegistered', v)}
                     title="VAT-registered"
-                    desc="Required once gross sales pass ₱3,000,000; non-VAT corporations file the 3% quarterly percentage tax instead." />
+                    desc={`Required once gross sales pass ${RT.vatThreshold}; non-VAT corporations file the ${RT.percentageTaxRate} quarterly percentage tax instead.`} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px', marginTop: '18px' }}>
                   <SelectField label="Taxable year ends in" value={String(p.fiscalYearEndMonth)}
@@ -258,7 +259,7 @@ function WizardForm({ app, editing }) {
                     options={registrationYearOptions(manilaToday().getFullYear())}
                     hint="The year on your BIR Certificate of Registration (Form 2303), even if your first sale came later." />
                 </div>
-                <p className="cite" style={{ marginTop: '10px' }}>The 2% minimum corporate income tax (MCIT) starts in the fourth taxable year after the year the corporation registered with the BIR (RR 9-98). If you are not sure, the estimator shows both the regular tax and the MCIT.</p>
+                <p className="cite" style={{ marginTop: '10px' }}>The {RT.mcitRate} minimum corporate income tax (MCIT) starts in the {RT.mcitStartYear} taxable year after the year the corporation registered with the BIR (RR 9-98). If you are not sure, the estimator shows both the regular tax and the MCIT.</p>
               </>
             )}
           </div>
@@ -321,7 +322,7 @@ function WizardForm({ app, editing }) {
                   desc="BIR-registered CRM/POS units carry their own reporting duties." />
                 <Switch on={p.sellsGoods} onChange={v => set('sellsGoods', v)}
                   title="Sells goods / maintains inventory"
-                  desc="Inventory-holding businesses submit an annual inventory list to the BIR within 30 days of year-end." />
+                  desc={`Inventory-holding businesses submit an annual inventory list to the BIR within ${daysAfterEnd('bir-inventory-list')} days of year-end.`} />
               </div>
             )}
             <div style={{ marginTop: '18px', background: 'var(--accSoft)', borderRadius: '11px', padding: '14px 16px', fontSize: '13px', color: 'var(--accInk)', lineHeight: 1.6 }}>

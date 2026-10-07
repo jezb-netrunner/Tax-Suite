@@ -39,6 +39,12 @@
     "confidence": "verified",
     "notes": "Confirmed unchanged through Aug 2026 (no 2024-2026 issuance revised Annex E) and matched against multiple independent sources, including a worked example (₱50,000/mo → ₱1,875 + 20% × ₱16,667 = ₱5,208.40). Withholding applies to taxable compensation after mandatory SSS/PhilHealth/Pag-IBIG employee shares and non-taxable benefits. Pending House/Senate bracket bills would change these tables if enacted (TY2027 earliest)."
   },
+  "tablesEffectiveFrom": {
+    "value": "2023-01-01",
+    "legalBasis": ["RR 11-2018 Annex E (Revised Withholding Tax Table effective Jan 1, 2023)"],
+    "confidence": "verified",
+    "notes": "The date the withholding tables above took effect. The Employee and Payroll results cite it (\"Revised withholding table effective 2023\")."
+  },
   "deMinimis": {
     "value": {
       "effectiveFrom": "2026-01-06",
@@ -92,7 +98,9 @@
   "mweExempt": {
     "value": {
       "exemptItems": ["statutory minimum wage", "holiday pay", "overtime pay", "night-shift differential", "hazard pay"],
-      "payFactors": [365, 313, 261]
+      "payFactors": [365, 313, 261],
+      "payFactorLabels": { "365": "paid every day", "313": "six-day week", "261": "five-day week" },
+      "defaultPayFactor": 313
     },
     "legalBasis": ["NIRC Sec 24(A)(2), as amended by RA 9504 and RA 10963", "RR 11-2018", "Soriano v. Secretary of Finance, G.R. No. 184450, Jan 24, 2017"],
     "confidence": "verified",

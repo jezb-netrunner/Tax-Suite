@@ -144,8 +144,9 @@ function longDate(d, short) {
   return d.toLocaleDateString('en-US', { month: short ? 'short' : 'long', day: 'numeric' })
 }
 
-// Due date of an annual_fy rule for a taxable year ending Dec 31 of `year`.
-function fyDue(schedule, year, fyEndMonth = 12) {
+// Due date of an annual_fy rule for a taxable year ending in month
+// fyEndMonth of `year` (H16: the corporate estimator uses it too).
+export function fyDue(schedule, year, fyEndMonth = 12) {
   const end = lastDayOfMonth(year, fyEndMonth)
   if (schedule.daysAfterEnd != null) return addDays(end, schedule.daysAfterEnd)
   const m = fyEndMonth + schedule.monthsAfterEnd

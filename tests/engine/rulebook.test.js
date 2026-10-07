@@ -165,6 +165,8 @@ describe('H07 rule values', () => {
     const sur = describeValue(penalties.surcharge.value, 'surcharge')
     expect(sur.fields.map(f => [f.label, f.value.text])).toEqual([
       ['Standard', '25%'], ['Willful neglect', '50%'], ['Micro small', '10%'], ['Micro small from', 'Jan 22, 2024'],
+      // H16: the 30% prima facie fraud line moved from the Tools page into the rulebook.
+      ['Substantial underdeclaration', '30%'],
     ])
     const fbt = describeValue(ewtRates.fringeBenefitsTax.value, 'fringeBenefitsTax')
     expect(fbt.fields.map(f => [f.label, f.value.text])).toEqual([

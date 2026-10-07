@@ -14,6 +14,7 @@ import { bracketTax, bracketTaxCentavos } from '../tax.js'
 import { toCentavos, fromCentavos, toWholePesos, mulRate, mulFrac, groupThousands } from '../../lib/money.js'
 import { manilaToday } from '../dates.js'
 import { estimateEmployee } from './employee.js'
+import { RT } from '../ruleText.js'
 
 const BR = incomeTax.graduatedBrackets.value
 const EIGHT = incomeTax.eightPercent.value
@@ -29,7 +30,7 @@ export const VAT_NOTE = 'Income tax and percentage tax only; VAT not included.'
 export const RATES_NOTE = 'Earlier years used different rates (the 2018-2022 graduated table, and a 1% percentage tax from July 2020 to June 2023) and are not supported here.'
 // L02: the annual return offers three choices for an overpayment.
 export const OVERPAYMENT_NOTE = 'On the return, choose one: refund, tax credit certificate, or carry over to next year.'
-export const VAT_ROW_NOTE = 'Not included in this estimate. VAT (12% of sales less creditable input VAT) is filed quarterly on Form 2550Q.'
+export const VAT_ROW_NOTE = `Not included in this estimate. VAT (${RT.vatRate} of sales less creditable input VAT) is filed quarterly on Form 2550Q.`
 
 // L21: the annual income tax return an individual files, in one place (RMC
 // 17-2019): Form 1701A only for income purely from business or profession on
@@ -96,8 +97,8 @@ export function estimateIndividual(in_) {
   const over8Ceiling = salesC + toCentavos(in_.otherIncome || 0) > toCentavos(EIGHT.grossCeiling)
   const eligible8Reason = vatRegistered
     ? 'Not available to VAT-registered taxpayers.'
-    : overThreshold ? 'Not available: sales are over ₱3,000,000.'
-      : over8Ceiling ? 'Not available: sales plus other non-operating income are over ₱3,000,000.'
+    : overThreshold ? `Not available: sales are over ${RT.vatThreshold}.`
+      : over8Ceiling ? `Not available: sales plus other non-operating income are over ${RT.eightCeiling}.`
         : subjectToOPT ? 'Not available: the business is subject to other percentage taxes (NIRC Secs 117-127).'
           : null
   const eligible8 = eligible8Reason === null
@@ -123,7 +124,7 @@ export function estimateIndividual(in_) {
         ptBaseC = grossC
         warnings.push(`Sales from ${span} can't be more than the year's gross sales (${pesoText(grossC)}); ${pesoText(grossC)} is used.`)
       } else if (enteredC <= thresholdC) {
-        warnings.push(`Sales from ${span} should be more than ₱3,000,000, since that is the month the threshold was passed.`)
+        warnings.push(`Sales from ${span} should be more than ${RT.vatThreshold}, since that is the month the threshold was passed.`)
       }
     } else {
       ptBaseC = toWholePesos(mulFrac(grossC, month, 12))
@@ -190,7 +191,7 @@ export function estimateIndividual(in_) {
   const creditItems = [
     { label: 'Less: tax withheld by clients (2307s)', c: cwtC },
     { label: 'Less: tax withheld by employer', c: compWithheldC },
-    { label: 'Less: 8% income tax already paid on 1701Q this year', c: eightPaidC },
+    { label: `Less: ${RT.eightRate} income tax already paid on 1701Q this year`, c: eightPaidC },
     { label: 'Less: income tax paid on this year\'s quarterly returns (1701Q)', c: quarterlyPaidC },
     { label: 'Less: excess credits carried over from last year', c: priorYearCreditsC },
   ].filter(x => x.c > 0)
@@ -214,13 +215,13 @@ export function estimateIndividual(in_) {
   const taxable8 = mixed
     ? [
         { label: 'Taxable compensation (graduated rates)', value: compensationTaxable },
-        { label: `Business income taxed at 8% (gross sales${withOther ? ' and other income' : ''})`, value: base8 },
+        { label: `Business income taxed at ${RT.eightRate} (gross sales${withOther ? ' and other income' : ''})`, value: base8 },
       ]
-    : [{ label: `Taxable base (gross sales${withOther ? ' and other income' : ''} less ₱250,000)`, value: base8 }]
+    : [{ label: `Taxable base (gross sales${withOther ? ' and other income' : ''} less ${RT.eightAllowance})`, value: base8 }]
   const taxableOsd = [{
     label: mixed
-      ? `Taxable income (compensation + business after the 40% OSD${withOther ? ' + other income' : ''})`
-      : `Taxable income (after the 40% OSD${withOther ? ', plus other income' : ''})`,
+      ? `Taxable income (compensation + business after the ${RT.osdRate} OSD${withOther ? ' + other income' : ''})`
+      : `Taxable income (after the ${RT.osdRate} OSD${withOther ? ', plus other income' : ''})`,
     value: P(compC + osdNetC + otherC),
   }]
   const taxableItem = [{
@@ -242,7 +243,7 @@ export function estimateIndividual(in_) {
   const options = [
     {
       key: '8pct',
-      name: mixed ? '8% on business income' : '8% flat tax',
+      name: mixed ? `${RT.eightRate} on business income` : `${RT.eightRate} flat tax`,
       eligible: eligible8,
       reason: eligible8Reason,
       incomeTax: inc8,
@@ -255,7 +256,7 @@ export function estimateIndividual(in_) {
     },
     {
       key: 'osd',
-      name: 'Graduated + OSD (40%)',
+      name: `Graduated + OSD (${RT.osdRate})`,
       eligible: true,
       incomeTax: incOsd,
       businessTax: gradBusinessTax,
@@ -295,7 +296,7 @@ export function estimateIndividual(in_) {
     const names = tied.map(o => o.name)
     const list = names.length === 2 ? names.join(' and ') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
     const why = []
-    if (tie.includes('8pct')) why.push('With 8% you file no quarterly percentage tax returns (2551Q).')
+    if (tie.includes('8pct')) why.push(`With ${RT.eightRate} you file no quarterly percentage tax returns (2551Q).`)
     if (tie.includes('osd') && tie.includes('itemized')) why.push('OSD needs no proof of expenses; itemized deductions must be backed by receipts and books.')
     tieNote = `${list} tie for the lowest tax at ${pesoText(toCentavos(best.total))}. ${why.join(' ')}`
   }
@@ -329,7 +330,7 @@ export function estimateIndividual(in_) {
     note: netLossC > 0
       ? `Net loss ${pesoText(netLossC)}. This net operating loss (NOLCO) can be deducted from business income in the next ` +
         `${NOLCO_YEARS} years (${taxYear + 1} to ${taxYear + NOLCO_YEARS}), but only in years you itemize deductions. ` +
-        `It cannot be used while on OSD or the 8% option, and those years still count toward the ${NOLCO_YEARS}.` +
+        `It cannot be used while on OSD or the ${RT.eightRate} option, and those years still count toward the ${NOLCO_YEARS}.` +
         (mixed ? ' A business loss does not reduce taxable compensation.' : '')
       : null,
     shortNote: netLossC > 0
@@ -347,7 +348,7 @@ export function estimateIndividual(in_) {
         r('Income tax on compensation (graduated)', compTax, { strong: true })
         r('Business gross sales / receipts', gross)
         if (withOther) r('Plus: other non-operating income', other)
-        r('Income tax on business @ 8% of gross', tax8, { strong: true, sub: 'Mixed-income earners get no ₱250,000 reduction on the business side; it is built into the compensation computation.' })
+        r(`Income tax on business @ ${RT.eightRate} of gross`, tax8, { strong: true, sub: `Mixed-income earners get no ${RT.eightAllowance} reduction on the business side; it is built into the compensation computation.` })
       }
     }
     if (!mixed || opt.key !== '8pct') {
@@ -355,12 +356,12 @@ export function estimateIndividual(in_) {
     }
     if (opt.key === '8pct' && !mixed) {
       if (withOther) r('Plus: other non-operating income', other)
-      r('Less: ₱250,000 annual allowance', -allowance8)
+      r(`Less: ${RT.eightAllowance} annual allowance`, -allowance8)
       r('Taxable base', base8, { rule: true })
-      r('Income tax @ 8%', tax8, { strong: true, sub: 'In lieu of graduated rates and the 3% percentage tax.' })
+      r(`Income tax @ ${RT.eightRate}`, tax8, { strong: true, sub: `In lieu of graduated rates and the ${RT.percentageTaxRate} percentage tax.` })
     }
     if (opt.key === 'osd') {
-      r('Less: Optional Standard Deduction (40% of gross)', -osdDeduction)
+      r(`Less: Optional Standard Deduction (${RT.osdRate} of gross)`, -osdDeduction)
       r('Net taxable business income', osdNet, { rule: true })
       if (withOther) r('Plus: other non-operating income', other)
       if (mixed) r('Plus: taxable compensation', compensationTaxable)
@@ -382,14 +383,14 @@ export function estimateIndividual(in_) {
       r('Graduated income tax', incItem, { strong: true })
     }
     if (opt.businessTax.kind === 'pct' && crossing) {
-      r(`Percentage tax (3% of sales ${crossing.span})`, opt.businessTax.amount, {
+      r(`Percentage tax (${RT.percentageTaxRate} of sales ${crossing.span})`, opt.businessTax.amount, {
         strong: true,
         sub: `NIRC Sec 116. Paid quarterly on Form 2551Q, not with the annual return. Sales from ${crossing.span}: ${pesoText(ptBaseC)}` +
           (crossing.ptBaseProrated ? ' (the year\'s sales spread evenly by month).' : '.'),
       })
       r('Value-added tax', null, { sub: `VAT applies from ${crossing.vatFrom}: not included in this estimate.` })
     } else if (opt.businessTax.kind === 'pct') {
-      r(`Percentage tax (3% of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116. Percentage tax: paid quarterly on Form 2551Q, not with the annual return.' })
+      r(`Percentage tax (${RT.percentageTaxRate} of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116. Percentage tax: paid quarterly on Form 2551Q, not with the annual return.' })
     }
     if (opt.businessTax.kind === 'vat') {
       r('Value-added tax', null, { sub: VAT_ROW_NOTE })

@@ -123,8 +123,23 @@ Supabase Site URL and redirect allow-list to the new address.
 
 Every entry carries `legalBasis` (the RA/RR/RMC it comes from), a `confidence`
 maintenance flag, and notes. The in-app **References** page is generated
-from these same files, so the audit trail can't drift from behavior. When the law changes:
-edit the value, cite the issuance, bump `meta.json`. No code changes.
+from these same files, so the audit trail can't drift from behavior.
+
+The calculators read these values, and every rate, threshold, cap and due date
+shown in words (labels, warnings, help text, the profile setup cards, the form
+guide and the blog) is built from them by
+[`src/engine/ruleText.js`](src/engine/ruleText.js). When a **value** changes
+(a new rate, a CPI-adjusted threshold, a new cap, a moved due date): edit the
+value, cite the issuance, bump `meta.json`, and run `npm test` and
+`npm run build`. No code change is needed. When the **shape** of a rule
+changes (a new bracket structure, a new exemption, a new kind of deadline, a
+different rounding), the code and its tests must change too.
+
+A test (`tests/build/no-typed-tax-numbers.test.js`) fails if a peso amount,
+percentage, year count or pay factor is typed into a page, the engine, the
+form guide or the blog instead of coming from the rulebook; its short list of
+exceptions (for example earlier-law rates in "not supported" notes) says why
+each may stay.
 
 ## Backend (multi-tenant accounts)
 

@@ -12,6 +12,7 @@ import wcomp from '../../data/rules/withholding-compensation.json'
 import { bracketTaxCentavos } from '../tax.js'
 import { monthlyPay, sssBaseNote, periodWithholding, perPaydayRows, monthLabel } from './payroll.js'
 import { toCentavos, fromCentavos } from '../../lib/money.js'
+import { RT, pesoText } from '../ruleText.js'
 
 const BR = incomeTax.graduatedBrackets.value
 const CAP13 = incomeTax.thirteenthMonthExclusionCap.value
@@ -79,7 +80,7 @@ export function estimateEmployee(in_) {
     strong: true,
     sub: monthLabel(pw)
       ? 'The number of paydays in a month varies, so the amount withheld in a month varies; this is the average.'
-      : 'Revised withholding table effective 2023 (RR 11-2018, as amended).',
+      : `Revised withholding table effective ${RT.withholdingTablesFrom} (RR 11-2018, as amended).`,
   })
   r('Estimated monthly take-home', monthlyTakeHome, { strong: true })
 
@@ -87,7 +88,7 @@ export function estimateEmployee(in_) {
   const a = (label, value, o = {}) => annualRows.push({ label, value, ...o })
   a('Annualized taxable compensation (×12)', P(monthlyTaxableC * 12))
   a('13th month & other benefits', bonusesAnnual)
-  a(`Less: exclusion cap (₱${CAP13.toLocaleString('en-US')})`, -P(Math.min(C(bonusesAnnual), C(CAP13))))
+  a(`Less: exclusion cap (${pesoText(CAP13)})`, -P(Math.min(C(bonusesAnnual), C(CAP13))))
   a('Annual taxable income', annualTaxable, { rule: true })
   a('Annual income tax (graduated table)', annualTax, { strong: true, sub: 'Your employer trues this up in December: extra tax is withheld or over-withholding refunded (NIRC Sec 79(H)).' })
   a(pw.payPeriod === 'monthly' ? 'Total withheld over 12 months' : `Total withheld over the year (${pw.periodsPerYear} paydays)`, P(withheld12C))

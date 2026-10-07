@@ -1,10 +1,10 @@
 {
   "$comment": "Civil penalties for late filing/payment + EOPT taxpayer classification.",
   "surcharge": {
-    "value": { "standard": 0.25, "willfulNeglect": 0.50, "microSmall": 0.10, "microSmallFrom": "2024-01-22" },
+    "value": { "standard": 0.25, "willfulNeglect": 0.50, "microSmall": 0.10, "microSmallFrom": "2024-01-22", "substantialUnderdeclaration": 0.30 },
     "legalBasis": ["NIRC Sec 248", "RA 11976 (EOPT); reduced 10% surcharge for micro & small taxpayers", "RR 6-2024"],
     "confidence": "verified",
-    "notes": "The reduced 10% applies to micro & small taxpayers for returns due on or after Jan 22, 2024, when EOPT took effect (it is not retroactive); returns due earlier keep 25%. EOPT also removed the 25% surcharge for filing at the wrong venue. The 50% surcharge covers willful neglect to file AND willfully false/fraudulent returns (underdeclaring sales by more than 30% or overstating deductions by more than 30% is prima facie fraud) and is NOT reduced for micro/small taxpayers (only the 25% drops to 10%). The 25% also applies to unpaid deficiency assessments and partial payments, not just late returns."
+    "notes": "The reduced 10% applies to micro & small taxpayers for returns due on or after Jan 22, 2024, when EOPT took effect (it is not retroactive); returns due earlier keep 25%. EOPT also removed the 25% surcharge for filing at the wrong venue. The 50% surcharge covers willful neglect to file AND willfully false/fraudulent returns (underdeclaring sales by more than 30% or overstating deductions by more than 30% is prima facie fraud: substantialUnderdeclaration, NIRC Sec 248(B)) and is NOT reduced for micro/small taxpayers (only the 25% drops to 10%). The 25% also applies to unpaid deficiency assessments and partial payments, not just late returns."
   },
   "interest": {
     "value": {

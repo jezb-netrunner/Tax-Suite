@@ -3,6 +3,7 @@
 
 import { calendarYearDue } from './rulebook.js'
 import { annualReturnForm } from './estimators/individual.js'
+import { RT } from './ruleText.js'
 
 // Text of the income-tax regime cards: { '8pct', graduated_osd, graduated_itemized }.
 //
@@ -18,21 +19,21 @@ export function regimeCardText({ type, vatRegistered }) {
   const form = regime => annualReturnForm({ mixed, regime })
   if (vatRegistered) {
     return {
-      graduated_osd: `40% Optional Standard Deduction: simpler books, files ${form('graduated_osd')}${mixed ? ' (mixed income)' : ''}.`,
+      graduated_osd: `${RT.osdRate} Optional Standard Deduction: simpler books, files ${form('graduated_osd')}${mixed ? ' (mixed income)' : ''}.`,
       graduated_itemized: `Actual documented expenses: files the full ${form('graduated_itemized')}.`,
     }
   }
   if (mixed) {
     return {
-      '8pct': `8% on business gross sales (no ₱250,000 reduction), in lieu of graduated rates and percentage tax on the business income; your salary stays on graduated rates. Elected each year on the Q1 return; files ${form('8pct')}.`,
-      graduated_osd: `Graduated rates on your salary plus business income after the 40% Optional Standard Deduction, plus 3% percentage tax on business sales; files ${form('graduated_osd')}.`,
-      graduated_itemized: `Graduated rates on your salary plus business income after actual documented expenses, plus 3% percentage tax on business sales; files ${form('graduated_itemized')}.`,
+      '8pct': `${RT.eightRate} on business gross sales (no ${RT.eightAllowance} reduction), in lieu of graduated rates and percentage tax on the business income; your salary stays on graduated rates. Elected each year on the Q1 return; files ${form('8pct')}.`,
+      graduated_osd: `Graduated rates on your salary plus business income after the ${RT.osdRate} Optional Standard Deduction, plus ${RT.percentageTaxRate} percentage tax on business sales; files ${form('graduated_osd')}.`,
+      graduated_itemized: `Graduated rates on your salary plus business income after actual documented expenses, plus ${RT.percentageTaxRate} percentage tax on business sales; files ${form('graduated_itemized')}.`,
     }
   }
   return {
-    '8pct': `8% on gross above ₱250,000, in lieu of graduated rates and percentage tax. Elected each year on the Q1 return; files ${form('8pct')}.`,
-    graduated_osd: `Graduated rates on income after the 40% Optional Standard Deduction, plus 3% percentage tax; files ${form('graduated_osd')}.`,
-    graduated_itemized: `Graduated rates on income after actual documented expenses, plus 3% percentage tax; files the full ${form('graduated_itemized')}.`,
+    '8pct': `${RT.eightRate} on gross above ${RT.eightAllowance}, in lieu of graduated rates and percentage tax. Elected each year on the Q1 return; files ${form('8pct')}.`,
+    graduated_osd: `Graduated rates on income after the ${RT.osdRate} Optional Standard Deduction, plus ${RT.percentageTaxRate} percentage tax; files ${form('graduated_osd')}.`,
+    graduated_itemized: `Graduated rates on income after actual documented expenses, plus ${RT.percentageTaxRate} percentage tax; files the full ${form('graduated_itemized')}.`,
   }
 }
 
