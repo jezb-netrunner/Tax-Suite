@@ -106,6 +106,27 @@ export function changeProfileType(profile, type) {
   return next
 }
 
+// M06: the profile wizard's edits applied to the newest stored profile.
+// `base` is the profile the form was opened with and `edited` the form now.
+// Only the answers the form changed are written; everything else comes from
+// `latest`, so figures (inputs), filed marks and checklist ticks saved after
+// the form opened, and answers changed in another window that the form did
+// not touch, are kept.
+const NOT_WIZARD_FIELDS = new Set(['id', 'inputs', 'filed', 'checklistDone'])
+
+function sameValue(a, b) {
+  return a === b || JSON.stringify(a) === JSON.stringify(b)
+}
+
+export function withWizardChanges(latest, base, edited) {
+  const next = { ...latest }
+  for (const k of Object.keys(edited)) {
+    if (NOT_WIZARD_FIELDS.has(k)) continue
+    if (!sameValue(edited[k], base[k])) next[k] = edited[k]
+  }
+  return next
+}
+
 // C07: a copy of the profile with the estimator figures of one tab (key:
 // 'individual', 'mixed', 'employee', 'corporation' or 'payroll') replaced and
 // every other part kept. Applied to the newest stored profile when saving, so

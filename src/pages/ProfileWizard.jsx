@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { PROFILE_TYPES, defaultProfile, changeProfileType } from '../engine/profile.js'
+import { PROFILE_TYPES, defaultProfile, changeProfileType, withWizardChanges } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
 import { manilaToday } from '../engine/dates.js'
 import { registrationYearOptions, registrationYearChoice } from '../engine/estimators/corporation.js'
@@ -33,6 +33,8 @@ function WizardForm({ app, editing }) {
   const nav = useNavigate()
   const [step, setStep] = useState(0)
   const [p, setP] = useState(() => (editing ? { ...editing } : defaultProfile()))
+  // M06: the profile as the form opened it, to save only what the form changed.
+  const [base] = useState(() => (editing ? { ...editing } : null))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
 
@@ -71,7 +73,10 @@ function WizardForm({ app, editing }) {
   async function finish() {
     setBusy(true); setErr(null)
     try {
-      await app.save(p)
+      // M06: an edit is written onto the newest stored profile, changing only
+      // what this form changed, so figures typed meanwhile are never wiped.
+      if (base) await app.updateProfile(base.id, latest => withWizardChanges(latest, base, p))
+      else await app.save(p)
       nav('/')
     } catch (ex) {
       setErr(ex.message || 'Could not save the profile.')

@@ -8,6 +8,7 @@ import { estimatePayroll, DEFAULT_PAY_FACTOR, PAY_PERIODS, minimumWageReferenceN
 import { selfEmployedMonthlyContributions, selfEmployedMonthlyEarnings } from '../engine/estimators/contributions.js'
 import { fromISO, taxableYearQuarters } from '../engine/dates.js'
 import { withInputs } from '../engine/profile.js'
+import { createInputSaver } from '../lib/inputSaver.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
@@ -56,7 +57,7 @@ const NOTE_STYLE = { marginTop: '12px', fontSize: '12.5px', color: 'var(--ink)',
 // Per-profile input memory so returning users see their numbers.
 // Persists 900ms after the last keystroke to avoid write storms.
 //
-// Three things this has to get right, because one account holds many clients:
+// Four things this has to get right, because one account holds many clients:
 //  - Seed from the profile these inputs belong to. The estimator subtree is
 //    keyed by profile id (see Estimator below), so switching clients remounts
 //    and re-seeds rather than showing the previous client's figures.
@@ -64,32 +65,37 @@ const NOTE_STYLE = { marginTop: '12px', fontSize: '12.5px', color: 'var(--ink)',
 //    save time), never write back this tab's copy of the whole profile: that
 //    undid renames and settings saved in another tab, and re-created profiles
 //    deleted there.
-//  - Flush a pending write on unmount instead of dropping it.
+//  - M06: save pending figures at once when the page is hidden, closed or
+//    reloaded, and when the estimator is left (createInputSaver).
+//  - M06: a failed save shows "Couldn't save your figures." (SaveNotice).
 function useInputs(app, key, defaults) {
   const profileId = app.active?.id ?? null
   const saved = app.active?.inputs?.[key]
   const [vals, setVals] = useState({ ...defaults, ...(saved || {}) })
-  const timer = React.useRef(null)
-  const pending = React.useRef(null)
+  // The newest app state, for saves that run after this render.
+  const appRef = React.useRef(app)
+  appRef.current = app
+  const saver = React.useRef(null)
 
-  const flush = React.useCallback(() => {
-    const inputs = pending.current
-    pending.current = null
-    if (!inputs || !profileId) return
-    app.updateProfile(profileId, p => withInputs(p, key, inputs))
-      .catch(e => app.reportSaveProblem(e))
-  }, [app, key, profileId])
+  React.useEffect(() => {
+    if (!profileId) return undefined
+    const s = createInputSaver({
+      save: values => appRef.current.updateProfile(profileId, p => withInputs(p, key, values)),
+      onError: e => appRef.current.reportSaveProblem(e),
+    })
+    saver.current = s
+    return () => {
+      if (saver.current === s) saver.current = null
+      s.dispose()
+    }
+  }, [key, profileId])
 
   function update(k, v) {
     const next = { ...vals, [k]: v }
     setVals(next)
-    if (!app.active) return
-    pending.current = next
-    clearTimeout(timer.current)
-    timer.current = setTimeout(flush, 900)
+    if (saver.current) saver.current.schedule(next)
   }
 
-  React.useEffect(() => () => { clearTimeout(timer.current); flush() }, [flush])
   return [vals, update]
 }
 

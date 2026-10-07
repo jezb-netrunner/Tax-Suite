@@ -18,9 +18,10 @@ export default function SaveNotice() {
   if (!err) return null
   return (
     <div className="wrap" style={{ marginTop: '18px' }}>
-      <div className="form-err" role="alert" style={{ display: 'flex', gap: '12px', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', marginTop: 0 }}>
+      {/* #943b2c on the notice background: 6.0:1 (WCAG AA). */}
+      <div className="form-err" role="alert" style={{ display: 'flex', gap: '12px', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', marginTop: 0, color: '#943b2c' }}>
         <span>{saveProblemText(err)}</span>
-        <button className="linkbtn" type="button" style={{ color: 'inherit', textDecoration: 'underline' }} onClick={() => app.clearSaveProblem()}>Dismiss</button>
+        <button className="linkbtn" type="button" style={{ color: 'inherit', textDecoration: 'underline', minHeight: '24px', padding: '2px 4px' }} onClick={() => app.clearSaveProblem()}>Dismiss</button>
       </div>
     </div>
   )
