@@ -317,6 +317,32 @@
       "notes": "April 30 is the date for returns filed by April 15; file the return late and the 15-day window runs from the actual e-filing date instead. Only 'if applicable': nothing to upload means nothing due. Skipping it costs ₱1,000 per document (₱500 for micro/small taxpayers) and puts claimed 2307 credits at risk; season RMCs occasionally move the date (May 15, 2026 for CY2025 per RMC 30-2026/39-2026)."
     },
     {
+      "id": "bir-annual-itr-2nd-installment",
+      "title": "Pay the 2nd installment of annual income tax (only if you paid half with your return)",
+      "desc": "If the income tax due on your annual return (1700, 1701 or 1701A) was over ₱2,000, you may pay half when you file and the other half by October 15. Skip this if you paid the full amount with your return.",
+      "form": "2nd installment",
+      "agency": "BIR",
+      "category": "income",
+      "appliesTo": {
+        "anyOf": [
+          "individual-business",
+          "files-1700"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 10,
+        "day": 15
+      },
+      "conditional": true,
+      "ruleRef": "income-tax.annualITRInstallment",
+      "legalBasis": [
+        "NIRC Sec 56(A)(2), as amended by RA 10963 (TRAIN)"
+      ],
+      "confidence": "verified",
+      "notes": "Individuals only (corporations pay in full). The choice is made on the annual return by entering the amount deferred to the second installment; the balance is due on or before October 15 of the year the return is filed. Paying it late brings the surcharge and interest on the unpaid half."
+    },
+    {
       "id": "bir-eafs-itr-attachments-corp",
       "title": "Submit annual ITR attachments via eAFS",
       "desc": "Corporate annual-return attachments: the FS with SMR (audited with auditor's report when gross sales exceed ₱3M), SAWT confirmation with 2307s and 2304s, Form 1709, CETI, tax debit memos and credit proofs where applicable, uploaded to eAFS in the prescribed PDF file groups.",

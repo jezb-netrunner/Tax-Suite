@@ -64,7 +64,9 @@ export default function Dashboard() {
   const eom = lastDayOfMonth(t.getFullYear(), t.getMonth() + 1)
 
   // Hero: next filing-money deadline (income/business/withholding), else next of any kind.
-  const heroPool = deadlines.filter(d => ['income', 'business', 'withholding'].includes(d.obligation.category))
+  // Items that apply only by the taxpayer's own choice (the Oct 15 second
+  // installment) stay in the lists but never take the hero spot.
+  const heroPool = deadlines.filter(d => ['income', 'business', 'withholding'].includes(d.obligation.category) && !d.obligation.conditional)
   const hero = heroPool[0] || deadlines[0] || null
   const rest = deadlines.filter(d => d !== hero)
   const monthItems = rest.filter(d => d.date <= eom)
