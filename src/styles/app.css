@@ -223,6 +223,37 @@ main h1[tabindex="-1"]:focus { outline: none; }
   .hero-days { font-size: 40px; }
   .pg-h1 { font-size: 21px; }
 }
+/* M22: print / Save as PDF. Only the page content prints, as dark text on
+   white, with a header line (profile, tax year, Manila print date). */
+.print-only { display: none; }
+@media print {
+  @page { margin: 14mm 12mm; }
+  :root { --mut: #333; --dim: #444; --line: #b8c2cc; --line2: #d0d7de; --bg: #fff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body, #root { background: #fff !important; height: auto; }
+  body { color: #000; font-size: 11pt; }
+  .hdr, .no-print, button, .ftr p + p, .dl-details, .linkbtn { display: none !important; }
+  .print-only { display: block !important; }
+  .print-head { font-size: 10pt; font-weight: 600; color: #000; border-bottom: 1px solid #000; padding-bottom: 6px; margin-bottom: 14px; }
+  .page, .acc-body { animation: none !important; }
+  .wrap { max-width: none; padding-left: 0 !important; padding-right: 0 !important; }
+  .hero, .summary-banner {
+    background: #fff !important; color: #000 !important; border: 1.5px solid #333;
+    box-shadow: none !important;
+  }
+  .hero *, .summary-banner * { color: #000 !important; }
+  .hero .badge-unconf.on-dark { border-color: #6b4a12; }
+  .hero-side { border-color: #999 !important; }
+  .card, .list-card { box-shadow: none !important; }
+  .list-card { overflow: visible; }
+  .card, .hero, .summary-banner, .frow, .check-row, .disclaimer, .mini-warn, .form-row-head, li, tr, .opt-card {
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+  a { color: #000 !important; text-decoration: none; }
+  .ftr { border-top: 1px solid #999; padding: 12px 0 0; }
+  .ftr p { color: #333; max-width: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }

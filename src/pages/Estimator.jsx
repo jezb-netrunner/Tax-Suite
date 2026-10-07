@@ -12,6 +12,7 @@ import { createInputSaver } from '../lib/inputSaver.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
+import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
 
 // fmt 'peso': return figures in whole pesos (BIR form lines);
 // fmt 'centavo': payslip and contribution figures to the centavo.
@@ -280,7 +281,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
             })}
           </div>
 
-          <div style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px', display: 'flex', alignItems: 'center', gap: '13px' }}>
+          <div className="summary-banner" style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px', display: 'flex', alignItems: 'center', gap: '13px' }}>
             <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--good)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>✓</span>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
               {r.tie
@@ -531,7 +532,7 @@ function fmtISO(isoDate) {
   return fromISO(isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function CorporationEstimator({ app }) {
+function CorporationEstimator({ app, onPrintYear }) {
   const p = app.active
   const [v, set] = useInputs(app, 'corporation', {})
   const hasFigures = Number(v.grossSales) > 0
@@ -561,6 +562,9 @@ function CorporationEstimator({ app }) {
     excessMcit,
   })), [v, p, choice, fy, earlier, excessMcit])
   const setExcessMcit = (y, x) => set('excessMcit', { ...(v.excessMcit || {}), [y]: x })
+  // M22: the printout's "Tax year" is the taxable year chosen here.
+  const printYear = earlier ? `before ${years.previous}` : taxablePeriod(choice, fy).option
+  React.useEffect(() => { if (onPrintYear) onPrintYear(printYear) }, [onPrintYear, printYear])
   return (
     <>
       <div className="card pad">
@@ -622,7 +626,7 @@ function CorporationEstimator({ app }) {
               {p.id && <>{' '}<Link to={`/profiles/${p.id}/edit`}>Edit the profile</Link></>}
             </div>
           )}
-          <div style={{ marginTop: '10px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
+          <div className="summary-banner" style={{ marginTop: '10px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
               {r.mcitStatus === 'unknown' && r.usesMcit
                 ? <>Income tax due: {money(r.incomeTaxDue)} if the 2% MCIT applies, or {money(r.rcit)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate if it does not apply yet.</>
@@ -739,6 +743,8 @@ export default function Estimator() {
   const nav = useNavigate()
   const p = app.active
   const [tab, setTab] = useState(null)
+  const year = useManilaToday().getFullYear()
+  const [corpPrintYear, setCorpPrintYear] = useState(null)
 
   if (!app.profilesReady) return null
   if (!p) {
@@ -772,19 +778,23 @@ export default function Estimator() {
 
   return (
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px' }}>
+      <PrintHeader profileName={p.name} taxYear={active === 'corporation' && corpPrintYear ? corpPrintYear : year} />
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
         <div>
           <h1 className="pg-h1">{titles[active]}</h1>
           <p className="pg-sub">Estimating for <b>{p.name}</b>. Every line shows its math, every rate shows its source.</p>
           <p style={{ fontSize: '12.5px', color: 'var(--ink)', marginTop: '4px' }}>{app.hasCloud ? 'Figures you type are saved to this profile in your account.' : 'Figures you type are saved to this profile in this browser.'}</p>
         </div>
-        {tabs.length > 1 && (
-          <div className="seg" role="group" aria-label="Estimator">
-            {tabs.map(([k, l]) => (
-              <button key={k} className={active === k ? 'active' : ''} aria-pressed={active === k} onClick={() => setTab(k)}>{l}</button>
-            ))}
-          </div>
-        )}
+        <div className="no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {tabs.length > 1 && (
+            <div className="seg" role="group" aria-label="Estimator">
+              {tabs.map(([k, l]) => (
+                <button key={k} className={active === k ? 'active' : ''} aria-pressed={active === k} onClick={() => setTab(k)}>{l}</button>
+              ))}
+            </div>
+          )}
+          <PrintButton />
+        </div>
       </div>
 
       {/* Keyed by profile and tab so switching either remounts the inputs —
@@ -793,7 +803,7 @@ export default function Estimator() {
         {active === 'individual' && <IndividualEstimator app={app} mixed={false} />}
         {active === 'mixed' && <IndividualEstimator app={app} mixed={true} onOpenTab={setTab} />}
         {active === 'employee' && <EmployeeEstimator app={app} />}
-        {active === 'corporation' && <CorporationEstimator app={app} />}
+        {active === 'corporation' && <CorporationEstimator app={app} onPrintYear={setCorpPrintYear} />}
         {active === 'payroll' && <PayrollEstimator app={app} />}
       </React.Fragment>
 

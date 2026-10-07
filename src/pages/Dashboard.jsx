@@ -14,6 +14,8 @@ import { AgencyTag } from '../components/ui.jsx'
 import { ItemBadge, DeadlineDetails } from '../components/Confidence.jsx'
 import { FormCode } from '../components/FormCode.jsx'
 import { PROFILE_TYPES } from '../engine/profile.js'
+import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
+import { deadlineCsv, deadlineCsvFileName, downloadText } from '../lib/exports.js'
 
 const CATLABEL = { income: 'Income tax', business: 'Business tax', withholding: 'Withholding', payroll: 'Payroll & contributions', admin: 'Admin', registration: 'Registration' }
 
@@ -78,6 +80,10 @@ export default function Dashboard() {
     updateMarks(prof => withFiledMany(prof, list.map(filedKey), on, t))
     setLastMark({ many: list, on })
   }
+  // M22: every deadline on the calendar (overdue, recently marked, next 13 months) as a spreadsheet file.
+  function downloadCsv() {
+    downloadText(deadlineCsvFileName(p.name, t), deadlineCsv({ overdue, recent: recentlyMarked, upcoming: deadlines, profile: pv, today: t }))
+  }
 
   if (!app.profilesReady) return null
   if (!p && app.loadError) {
@@ -128,6 +134,7 @@ export default function Dashboard() {
 
   return (
     <div className="page">
+      <PrintHeader profileName={p.name} taxYear={t.getFullYear()} />
       <div style={{ background: 'var(--sf)', borderBottom: '1px solid var(--line)' }}>
         <div className="wrap" style={{ padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -159,10 +166,14 @@ export default function Dashboard() {
               </p>
             )}
           </div>
-          <div className="seg" role="group" aria-label="View">
-            {[['feed', 'Feed'], ['timeline', 'Timeline'], ['table', 'Table']].map(([k, l]) => (
-              <button key={k} className={view === k ? 'active' : ''} aria-pressed={view === k} onClick={() => setView(k)}>{l}</button>
-            ))}
+          <div className="no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="seg" role="group" aria-label="View">
+              {[['feed', 'Feed'], ['timeline', 'Timeline'], ['table', 'Table']].map(([k, l]) => (
+                <button key={k} className={view === k ? 'active' : ''} aria-pressed={view === k} onClick={() => setView(k)}>{l}</button>
+              ))}
+            </div>
+            <PrintButton />
+            <button type="button" className="btn sm ghost" onClick={downloadCsv}>Download as spreadsheet (CSV)</button>
           </div>
         </div>
 
