@@ -1,6 +1,7 @@
 // H16: tax numbers must come from the rulebook (src/data/rules/*.json, put
 // into words by src/engine/ruleText.js), never typed into a page, the engine,
-// the form guide or the blog. This test reads the source of those files and
+// the form guide, the blog, the glossary or any other data or helper module
+// (src/data/*.js, src/lib/*.js). This test reads the source of those files and
 // fails when a string, template or JSX text contains a peso amount, a
 // percentage, a count of years or days, an "Nth taxable year" or a pay factor.
 // Comments are ignored. Each exception below says why it may stay.
@@ -21,14 +22,15 @@ function filesIn(dir, exts) {
   return out
 }
 
-const FILES = [
+const FILES = [...new Set([
   ...filesIn('src/pages', ['.jsx', '.js']),
   ...filesIn('src/engine', ['.js']),
   ...filesIn('src/components', ['.jsx', '.js']),
   'src/App.jsx',
-  'src/data/forms.js',
-  'src/data/posts.js',
-]
+  // Follow-up: every data and helper module, not only the form guide and blog.
+  ...filesIn('src/data', ['.js']),
+  ...filesIn('src/lib', ['.js', '.jsx']),
+])]
 
 // What counts as a typed tax number.
 const PATTERNS = [
@@ -50,6 +52,10 @@ const ALLOWED = [
   ['src/data/forms.js', '₱150M', 'transfer-pricing documentation threshold (RR 34-2020), quoted for reference only'],
   ['src/data/forms.js', '₱90M', 'transfer-pricing documentation threshold (RR 34-2020), quoted for reference only'],
   ['src/data/forms.js', '10 days', 'registration-update windows (Forms 1902 and 1905), quoted for reference only'],
+  ['src/data/statutes.js', '8%', 'one-line summary of what TRAIN (RA 10963) enacted; describes the law, not the current rule'],
+  ['src/data/statutes.js', '12%', 'one-line summary of what RA 12023 enacted; describes the law, not the current rule'],
+  ['src/data/statutes.js', '20%', 'one-line summary of CREATE MORE\'s RBE rate (RA 12066); not used by any estimator'],
+  ['src/lib/format.js', '₱999,999,999,999.99', 'the largest amount an input box accepts (MAX_MONEY_CENTAVOS); an input limit, not a tax rule'],
 ]
 
 // CSS values in style objects (borderRadius: '50%', width: '100%') are not tax.
@@ -80,6 +86,10 @@ describe('no tax numbers typed into pages, engine, form guide or blog (H16)', ()
   it('scans the files it should', () => {
     expect(FILES).toContain('src/pages/Estimator.jsx')
     expect(FILES).toContain('src/engine/estimators/individual.js')
+    expect(FILES).toContain('src/data/glossary.js')
+    expect(FILES).toContain('src/data/statutes.js')
+    expect(FILES).toContain('src/data/forms.js')
+    expect(FILES).toContain('src/lib/format.js')
     expect(FILES.length).toBeGreaterThan(30)
   })
 

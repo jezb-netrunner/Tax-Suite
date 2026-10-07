@@ -1,6 +1,11 @@
 // Plain-language meaning of the codes shown on calendar chips and forms
 // (L15). Used for the chip tooltips (src/components/FormCode.jsx), the
 // calendar row "Details", and the glossary on the Forms page.
+//
+// H16: rates and the MCIT start year come from the rulebook through RT
+// (src/engine/ruleText.js), so a rule change updates these words too.
+import { RT } from '../engine/ruleText.js'
+
 export const GLOSSARY = [
   { code: 'PRN', name: 'Payment Reference Number', meaning: 'The number you generate in your My.SSS account for each SSS payment.' },
   { code: 'R-5', name: 'SSS Form R-5', meaning: 'The SSS contribution payment form for employers; payments now go through a PRN.' },
@@ -17,8 +22,8 @@ export const GLOSSARY = [
   { code: 'QAP', name: 'Quarterly Alphalist of Payees', meaning: 'The quarterly list of everyone you withheld tax from, sent with the 1601-EQ.' },
   { code: 'CTC', name: 'Community Tax Certificate', meaning: 'The cedula, paid each year to your city or municipality.' },
   { code: 'PTR', name: 'Professional Tax Receipt', meaning: 'The yearly tax licensed professionals pay to the city or province where they practise.' },
-  { code: 'RCIT', name: 'Regular corporate income tax', meaning: '25% of a corporation\'s taxable income (20% for small corporations).' },
-  { code: 'MCIT', name: 'Minimum corporate income tax', meaning: '2% of gross income, paid instead when it is higher than the regular tax, from the 4th taxable year after BIR registration.' },
+  { code: 'RCIT', name: 'Regular corporate income tax', meaning: `${RT.rcitStandard} of a corporation's taxable income (${RT.rcitSmall} for small corporations).` },
+  { code: 'MCIT', name: 'Minimum corporate income tax', meaning: `${RT.mcitRate} of gross income, paid instead when it is higher than the regular tax, from the ${RT.mcitStartYear} taxable year after BIR registration.` },
 ]
 
 const BY_CODE = Object.fromEntries(GLOSSARY.map(g => [g.code, g]))

@@ -21,7 +21,13 @@ vi.mock('../../src/data/rules/income-tax.json', async (importOriginal) => {
 })
 vi.mock('../../src/data/rules/corporate.json', async (importOriginal) => {
   const m = (await importOriginal()).default
-  return { default: { ...m, mcit: { ...m.mcit, value: { ...m.mcit.value, rate: 0.015, startsInTaxableYear: 5, excessCarryForwardYears: 4 } } } }
+  return {
+    default: {
+      ...m,
+      rcit: { ...m.rcit, value: { ...m.rcit.value, standardRate: 0.24, smallCorpRate: 0.19 } },
+      mcit: { ...m.mcit, value: { ...m.mcit.value, rate: 0.015, startsInTaxableYear: 5, excessCarryForwardYears: 4 } },
+    },
+  }
 })
 vi.mock('../../src/data/rules/obligations.json', async (importOriginal) => {
   const m = (await importOriginal()).default
@@ -41,6 +47,7 @@ const { regimeCardText } = await import('../../src/engine/wizardText.js')
 const { regimeLabel } = await import('../../src/engine/profile.js')
 const { FORMS_DATA } = await import('../../src/data/forms.js')
 const { POSTS } = await import('../../src/data/posts.js')
+const { GLOSSARY } = await import('../../src/data/glossary.js')
 
 const text = x => JSON.stringify(x)
 const form = code => FORMS_DATA.find(f => f.code === code)
@@ -84,6 +91,13 @@ describe('labels follow a changed rulebook (H16)', () => {
     expect(applies.mcitStatus).toBe('applies')
     expect(text(applies.rows)).toContain('Minimum corporate income tax @ 1.5% of gross income')
     expect(text(applies.rows)).toContain('for the next 4 years')
+  })
+
+  it('Forms-page glossary: RCIT and MCIT rates and the MCIT start year (H16 follow-up)', () => {
+    const meaning = code => GLOSSARY.find(g => g.code === code).meaning
+    expect(meaning('RCIT')).toBe('24% of a corporation\'s taxable income (19% for small corporations).')
+    expect(meaning('MCIT')).toBe('1.5% of gross income, paid instead when it is higher than the regular tax, from the 5th taxable year after BIR registration.')
+    expect(text(GLOSSARY)).not.toMatch(/25%|20%|\b2%|4th taxable/)
   })
 
   it('payroll: the 1601-C remittance day', () => {
