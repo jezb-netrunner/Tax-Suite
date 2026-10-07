@@ -314,7 +314,7 @@ function FormPreview({ r }) {
       ? ar.creditLines.map(c => ({ label: c.label, value: `(${money(c.value)})` }))
       : [{ label: 'Less: tax credits', value: '—' }]),
     {
-      label: ar.netPayable >= 0 ? 'Income tax payable with the annual return' : 'Overpayment (refund / carry-over)',
+      label: ar.netPayable >= 0 ? 'Income tax payable with the annual return' : 'Overpayment',
       value: money(Math.abs(ar.netPayable)),
       strong: true,
     },
@@ -342,6 +342,9 @@ function FormPreview({ r }) {
             <span className="mono" style={{ fontSize: '13.5px', fontWeight: 600 }}>{f.value}</span>
           </div>
         ))}
+        {ar.overpaymentNote && (
+          <p className="cite" style={{ marginTop: '10px' }}>{ar.overpaymentNote}</p>
+        )}
         {!ar.creditLines.some(c => c.label.includes('1701Q')) && (
           <p className="cite" style={{ marginTop: '10px' }}>This is before any income tax paid on this year's 1701Q returns. Quarterly amounts are not computed here; enter what you paid above.</p>
         )}

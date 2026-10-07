@@ -27,6 +27,8 @@ const pesoText = c => '₱' + groupThousands(Math.round(c / 100))
 export const VAT_NOTE = 'Income tax and percentage tax only; VAT not included.'
 // M01 (owner decision 1): the rulebook holds the current rates only.
 export const RATES_NOTE = 'Earlier years used different rates (the 2018-2022 graduated table, and a 1% percentage tax from July 2020 to June 2023) and are not supported here.'
+// L02: the annual return offers three choices for an overpayment.
+export const OVERPAYMENT_NOTE = 'On the return, choose one: refund, tax credit certificate, or carry over to next year.'
 export const VAT_ROW_NOTE = 'Not included in this estimate. VAT (12% of sales less creditable input VAT) is filed quarterly on Form 2550Q.'
 
 export function gradTax(taxable) {
@@ -304,6 +306,7 @@ export function estimateIndividual(in_) {
       creditLines,
       credits,
       netPayable: diff(opt.incomeTax, credits),
+      overpaymentNote: toCentavos(opt.incomeTax) < toCentavos(credits) ? OVERPAYMENT_NOTE : null,
       percentageTax,
     }
   }
@@ -391,7 +394,7 @@ export function estimateIndividual(in_) {
       r(`Income tax due on the annual return (${ar.form})`, ar.incomeTaxDue, { rule: true })
       for (const c of ar.creditLines) r(c.label, -c.value)
       if (ar.netPayable >= 0) r('Income tax payable with the annual return', ar.netPayable, { strong: true })
-      else r('Overpayment: refund or carry over', -ar.netPayable, { strong: true, sub: 'Excess credits can be refunded or carried forward to next year\'s returns.' })
+      else r('Overpayment', -ar.netPayable, { strong: true, sub: OVERPAYMENT_NOTE })
     }
     return rows
   }
