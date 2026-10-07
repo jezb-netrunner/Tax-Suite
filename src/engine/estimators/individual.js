@@ -49,6 +49,10 @@ export function gradTax(taxable) {
  *                    (empty -> the year's sales prorated evenly by month)
  *   eightPercentPaid (sales over ₱3M) 8% income tax already paid on 1701Q this year
  *   taxYear          taxable year (default: the current year in Manila)
+ *   otherIncome      other non-operating income NOT subject to final tax (M02):
+ *                    counts in the 8% ₱3M test and 8% base, added after OSD /
+ *                    itemized deductions; not part of the OSD or percentage-tax base
+ *   subjectToOtherPercentageTax  business subject to NIRC Secs 117-127 (no 8%)
  */
 export function estimateIndividual(in_) {
   const { vatRegistered = false, mixed = false } = in_
@@ -63,16 +67,24 @@ export function estimateIndividual(in_) {
   const gross = P(grossC)
   const expenses = P(expensesC)
   const compensationTaxable = P(compC)
+  const otherC = line(in_.otherIncome)
+  const other = P(otherC)
+  const subjectToOPT = Boolean(in_.subjectToOtherPercentageTax)
 
   // The ₱3M test uses the actual sales (₱3,000,000.01 is over), not the rounded line.
   const salesC = toCentavos(in_.gross || 0)
   const thresholdC = toCentavos(VAT_THRESHOLD)
   const overThreshold = salesC > thresholdC
   const vat = vatRegistered || overThreshold
-  const eligible8 = !vat
+  // 8% ceiling (RR 8-2018): sales plus other non-operating income not over ₱3M.
+  const over8Ceiling = salesC + toCentavos(in_.otherIncome || 0) > toCentavos(EIGHT.grossCeiling)
   const eligible8Reason = vatRegistered
     ? 'Not available to VAT-registered taxpayers.'
-    : overThreshold ? 'Not available: sales are over ₱3,000,000.' : null
+    : overThreshold ? 'Not available: sales are over ₱3,000,000.'
+      : over8Ceiling ? 'Not available: sales plus other non-operating income are over ₱3,000,000.'
+        : subjectToOPT ? 'Not available: the business is subject to other percentage taxes (NIRC Secs 117-127).'
+          : null
+  const eligible8 = eligible8Reason === null
 
   // H04 (RR 8-2018, owner decision 6): a non-VAT taxpayer whose sales pass ₱3M
   // during the year. The whole year is on graduated rates, the 3% percentage
@@ -120,7 +132,7 @@ export function estimateIndividual(in_) {
 
   // Business-side income tax per regime.
   const allowance8 = mixed ? EIGHT.allowanceForMixedIncome : EIGHT.allowanceForPureSelfEmployed
-  const base8C = Math.max(0, grossC - toCentavos(allowance8))
+  const base8C = Math.max(0, grossC + otherC - toCentavos(allowance8))
   const tax8C = toWholePesos(mulRate(base8C, EIGHT.rate))
 
   const pctC = vatRegistered ? 0
@@ -131,10 +143,10 @@ export function estimateIndividual(in_) {
   const itemNetC = Math.max(0, grossC - expensesC)
 
   // Mixed graduated: compensation and business net are AGGREGATED into one
-  // graduated computation (single taxable income). Pure SE: business net alone.
+  // graduated computation (single taxable income). Other non-operating income
+  // is added after the deductions (compC is 0 for the purely self-employed).
   function gradIncomeTaxOn(businessNetC) {
-    if (!mixed) return gradLine(businessNetC)
-    return gradLine(compC + Math.max(0, businessNetC))
+    return gradLine(compC + Math.max(0, businessNetC) + otherC)
   }
   // For mixed 8%: compensation stays graduated; business is flat 8% on gross.
   const inc8C = mixed ? compTaxC + tax8C : tax8C
@@ -175,19 +187,24 @@ export function estimateIndividual(in_) {
   const credits = P(creditsC)
 
   // Taxable-income lines as they appear on the annual return.
+  const withOther = otherC > 0
   const taxable8 = mixed
     ? [
         { label: 'Taxable compensation (graduated rates)', value: compensationTaxable },
-        { label: 'Business income taxed at 8% (gross sales)', value: base8 },
+        { label: `Business income taxed at 8% (gross sales${withOther ? ' and other income' : ''})`, value: base8 },
       ]
-    : [{ label: 'Taxable base (gross sales less ₱250,000)', value: base8 }]
+    : [{ label: `Taxable base (gross sales${withOther ? ' and other income' : ''} less ₱250,000)`, value: base8 }]
   const taxableOsd = [{
-    label: mixed ? 'Taxable income (compensation + business after the 40% OSD)' : 'Taxable income (after the 40% OSD)',
-    value: P(compC + osdNetC),
+    label: mixed
+      ? `Taxable income (compensation + business after the 40% OSD${withOther ? ' + other income' : ''})`
+      : `Taxable income (after the 40% OSD${withOther ? ', plus other income' : ''})`,
+    value: P(compC + osdNetC + otherC),
   }]
   const taxableItem = [{
-    label: mixed ? 'Taxable income (compensation + business after itemized deductions)' : 'Taxable income (after itemized deductions)',
-    value: P(compC + itemNetC),
+    label: mixed
+      ? `Taxable income (compensation + business after itemized deductions${withOther ? ' + other income' : ''})`
+      : `Taxable income (after itemized deductions${withOther ? ', plus other income' : ''})`,
+    value: P(compC + itemNetC + otherC),
   }]
 
   // Business tax under the graduated options: VAT all year when registered;
@@ -274,6 +291,7 @@ export function estimateIndividual(in_) {
       if (opt.key === '8pct') {
         r('Income tax on compensation (graduated)', compTax, { strong: true })
         r('Business gross sales / receipts', gross)
+        if (withOther) r('Plus: other non-operating income', other)
         r('Income tax on business @ 8% of gross', tax8, { strong: true, sub: 'Mixed-income earners get no ₱250,000 reduction on the business side; it is built into the compensation computation.' })
       }
     }
@@ -281,6 +299,7 @@ export function estimateIndividual(in_) {
       r('Gross sales / receipts', gross)
     }
     if (opt.key === '8pct' && !mixed) {
+      if (withOther) r('Plus: other non-operating income', other)
       r('Less: ₱250,000 annual allowance', -allowance8)
       r('Taxable base', base8, { rule: true })
       r('Income tax @ 8%', tax8, { strong: true, sub: 'In lieu of graduated rates and the 3% percentage tax.' })
@@ -288,12 +307,14 @@ export function estimateIndividual(in_) {
     if (opt.key === 'osd') {
       r('Less: Optional Standard Deduction (40% of gross)', -osdDeduction)
       r('Net taxable business income', osdNet, { rule: true })
+      if (withOther) r('Plus: other non-operating income', other)
       if (mixed) r('Plus: taxable compensation', compensationTaxable)
       r('Graduated income tax', incOsd, { strong: true })
     }
     if (opt.key === 'itemized') {
       r('Less: itemized expenses', -expenses)
       r('Net taxable business income', itemNet, { rule: true })
+      if (withOther) r('Plus: other non-operating income', other)
       if (mixed) r('Plus: taxable compensation', compensationTaxable)
       r('Graduated income tax', incItem, { strong: true })
     }

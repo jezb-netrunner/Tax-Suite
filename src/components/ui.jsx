@@ -116,16 +116,18 @@ function sameValue(a, b) {
   return a === b || (a == null && b == null)
 }
 
-export function SelectField({ label, value, onChange, options }) {
+export function SelectField({ label, value, onChange, options, hint }) {
   const id = React.useId()
+  const hintId = hint ? id + '-hint' : undefined
   return (
     <div>
       <label className="lbl" htmlFor={id}>{label}</label>
       <div className="input-w">
-        <select id={id} value={value} onChange={e => onChange(e.target.value)}>
+        <select id={id} value={value} onChange={e => onChange(e.target.value)} aria-describedby={hintId}>
           {options.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
       </div>
+      {hint && <div id={hintId} style={{ fontSize: '11.5px', color: 'var(--dim)', marginTop: '5px' }}>{hint}</div>}
     </div>
   )
 }

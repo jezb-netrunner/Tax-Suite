@@ -95,14 +95,18 @@ function IndividualEstimator({ app, mixed }) {
     quarterlyPaid: v.quarterlyPaid, priorYearCredits: v.priorYearCredits,
     crossedMonth: v.crossedMonth, salesThroughCrossMonth: v.salesThroughCrossMonth,
     eightPercentPaid: v.eightPercentPaid, taxYear,
+    otherIncome: v.otherIncome, subjectToOtherPercentageTax: v.otherPercentageTax === 'yes',
   }), [v, p.vatRegistered, mixed, taxYear])
 
   // The profile's regime, unless the figures override it.
+  const opt8 = r.options.find(o => o.key === '8pct')
   const regimeNote = p.regime === '8pct' && r.crossing
     ? 'Your profile says the 8% option, but because sales passed ₱3,000,000 the whole year is taxed at graduated rates.'
     : p.regime === '8pct' && p.vatRegistered
       ? 'Your profile says the 8% option, but it is not available to VAT-registered taxpayers.'
-      : `Note: the regime on this profile is ${p.regime === '8pct' ? 'the 8% option' : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
+      : p.regime === '8pct' && !opt8.eligible
+        ? `Your profile says the 8% option, but it is not available with these figures: ${opt8.reason.replace(/^Not available: /, '')}`
+        : `Note: the regime on this profile is ${p.regime === '8pct' ? 'the 8% option' : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
 
   return (
     <>
@@ -110,12 +114,27 @@ function IndividualEstimator({ app, mixed }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
           <NumField label="Business gross sales / receipts · year" value={v.gross} onChange={x => set('gross', x)} prefix="₱" lg />
           <NumField label="Itemized expenses" value={v.expenses} onChange={x => set('expenses', x)} prefix="₱" />
+          <NumField label="Other non-operating income (not subject to final tax)" value={v.otherIncome} onChange={x => set('otherIncome', x)} prefix="₱" hint="Income outside your main business. Leave out bank interest and other income already taxed at a final rate." />
           <NumField label="Tax withheld by clients (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
           {mixed && <NumField label="Taxable compensation · year" value={v.compensationTaxable} onChange={x => set('compensationTaxable', x)} prefix="₱" hint="After mandatory contributions and non-taxable benefits; see box 21 of your 2316." />}
           {mixed && <NumField label="Tax withheld by employer" value={v.compensationWithheld} onChange={x => set('compensationWithheld', x)} prefix="₱" />}
           <NumField label="Income tax already paid on this year's quarterly returns (1701Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
           <NumField label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
+        <div style={{ marginTop: '18px', maxWidth: '560px' }}>
+          <SelectField
+            label="Is the business subject to other percentage taxes (NIRC Secs 117-127)?"
+            value={v.otherPercentageTax === 'yes' ? 'yes' : 'no'}
+            onChange={x => set('otherPercentageTax', x)}
+            options={[['no', 'No'], ['yes', 'Yes']]}
+            hint="For example carriers, franchise holders, banks and finance companies, insurance, or amusement places. If yes, the 8% option is not available."
+          />
+        </div>
+        {v.otherPercentageTax === 'yes' && (
+          <div className="mini-warn" role="note">
+            Other percentage taxes (NIRC Secs 117-127) are not computed here. The percentage tax shown is the general 3% (NIRC Sec 116); check with your CPA which applies to your sales.
+          </div>
+        )}
         <p className="cite" style={{ marginTop: '14px' }}>
           Quarterly amounts are not computed here. Enter the income tax you have already paid on this year's 1701Q returns, and it is subtracted from what you pay with the annual return.
         </p>
