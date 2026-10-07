@@ -102,9 +102,13 @@ Choose one:
 **Content-Security-Policy.** `npm run build` adds a CSP `<meta>` tag to
 `dist/index.html`, `dist/standalone.html` and `index.html`
 ([`scripts/standalone-plugin.js`](scripts/standalone-plugin.js)): only the
-app's own code runs (inline blocks by SHA-256 hash), styles and fonts may come
-from Google Fonts while `app.html` loads them, and connections go nowhere
-except, in an accounts build, the Supabase project. `npm run dev` has no CSP
+app's own code runs (inline blocks by SHA-256 hash), nothing is loaded from
+another site, and connections go nowhere except, in an accounts build, the
+Supabase project. The two fonts (Schibsted Grotesk and IBM Plex Mono, from the
+`@fontsource` packages, SIL Open Font License) are served from the app's own
+address in `dist/` ([`src/styles/fonts.css`](src/styles/fonts.css)); the
+single-file `index.html` and `dist/standalone.html` carry no font files and use
+the system fonts. `npm run dev` has no CSP
 because Vite injects its own inline scripts there. A `<meta>` tag cannot set
 `frame-ancestors`; if the host can send HTTP headers, also send
 `Content-Security-Policy: frame-ancestors 'none'` (GitHub Pages cannot).

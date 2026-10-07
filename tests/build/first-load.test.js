@@ -1,6 +1,7 @@
 // M23: faster first load. A local-mode build ships no account library, the
 // web fonts do not hold up the first paint, and the page shows "Loading
-// JEZ Tax Suite…" until the app starts.
+// JEZ Tax Suite…" until the app starts. (L18 follow-up: the fonts are now
+// self-hosted with font-display: swap, so app.html links nothing.)
 import { describe, it, expect, afterEach } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -48,10 +49,12 @@ describe('account library (M23)', () => {
 })
 
 describe('first paint (M23)', () => {
-  it('no stylesheet from Google Fonts blocks the first paint', () => {
-    expect(appHtml).not.toMatch(/<link[^>]*rel="stylesheet"[^>]*fonts\.googleapis/)
-    expect(appHtml).not.toMatch(/<link[^>]*fonts\.googleapis[^>]*rel="stylesheet"/)
-    expect(appHtml).toMatch(/<link rel="preload" as="style" data-fonts href="https:\/\/fonts\.googleapis\.com\/css2\?[^"]*display=swap">/)
+  it('no font stylesheet blocks the first paint: the self-hosted fonts swap in (font-display: swap)', () => {
+    expect(appHtml).not.toMatch(/<link[^>]*(fonts\.googleapis|data-fonts)/)
+    const fonts = fs.readFileSync(path.join(root, 'src/styles/fonts.css'), 'utf8')
+    const faces = fonts.match(/@font-face\s*\{[^}]*\}/g)
+    expect(faces.length).toBeGreaterThan(0)
+    for (const f of faces) expect(f).toContain('font-display: swap;')
   })
   it('#root says "Loading JEZ Tax Suite…" until the app starts', () => {
     expect(appHtml).toContain('<div id="root"><p class="boot" role="status">Loading JEZ Tax Suite…</p></div>')

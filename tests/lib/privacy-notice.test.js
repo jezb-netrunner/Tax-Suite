@@ -74,10 +74,11 @@ describe('H14 Privacy Notice page', () => {
     expect(accounts).toMatch(/Supabase[^.]*\[REGION\]/)
   })
 
-  it('names every recipient: GitHub Pages hosting logs, Google Fonts, Supabase in accounts mode', () => {
+  it('names every recipient: GitHub Pages hosting logs, Supabase in accounts mode (fonts are self-hosted: no Google)', () => {
     expect(local).toContain('GitHub Pages')
     expect(local).toContain('IP address')
-    expect(local).toContain('Google Fonts')
+    expect(local).not.toMatch(/Google/)
+    expect(accounts).not.toMatch(/Google/)
     expect(local).toMatch(/Supabase \(accounts only\)/)
   })
 

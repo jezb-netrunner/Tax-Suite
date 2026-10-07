@@ -1,6 +1,8 @@
 // L18: every built page carries a Content-Security-Policy <meta> tag. Inline
-// blocks are allowed by hash only, Google Fonts only while app.html uses them,
-// and the Supabase project only in an accounts build.
+// blocks are allowed by hash only, and the Supabase project only in an
+// accounts build. Follow-up: the fonts are self-hosted, so no CSP names Google
+// Fonts: the hosted page loads its fonts from its own origin (font-src
+// 'self'), and the single file loads none (font-src 'none').
 import { describe, it, expect } from 'vitest'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -14,10 +16,13 @@ const appHtml = fs.readFileSync(path.join(root, 'app.html'), 'utf8')
 const hash = text => `'sha256-${crypto.createHash('sha256').update(text, 'utf8').digest('base64')}'`
 const cspOf = html => (html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)">/) || [])[1]
 
-const SHELL = '<!DOCTYPE html><html><head>\n<meta charset="utf-8">\n<link rel="preload" as="style" data-fonts href="https://fonts.googleapis.com/css2?family=X">\n' +
+const SHELL = '<!DOCTYPE html><html><head>\n<meta charset="utf-8">\n' +
   '<style>.boot{color:#2a4d62}</style>\n<script type="module" crossorigin src="./assets/app.js"></script>\n' +
   '<link rel="stylesheet" crossorigin href="./assets/app.css">\n</head><body><div id="root"></div></body></html>'
-const ASSETS = { './assets/app.js': 'document.title="x"', './assets/app.css': 'body{margin:0}' }
+// The built CSS, as Vite minifies it: the self-hosted @font-face rules first.
+const FONT_FACES = '@font-face{font-family:Schibsted Grotesk;font-style:normal;font-display:swap;font-weight:400;src:url(./schibsted-grotesk-latin-400-normal-abc.woff2) format("woff2")}' +
+  '@font-face{font-family:IBM Plex Mono;font-style:normal;font-display:swap;font-weight:600;src:url(./ibm-plex-mono-latin-600-normal-def.woff2) format("woff2")}'
+const ASSETS = { './assets/app.js': 'document.title="x"', './assets/app.css': FONT_FACES + 'body{margin:0}' }
 const read = rel => ASSETS[rel] ?? null
 
 describe('Content-Security-Policy (L18)', () => {
@@ -29,14 +34,14 @@ describe('Content-Security-Policy (L18)', () => {
     expect(contentSecurityPolicy()).toBe("default-src 'self'; script-src 'self'; style-src 'self'; font-src 'none'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'")
   })
 
-  it('the single file allows only its own inlined script and styles, plus Google Fonts', () => {
+  it('the single file allows only its own inlined script and styles, and no fonts (it uses the system fonts)', () => {
     const out = singleFileHtml(SHELL, read)
     const csp = cspOf(out)
     expect(csp).toBe([
       "default-src 'self'",
       `script-src ${hash('\ndocument.title="x"\n')}`,
-      `style-src ${hash('.boot{color:#2a4d62}')} ${hash('\nbody{margin:0}\n')} https://fonts.googleapis.com`,
-      'font-src https://fonts.gstatic.com',
+      `style-src ${hash('.boot{color:#2a4d62}')} ${hash('\nbody{margin:0}\n')}`,
+      "font-src 'none'",
       "img-src 'self' data:",
       "connect-src 'self'",
       "object-src 'none'",
@@ -45,21 +50,34 @@ describe('Content-Security-Policy (L18)', () => {
     ].join('; '))
     expect(csp).not.toMatch(/unsafe-inline|unsafe-eval/)
     // The tag sits right after <meta charset>, before anything it governs.
-    expect(out.indexOf('Content-Security-Policy')).toBeLessThan(out.indexOf('<link rel="preload"'))
+    expect(out.indexOf('Content-Security-Policy')).toBeLessThan(out.indexOf('<style>'))
+    // The font files are not embedded (size), and no @font-face points at them.
+    expect(out).not.toContain('@font-face')
+    expect(out).not.toContain('.woff2')
   })
 
-  it('the hosted multi-file page allows its own files and the inline loading style', () => {
-    const csp = cspOf(multiFileHtml(SHELL))
+  it('the hosted multi-file page allows its own files, its own fonts and the inline loading style', () => {
+    const csp = cspOf(multiFileHtml(SHELL, { readAsset: read }))
     expect(csp).toContain("script-src 'self';")
-    expect(csp).toContain(`style-src 'self' ${hash('.boot{color:#2a4d62}')} https://fonts.googleapis.com;`)
+    expect(csp).toContain(`style-src 'self' ${hash('.boot{color:#2a4d62}')};`)
+    expect(csp).toContain("font-src 'self';")
     expect(csp).not.toMatch(/unsafe-inline|unsafe-eval/)
   })
 
-  it('Google Fonts is allowed only while the page uses it', () => {
-    const noFonts = SHELL.replace(/<link rel="preload"[^>]*>\n/, '')
-    const csp = cspOf(singleFileHtml(noFonts, read))
-    expect(csp).not.toContain('fonts.googleapis.com')
-    expect(csp).toContain("font-src 'none'")
+  it('no CSP names Google Fonts; font-src is \'self\' only when the CSS has @font-face', () => {
+    const noFonts = { ...ASSETS, './assets/app.css': 'body{margin:0}' }
+    const pages = [
+      singleFileHtml(SHELL, read), multiFileHtml(SHELL, { readAsset: read }), multiFileHtml(SHELL),
+      multiFileHtml(SHELL, { readAsset: rel => noFonts[rel] ?? null }),
+    ]
+    for (const page of pages) expect(cspOf(page)).not.toMatch(/googleapis|gstatic/)
+    expect(cspOf(pages[2])).toContain("font-src 'none'")
+    expect(cspOf(pages[3])).toContain("font-src 'none'")
+  })
+
+  it('the real app.html loads nothing from Google (no font link, preload or preconnect)', () => {
+    expect(appHtml).not.toMatch(/googleapis|gstatic|rel="preconnect"/)
+    expect(cspOf(multiFileHtml(appHtml))).not.toMatch(/googleapis|gstatic/)
   })
 
   it('the Supabase project is allowed only in an accounts build', () => {
