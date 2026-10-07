@@ -1070,13 +1070,14 @@
     {
       "id": "lgu-cedula",
       "title": "Pay community tax (cedula)",
-      "desc": "Annual community tax for individuals in business and corporations.",
+      "desc": "Yearly community tax for individuals who work for an employer, run a business or practice a profession, and for corporations.",
       "form": "CTC",
       "agency": "LGU",
       "category": "registration",
       "appliesTo": {
-        "allOf": [
-          "business"
+        "anyOf": [
+          "business",
+          "type:employee"
         ]
       },
       "schedule": {
@@ -1086,10 +1087,11 @@
         "periodBasis": "current_year"
       },
       "legalBasis": [
-        "Local Government Code (RA 7160) Secs 156-164"
+        "Local Government Code (RA 7160) Secs 156-164",
+        "Local Government Code (RA 7160) Sec 157 (individuals regularly employed on a wage or salary)"
       ],
-      "confidence": "verified",
-      "notes": "Accrues January 1; payable without interest until the last day of February."
+      "confidence": "needs_review",
+      "notes": "Accrues January 1; payable without interest until the last day of February. Employees are included because LGC Sec 157 covers individuals regularly employed on a wage or salary for at least 30 consecutive working days in the year (the Code text was not re-checked for this release, so this is flagged for review)."
     },
     {
       "id": "lgu-ptr",
