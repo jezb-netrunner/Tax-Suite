@@ -23,8 +23,21 @@
 //   ongoing            — no dates; surfaces on the compliance checklist
 //   info               — no dates; informational only
 
-import { iso, fromISO, mkDate, lastDayOfMonth, addDays, shiftToBusinessDay, taxableYearQuarters, isWeekend } from './dates.js'
+import { iso, fromISO, mkDate, lastDayOfMonth, addDays, shiftToBusinessDay, taxableYearQuarters, isWeekend, previousBusinessDay, nonWorkingReason } from './dates.js'
 import { profileFlags, obligationApplies } from './profile.js'
+import holidayRules from '../data/rules/holidays.json'
+
+// Weekend/holiday policy per agency (holidays.json rollOverByAgency):
+//   next_working_day — the deadline moves to the next working day (BIR, SSS,
+//                      PhilHealth, Pag-IBIG)
+//   statutory_date   — the date set by law is shown as is, with the agency's
+//                      note (LGU, SEC, DOLE); an agency missing from the list
+//                      is treated the same way, the conservative choice
+// Obligations marked noWeekendShift (13th-month pay, e-invoicing) never move
+// later whatever the agency ('never_later', with noShiftNote).
+const ROLL_OVER = holidayRules.rollOverByAgency
+const NO_SHIFT_NOTE = holidayRules.noShiftNote
+const STATUTORY_NOTE = ROLL_OVER.LGU.note
 
 function resolveDay(year, month, day) {
   return day === 'last' ? lastDayOfMonth(year, month) : mkDate(year, month, day)
@@ -128,21 +141,31 @@ const SHIFT_LOOKBACK_DAYS = 21
  * Generate the personalized deadline list.
  * @param {Array} obligations  rules from obligations.json
  * @param {Object} profile     taxpayer profile
- * @param {Object} opts        { from, to, holidays: Set<iso>, shift: true }
- * @returns [{ id, obligation, date, rawDate, shifted, label, period, daysAway }]
+ * @param {Object} opts        { from, to, holidays (Set<iso> or holiday calendar),
+ *                              refDate, rollOver (default: the rulebook's policy per agency) }
+ * @returns [{ id, obligation, date, rawDate, shifted, shiftReason, label, period, daysAway,
+ *             rollOver: 'next_working_day'|'statutory_date'|'never_later',
+ *             nonWorkingDay: 'weekend'|'holiday'|null  (only when the shown date is one),
+ *             lastWorkingDayBefore: Date|null, rollNote: string|null }]
  */
-export function generateDeadlines(obligations, profile, { from, to, holidays, refDate }) {
+export function generateDeadlines(obligations, profile, { from, to, holidays, refDate, rollOver = ROLL_OVER }) {
   const flags = profileFlags(profile)
   const out = []
   const scanFrom = addDays(from, -SHIFT_LOOKBACK_DAYS)
   for (const ob of obligations) {
     if (!obligationApplies(ob.appliesTo, flags)) continue
     if (ob.schedule.kind === 'ongoing' || ob.schedule.kind === 'info') continue
+    const noShift = ob.noWeekendShift || ob.schedule.noWeekendShift
+    const agencyRule = rollOver[ob.agency]
+    const policy = noShift ? 'never_later' : (agencyRule && agencyRule.policy) || 'statutory_date'
+    const rollNote = policy === 'never_later' ? NO_SHIFT_NOTE
+      : policy === 'statutory_date' ? ((agencyRule && agencyRule.note) || STATUTORY_NOTE)
+        : null
     for (const occ of rawOccurrences(ob, profile, scanFrom, to)) {
-      const noShift = ob.noWeekendShift || ob.schedule.noWeekendShift
-      const shiftedDate = noShift ? occ.date : shiftToBusinessDay(occ.date, holidays)
+      const shiftedDate = policy === 'next_working_day' ? shiftToBusinessDay(occ.date, holidays) : occ.date
       // The effective due date decides membership in the window.
       if (shiftedDate < from || shiftedDate > to) continue
+      const nonWorkingDay = policy === 'next_working_day' ? null : nonWorkingReason(occ.date, holidays)
       out.push({
         id: `${ob.id}:${iso(occ.date)}`,
         obligation: ob,
@@ -155,6 +178,10 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
         label: occ.label,
         period: occ.period,
         daysAway: refDate ? Math.round((shiftedDate - refDate) / 86400000) : null,
+        rollOver: policy,
+        nonWorkingDay,
+        lastWorkingDayBefore: nonWorkingDay ? previousBusinessDay(occ.date, holidays) : null,
+        rollNote,
       })
     }
   }

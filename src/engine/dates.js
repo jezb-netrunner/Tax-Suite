@@ -94,6 +94,24 @@ export function shiftToBusinessDay(d, holidays) {
   return out
 }
 
+// The last working day strictly before `d` (for dates that must not move later).
+export function previousBusinessDay(d, holidays) {
+  let out = addDays(d, -1)
+  let guard = 0
+  while ((isWeekend(out) || (holidays && holidays.has(iso(out)))) && guard < 14) {
+    out = addDays(out, -1)
+    guard++
+  }
+  return out
+}
+
+// 'weekend' | 'holiday' | null for a single date.
+export function nonWorkingReason(d, holidays) {
+  if (isWeekend(d)) return 'weekend'
+  if (holidays && holidays.has(iso(d))) return 'holiday'
+  return null
+}
+
 // ---------------------------------------------------------------------------
 // Holidays.
 //

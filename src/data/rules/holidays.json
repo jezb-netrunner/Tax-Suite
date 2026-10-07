@@ -4,8 +4,18 @@
     "value": "A filing/payment deadline falling on a Saturday, Sunday, or non-working holiday moves to the next working day",
     "legalBasis": ["The rule printed in the BIR's annual Tax Calendar and form instructions ('If the due date falls on a Saturday, Sunday or holiday, the deadline shall be moved to the next working day')", "RR 26-2002 (same treatment in the eFPS staggered-filing framework)"],
     "confidence": "verified",
-    "notes": "Applied to BIR deadlines and, as the safe default, to SSS/PhilHealth/Pag-IBIG/LGU/SEC dates. Deadlines only ever move later, never earlier; weekday special non-working days (Dec 8, Dec 24, Dec 31) shift deadlines just like regular holidays; purely LOCAL holidays do not move national e-filing deadlines. The 13th-month-pay deadline is an exception — it must be met on or before Dec 24."
+    "notes": "Applied per agency (rollOverByAgency below): BIR, SSS, PhilHealth and Pag-IBIG dates move to the next working day; LGU, SEC and DOLE dates stay on the date set by law, with a note to act on the last working day before. Moved deadlines only ever move later, never earlier; weekday special non-working days (Dec 8, Dec 24, Dec 31) move deadlines just like regular holidays; purely LOCAL holidays do not move national e-filing deadlines. The 13th-month-pay deadline never moves: it must be met on or before Dec 24."
   },
+  "rollOverByAgency": {
+    "BIR": { "policy": "next_working_day", "legalBasis": ["RMC 65-2016"], "confidence": "verified", "notes": "Applies to eFPS, eBIRForms and manual filers alike." },
+    "SSS": { "policy": "next_working_day", "legalBasis": ["SSS payment-deadline rule (sss.gov.ph): a deadline on a Saturday, Sunday or holiday may be paid on the next working day"], "confidence": "verified" },
+    "PhilHealth": { "policy": "next_working_day", "legalBasis": ["PhilHealth Circular No. 0001, s. 2014"], "confidence": "verified" },
+    "Pag-IBIG": { "policy": "next_working_day", "legalBasis": ["Secondary sources only (payroll guides); no Pag-IBIG circular found"], "confidence": "needs_review" },
+    "LGU": { "policy": "statutory_date", "legalBasis": ["Local Government Code (RA 7160) Secs 139, 161 and 167 set fixed last days; no weekend roll-over rule found"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." },
+    "SEC": { "policy": "statutory_date", "legalBasis": ["SEC MC 9-2026 treats a weekend or holiday e-filing as filed on the next working day; it does not extend the deadline"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." },
+    "DOLE": { "policy": "statutory_date", "legalBasis": ["PD 851 IRR and the annual DOLE labor advisories set fixed dates; no roll-over rule found"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." }
+  },
+  "noShiftNote": "This date never moves later: if it falls on a weekend or holiday, do it on the last working day before.",
   "confidence": "needs_review",
   "confidenceByYear": {
     "2026": "verified",

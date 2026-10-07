@@ -171,6 +171,7 @@ export default function Dashboard() {
                           moved from {fmtDate(hero.rawDate)} ({hero.shiftReason})
                         </div>
                       )}
+                      <RollNote d={hero} onDark />
                     </div>
                   </div>
                 ) : (
@@ -239,6 +240,7 @@ export default function Dashboard() {
                           <AgencyTag agency={d.obligation.agency} />
                           {d.shifted && <span style={{ fontSize: '11.5px', color: 'var(--dim)' }}>moved from {fmtDate(d.rawDate)}</span>}
                         </div>
+                        <RollNote d={d} />
                       </div>
                     </div>
                   )
@@ -335,6 +337,26 @@ export default function Dashboard() {
   )
 }
 
+const fmtDay = d => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+
+// LGU, SEC and DOLE dates (and 13th-month pay) are not moved to the next
+// working day (M08). Their note is always shown; when the date itself is a
+// weekend or holiday, say so and name the last working day before it.
+function RollNote({ d, onDark }) {
+  if (!d.rollNote) return null
+  const style = { fontSize: '12px', lineHeight: 1.5, marginTop: '5px', color: onDark ? '#cdddea' : 'var(--mut)' }
+  if (!d.nonWorkingDay) return <div style={style}>{d.rollNote}</div>
+  const holiday = d.nonWorkingDay === 'holiday' ? HOLIDAY_SET.get(d.date) : null
+  const why = d.nonWorkingDay === 'weekend'
+    ? `${fmtDay(d.date)} falls on a ${d.date.toLocaleDateString('en-US', { weekday: 'long' })}.`
+    : `${fmtDay(d.date)} is a holiday${holiday ? ` (${holiday.name})` : ''}.`
+  return (
+    <div style={{ ...style, color: onDark ? '#f3cf9a' : '#7a5a1f' }}>
+      <b>{why}</b> {d.rollNote} Last working day before: <b>{fmtDay(d.lastWorkingDayBefore)}</b>.
+    </div>
+  )
+}
+
 const FREQ_LABEL = {
   monthly: 'Monthly', quarterly_fixed: 'Quarterly', quarterly_offset: 'Quarterly',
   annual_fixed: 'Annual', annual_fy: 'Annual', once: 'One-time',
@@ -353,6 +375,7 @@ function DeadlineRow({ d, showFreq }) {
           {d.obligation.desc}
           {d.shifted && <span style={{ color: 'var(--dim)' }}> · moved from {fmtDate(d.rawDate)}</span>}
         </div>
+        <RollNote d={d} />
       </div>
       {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}
       <AgencyTag agency={d.obligation.agency} />
