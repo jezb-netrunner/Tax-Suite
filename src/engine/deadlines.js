@@ -46,6 +46,62 @@ const STATUTORY_NOTE = ROLL_OVER.LGU.note
 // usual (weekend-moved) date and is shown as "Extended to <date> by <basis>".
 const OVERRIDES = obligationRules.overrides || []
 
+// ---------------------------------------------------------------------------
+// Confidence (H07, owner decision 8). Every rule in the rulebook carries
+// confidence 'verified' or 'needs_review'; needs_review rules are shown with an
+// "Unconfirmed: check with the agency" badge. A generated deadline is
+// unconfirmed when its own rule is, and also when its date was moved past a
+// weekend or holiday using a needs_review holiday list (holidays.json
+// confidenceByYear, else the file's confidence) or a needs_review weekend rule
+// of the agency (rollOverByAgency), or when it stays on a weekend or holiday
+// under a needs_review agency rule. A rule with no confidence counts as
+// unconfirmed.
+
+export const UNCONFIRMED_RULE = 'This rule is not yet confirmed from an official source.'
+
+export function unconfirmedHolidaysReason(year) {
+  return `The ${year} holiday list is not confirmed, and this date was moved past a weekend or holiday.`
+}
+
+export function unconfirmedRollOverReason(agency) {
+  return `The ${agency} rule for deadlines that fall on a weekend or holiday is not confirmed.`
+}
+
+// Confidence of the holiday list used for a year.
+export function holidayYearConfidence(year, rules = holidayRules) {
+  const byYear = rules.confidenceByYear || {}
+  return byYear[String(year)] || rules.confidence || 'needs_review'
+}
+
+// True for a needs_review (or unrated) obligation or generated deadline.
+export function isUnconfirmed(x) {
+  return !x || x.confidence !== 'verified'
+}
+
+// Plain-language reasons why an item is unconfirmed ([] when it is verified).
+// A generated deadline carries them in confidenceReasons; an obligation
+// (checklist item) only has its own rule's confidence.
+export function confidenceReasons(x) {
+  if (x && Array.isArray(x.confidenceReasons)) return x.confidenceReasons
+  return isUnconfirmed(x) ? [UNCONFIRMED_RULE] : []
+}
+
+function deadlineConfidence(ob, { rawDate, dueDate, shifted, nonWorkingDay, policy, agencyRule }) {
+  const reasons = []
+  if (isUnconfirmed(ob)) reasons.push(UNCONFIRMED_RULE)
+  if (shifted) {
+    const years = [...new Set([rawDate.getFullYear(), dueDate.getFullYear()])]
+    for (const y of years) {
+      if (holidayYearConfidence(y) !== 'verified') reasons.push(unconfirmedHolidaysReason(y))
+    }
+  }
+  const agencyMatters = (policy === 'next_working_day' && shifted) || (policy === 'statutory_date' && nonWorkingDay)
+  if (agencyMatters && (!agencyRule || agencyRule.confidence !== 'verified')) {
+    reasons.push(unconfirmedRollOverReason(ob.agency))
+  }
+  return { confidence: reasons.length ? 'needs_review' : 'verified', confidenceReasons: reasons }
+}
+
 function resolveDay(year, month, day) {
   return day === 'last' ? lastDayOfMonth(year, month) : mkDate(year, month, day)
 }
@@ -166,7 +222,8 @@ function lookbackDays(overrides) {
  *             rollOver: 'next_working_day'|'statutory_date'|'never_later',
  *             nonWorkingDay: 'weekend'|'holiday'|null  (only when the shown date is one),
  *             lastWorkingDayBefore: Date|null, rollNote: string|null,
- *             extended: { basis, from: Date (the date it replaced), notes } | null }]
+ *             extended: { basis, from: Date (the date it replaced), notes } | null,
+ *             confidence: 'verified'|'needs_review', confidenceReasons: string[] }]
  */
 export function generateDeadlines(obligations, profile, { from, to, holidays, refDate, rollOver = ROLL_OVER, overrides = OVERRIDES }) {
   const flags = profileFlags(profile)
@@ -205,6 +262,7 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
         lastWorkingDayBefore: nonWorkingDay ? previousBusinessDay(dueDate, holidays) : null,
         rollNote,
         extended: ov ? { basis: ov.basis, from: usualDate, notes: ov.notes || null } : null,
+        ...deadlineConfidence(ob, { rawDate: occ.date, dueDate, shifted, nonWorkingDay, policy, agencyRule }),
       })
     }
   }

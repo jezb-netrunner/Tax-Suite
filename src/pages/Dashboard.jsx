@@ -4,13 +4,14 @@ import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS, HOLIDAY_SET } from '../lib/deadlineData.js'
 import {
   generateDeadlines, unproclaimedYears, holidayGapNote, overdueDeadlines, OVERDUE_DAYS,
-  filedKey, filedStatus, withFiled, withFiledMany, railStatus, groupByMonth,
+  filedKey, filedStatus, withFiled, withFiledMany, railStatus, groupByMonth, isUnconfirmed,
 } from '../engine/deadlines.js'
 import { profileFlags } from '../engine/profile.js'
 import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { useProfileMarks } from '../lib/useProfileMarks.js'
 import { AgencyTag } from '../components/ui.jsx'
+import { ItemBadge, DeadlineDetails } from '../components/Confidence.jsx'
 import { PROFILE_TYPES } from '../engine/profile.js'
 
 const CATLABEL = { income: 'Income tax', business: 'Business tax', withholding: 'Withholding', payroll: 'Payroll & contributions', admin: 'Admin', registration: 'Registration' }
@@ -185,6 +186,7 @@ export default function Dashboard() {
                         <span style={{ padding: '5px 10px', borderRadius: '7px', background: 'rgba(255,255,255,.12)', fontSize: '12px', fontWeight: 600, color: '#e4eef6' }}>{hero.obligation.agency}</span>
                         {hero.label && <span style={{ padding: '5px 10px', borderRadius: '7px', background: 'rgba(255,255,255,.12)', fontSize: '12px', fontWeight: 600, color: '#e4eef6' }}>{hero.label}</span>}
                       </div>
+                      {isUnconfirmed(hero) && <div style={{ marginTop: '12px' }}><ItemBadge item={hero} onDark /></div>}
                       <button className="btn-light" onClick={() => nav('/forms')}>Read the form guide →</button>
                     </div>
                     <div className="hero-side">
@@ -275,6 +277,7 @@ export default function Dashboard() {
                               <span className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}>{fmtDate(d.date)}{d.label ? ` · ${d.label}` : ''}</span>
                             </div>
                             <div style={{ fontWeight: 600, fontSize: '14.5px', marginTop: '7px' }}>{d.obligation.title}</div>
+                            {isUnconfirmed(d) && <div style={{ marginTop: '5px' }}><ItemBadge item={d} /></div>}
                             <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>{d.obligation.desc}</div>
                             <div style={{ display: 'flex', gap: '8px', marginTop: '9px', alignItems: 'center' }}>
                               {d.obligation.form && d.obligation.form !== '—' && <span className="boxcode">{d.obligation.form}</span>}
@@ -283,6 +286,7 @@ export default function Dashboard() {
                             </div>
                             <ExtendedNote d={d} />
                             <RollNote d={d} />
+                            <DeadlineDetails d={d} />
                           </div>
                         </div>
                       )
@@ -305,6 +309,7 @@ export default function Dashboard() {
                         <td style={{ fontWeight: 600 }}>
                           {d.obligation.title}
                           {d.extended && <div style={{ fontSize: '12px', fontWeight: 400, color: 'var(--mut)' }}>Extended by {d.extended.basis}</div>}
+                          {isUnconfirmed(d) && <div style={{ marginTop: '4px', fontWeight: 400 }}><ItemBadge item={d} /></div>}
                         </td>
                         <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}>{d.obligation.form || '—'}</td>
                         <td><AgencyTag agency={d.obligation.agency} /></td>
@@ -445,6 +450,7 @@ function OverdueSection({ items, recent, profile, onMark, onMarkMany, undoRef })
               </div>
               <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{itemName(d)}</div>
+                {isUnconfirmed(d) && <div style={{ marginTop: '5px' }}><ItemBadge item={d} /></div>}
                 <div style={{ fontSize: '13px', color: 'var(--bad)', marginTop: '2px', fontWeight: 600 }}>
                   {daysOverdueLabel(d.daysOverdue)} <span style={{ color: 'var(--mut)', fontWeight: 400 }}>· was due {fmtDay(d.date)}{d.extended ? ` (extended by ${d.extended.basis})` : ''}{d.obligation.form && d.obligation.form !== '—' ? ` · ${d.obligation.form}` : ''}</span>
                 </div>
@@ -589,23 +595,28 @@ const FREQ_LABEL = {
 
 function DeadlineRow({ d, showFreq }) {
   return (
-    <div className="frow">
-      <div style={{ textAlign: 'center', flexShrink: 0, width: '44px' }}>
-        <div className="mono" style={{ fontSize: '17px', fontWeight: 600 }}>{d.date.getDate()}</div>
-        <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--dim)' }}>{fmtMonthShort(d.date)}</div>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{d.obligation.title}{d.label ? ` · ${d.label}` : ''}</div>
-        <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>
-          {d.obligation.desc}
-          {d.shifted && <span style={{ color: 'var(--dim)' }}> · moved from {fmtDate(d.rawDate)}</span>}
+    <div className="frow" style={{ display: 'block' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ textAlign: 'center', flexShrink: 0, width: '44px' }}>
+          <div className="mono" style={{ fontSize: '17px', fontWeight: 600 }}>{d.date.getDate()}</div>
+          <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--dim)' }}>{fmtMonthShort(d.date)}</div>
         </div>
-        <ExtendedNote d={d} />
-        <RollNote d={d} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{d.obligation.title}{d.label ? ` · ${d.label}` : ''}</div>
+          {isUnconfirmed(d) && <div style={{ marginTop: '5px' }}><ItemBadge item={d} /></div>}
+          <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>
+            {d.obligation.desc}
+            {d.shifted && <span style={{ color: 'var(--dim)' }}> · moved from {fmtDate(d.rawDate)}</span>}
+          </div>
+          <ExtendedNote d={d} />
+          <RollNote d={d} />
+        </div>
+        {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}
+        <AgencyTag agency={d.obligation.agency} />
+        {d.obligation.form && d.obligation.form !== '—' && <span className="boxcode">{d.obligation.form}</span>}
       </div>
-      {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}
-      <AgencyTag agency={d.obligation.agency} />
-      {d.obligation.form && d.obligation.form !== '—' && <span className="boxcode">{d.obligation.form}</span>}
+      {/* Full width under the title, so the notes stay readable on phones. */}
+      <div style={{ paddingLeft: '60px' }}><DeadlineDetails d={d} /></div>
     </div>
   )
 }

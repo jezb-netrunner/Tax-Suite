@@ -2,8 +2,9 @@ import React, { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS } from '../lib/deadlineData.js'
-import { generateChecklist, isChecked, withChecked } from '../engine/deadlines.js'
+import { generateChecklist, isChecked, withChecked, isUnconfirmed } from '../engine/deadlines.js'
 import { AgencyTag, Disclaimer } from '../components/ui.jsx'
+import { ItemBadge } from '../components/Confidence.jsx'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { useProfileMarks } from '../lib/useProfileMarks.js'
 
@@ -60,13 +61,14 @@ export default function Checklist() {
               {inCat.map(ob => (
                 <div key={ob.id} className="check-row">
                   <input type="checkbox" id={`ck-${ob.id}`} checked={isChecked(pv, ob)}
-                    aria-describedby={`ckd-${ob.id}`}
+                    aria-describedby={isUnconfirmed(ob) ? `cku-${ob.id} ckd-${ob.id}` : `ckd-${ob.id}`}
                     onChange={e => update(prof => withChecked(prof, ob.id, e.target.checked, today))}
                     style={{ width: '20px', height: '20px', margin: '1px 0 0', flexShrink: 0, accentColor: 'var(--acc)', cursor: 'pointer' }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <label htmlFor={`ck-${ob.id}`} style={{ fontWeight: 600, fontSize: '14.5px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', cursor: 'pointer' }}>
                       {ob.title}
                     </label>
+                    {isUnconfirmed(ob) && <div style={{ marginTop: '5px' }}><ItemBadge item={ob} id={`cku-${ob.id}`} /></div>}
                     <div id={`ckd-${ob.id}`} style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '3px', lineHeight: 1.55 }}>{ob.desc}</div>
                     {ob.notes && <div style={{ fontSize: '12.5px', color: 'var(--dim)', marginTop: '5px', lineHeight: 1.5 }}>{ob.notes}</div>}
                     <div className="cite" style={{ marginTop: '6px' }}>{(ob.legalBasis || []).join(' · ')}</div>
