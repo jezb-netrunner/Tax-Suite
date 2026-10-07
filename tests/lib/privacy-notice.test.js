@@ -81,6 +81,12 @@ describe('H14 Privacy Notice page', () => {
     expect(local).toMatch(/Supabase \(accounts only\)/)
   })
 
+  // M06: in accounts mode, figures not yet saved when the page is closed are
+  // kept in this browser until the next sign-in.
+  it('accounts: says unsaved figures are kept in this browser until the next sign-in', () => {
+    expect(local).toContain('If you reload or close the page before figures you typed reach your account, they are kept in this browser until you next sign in here, then saved to your account.')
+  })
+
   it('states how long data is kept', () => {
     expect(local).toContain('How long we keep it')
     expect(local).toContain('until you delete the profile, use "Erase all data on this device", or clear this site')

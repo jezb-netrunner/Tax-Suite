@@ -103,7 +103,7 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local' }) {
       <Section title="Where it is stored and who receives it">
         <ul style={LIST}>
           <li><b>This browser (local mode).</b> Profiles and figures are kept in this browser's storage on this device. They are not encrypted, and anyone who uses this browser can see them.</li>
-          <li><b>Supabase (accounts only).</b> Our database provider stores your email, hashed password and profiles in <Placeholder>{region}</Placeholder>. Each account can read only its own profiles.</li>
+          <li><b>Supabase (accounts only).</b> Our database provider stores your email, hashed password and profiles in <Placeholder>{region}</Placeholder>. Each account can read only its own profiles. If you reload or close the page before figures you typed reach your account, they are kept in this browser until you next sign in here, then saved to your account.</li>
           <li><b>GitHub Pages (hosting).</b> GitHub, which hosts this site, receives your IP address and browser details when you open the site and keeps them in its server logs.</li>
           <li><b>Google Fonts.</b> While the app loads its fonts from Google, Google receives your IP address and browser details.</li>
         </ul>

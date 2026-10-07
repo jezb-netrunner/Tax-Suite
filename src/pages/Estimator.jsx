@@ -76,7 +76,9 @@ const NOTE_STYLE = { marginTop: '12px', fontSize: '12.5px', color: 'var(--ink)',
 //    be saved (figuresToShow). Two tabs on the same mode then keep each
 //    other's figures.
 //  - M06: save pending figures at once when the page is hidden, closed or
-//    reloaded, and when the estimator is left (createInputSaver).
+//    reloaded, and when the estimator is left (createInputSaver). In accounts
+//    mode they are also kept in this browser until the account has them, and
+//    saved after the next sign-in if the page went away first.
 //  - M06: a failed save shows "Couldn't save your figures." (SaveNotice).
 function useInputs(app, key) {
   const profileId = app.active?.id ?? null
@@ -95,6 +97,11 @@ function useInputs(app, key) {
       save: changes => appRef.current.updateProfile(profileId, p => withChangedInputs(p, key, changes)),
       onError: e => appRef.current.reportSaveProblem(e),
       onSettled: () => setSavesDone(n => n + 1),
+      // M06 (accounts mode only; the backend does nothing in local mode).
+      stash: {
+        write: values => (appRef.current.stashFigures ? appRef.current.stashFigures(profileId, key, values) : null),
+        clear: stamp => { if (appRef.current.clearStashedFigures) appRef.current.clearStashedFigures(profileId, key, stamp) },
+      },
     })
     saver.current = s
     return () => {

@@ -7,8 +7,9 @@ import { createContext, useContext, useEffect, useMemo, useState, useCallback, u
 import {
   hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
   localLeftovers, importLocalProfiles, eraseLocalLeftovers, openedFromRecoveryLink, emailLinkError,
-  updateProfile as updateStoredProfile, watchProfileChanges,
+  updateProfile as updateStoredProfile, watchProfileChanges, stashFigures, clearStashedFigures, replayStashedFigures,
 } from '../lib/backend.js'
+import { figuresNotSaved } from '../lib/inputSaver.js'
 
 const Ctx = createContext(null)
 
@@ -102,6 +103,20 @@ export function AppStateProvider({ children }) {
 
   useEffect(() => { setLeftovers(hasCloud && userId ? localLeftovers() : []) }, [userId])
 
+  // M06 (accounts mode): estimator figures kept in this browser because the
+  // page was reloaded or closed before they reached the account are saved now,
+  // after sign-in; a failure shows "Couldn't save your figures." (SaveNotice).
+  useEffect(() => {
+    if (!hasCloud || !authReady || !userId) return undefined
+    let current = true
+    replayStashedFigures(userId).then(r => {
+      if (!current) return
+      if (r.saved) refreshProfiles({ background: true })
+      if (r.problems.length) setSaveProblem(figuresNotSaved(r.problems[0]))
+    })
+    return () => { current = false }
+  }, [authReady, userId, refreshProfiles])
+
   const active = useMemo(
     () => profiles.find(p => p.id === activeId) || profiles[0] || null,
     [profiles, activeId]
@@ -142,6 +157,10 @@ export function AppStateProvider({ children }) {
         await refreshProfiles({ background: true })
       }
     },
+    // M06 (accounts mode): a browser copy of figures not yet saved, taken when
+    // the page is hidden or closed (see createInputSaver's stash).
+    stashFigures(profileId, key, values) { return stashFigures({ userId, profileId, key, values }) },
+    clearStashedFigures(profileId, key, stamp) { clearStashedFigures({ userId, profileId, key, stamp }) },
     saveProblem,
     reportSaveProblem(e) { setSaveProblem(e || null) },
     clearSaveProblem() { setSaveProblem(null) },

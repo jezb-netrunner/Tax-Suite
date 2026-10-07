@@ -14,6 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { iso, manilaToday } from '../engine/dates.js'
+import { withChangedInputs } from '../engine/profile.js'
 import { isRecoveryLink, authLinkError } from './auth.js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
@@ -33,6 +34,9 @@ export const emailLinkError = startHref ? authLinkError(startHref) : null
 export const LOCAL_PREFIX = 'pv.'
 export const LS_KEY = 'pv.profiles.v1'
 export const ACTIVE_KEY = 'pv.activeProfile.v1'
+// M06 (accounts mode): estimator figures not yet saved to the account when the
+// page was hidden or closed, kept here until the next load after sign-in.
+export const PENDING_FIGURES_KEY = 'pv.pendingFigures.v1'
 
 // "Download my data" file name, dated in Manila.
 export function exportFileName(now = new Date()) {
@@ -227,6 +231,75 @@ export function createBackend({ client = null, storage } = {}) {
     throw conflictError()
   }
 
+  // M06 (accounts mode): saving to the account is a read and then a
+  // conditional write over the network, which cannot finish while the page is
+  // being reloaded or closed. stashFigures keeps the figures not yet saved in
+  // this browser, synchronously, inside the pagehide / visibilitychange event;
+  // each { userId, profileId, key } has one entry, later changes merged in. It
+  // returns a stamp for clearStashedFigures, which removes the entry once the
+  // save succeeded, unless newer figures were kept since. replayStashedFigures
+  // runs on the next load after sign-in. Local mode needs none of this: its
+  // save is done inside the event, so stashFigures does nothing there.
+  function readStash() {
+    try {
+      const list = JSON.parse(store().getItem(PENDING_FIGURES_KEY) || '[]')
+      return Array.isArray(list) ? list.filter(e => e && typeof e === 'object') : []
+    } catch { return [] }
+  }
+  function writeStash(list) {
+    if (list.length) store().setItem(PENDING_FIGURES_KEY, JSON.stringify(list))
+    else store().removeItem(PENDING_FIGURES_KEY)
+  }
+  const sameEntry = (e, w) => e.userId === w.userId && e.profileId === w.profileId && e.key === w.key
+  let stashCount = 0
+
+  function stashFigures({ userId, profileId, key, values }) {
+    if (!cloud || !profileId || !key) return null
+    try {
+      const list = readStash()
+      const where = { userId, profileId, key }
+      const i = list.findIndex(e => sameEntry(e, where))
+      const stamp = `${Date.now()}-${++stashCount}`
+      const entry = { ...where, values: { ...(i >= 0 ? list[i].values : {}), ...values }, stamp }
+      if (i >= 0) list[i] = entry
+      else list.push(entry)
+      writeStash(list)
+      return stamp
+    } catch {
+      return null // storage blocked or full: the account save still runs
+    }
+  }
+
+  function clearStashedFigures({ userId, profileId, key, stamp }) {
+    try {
+      const list = readStash()
+      const left = list.filter(e => !(sameEntry(e, { userId, profileId, key }) && e.stamp === stamp))
+      if (left.length !== list.length) writeStash(left)
+    } catch { /* nothing to clear */ }
+  }
+
+  // Saves this user's kept figures onto the newest stored profiles. Entries
+  // saved, or whose profile was deleted meanwhile, are removed; entries that
+  // failed for another reason stay for the next load. Returns
+  // { saved, problems: [Error] }.
+  async function replayStashedFigures(userId) {
+    const result = { saved: 0, problems: [] }
+    if (!cloud || !userId) return result
+    for (const e of readStash().filter(x => x.userId === userId)) {
+      let drop
+      try {
+        await updateProfile(userId, e.profileId, p => withChangedInputs(p, e.key, e.values || {}))
+        result.saved++
+        drop = true
+      } catch (err) {
+        result.problems.push(err)
+        drop = err && err.code === 'profile-gone'
+      }
+      if (drop) clearStashedFigures(e)
+    }
+    return result
+  }
+
   async function deleteProfile(userId, id) {
     if (!cloud) {
       localSave(localLoad().filter(p => p.id !== id))
@@ -327,7 +400,7 @@ export function createBackend({ client = null, storage } = {}) {
 
   return {
     hasCloud: cloud, listProfiles, saveProfile, updateProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
-    localLeftovers, importLocalProfiles, eraseLocalLeftovers,
+    localLeftovers, importLocalProfiles, eraseLocalLeftovers, stashFigures, clearStashedFigures, replayStashedFigures,
   }
 }
 
@@ -343,3 +416,6 @@ export const deleteOwnAccount = (...a) => app.deleteOwnAccount(...a)
 export const localLeftovers = (...a) => app.localLeftovers(...a)
 export const importLocalProfiles = (...a) => app.importLocalProfiles(...a)
 export const eraseLocalLeftovers = (...a) => app.eraseLocalLeftovers(...a)
+export const stashFigures = (...a) => app.stashFigures(...a)
+export const clearStashedFigures = (...a) => app.clearStashedFigures(...a)
+export const replayStashedFigures = (...a) => app.replayStashedFigures(...a)
