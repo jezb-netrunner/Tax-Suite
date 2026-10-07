@@ -1,16 +1,34 @@
 {
   "$comment": "Civil penalties for late filing/payment + EOPT taxpayer classification.",
   "surcharge": {
-    "value": { "standard": 0.25, "willfulNeglect": 0.50, "microSmall": 0.10 },
+    "value": { "standard": 0.25, "willfulNeglect": 0.50, "microSmall": 0.10, "microSmallFrom": "2024-01-22" },
     "legalBasis": ["NIRC Sec 248", "RA 11976 (EOPT); reduced 10% surcharge for micro & small taxpayers", "RR 6-2024"],
     "confidence": "verified",
-    "notes": "EOPT also removed the 25% surcharge for filing at the wrong venue. The 50% surcharge covers willful neglect to file AND willfully false/fraudulent returns (underdeclaring sales by more than 30% or overstating deductions by more than 30% is prima facie fraud) and is NOT reduced for micro/small taxpayers (only the 25% drops to 10%). The 25% also applies to unpaid deficiency assessments and partial payments, not just late returns."
+    "notes": "The reduced 10% applies to micro & small taxpayers for returns due on or after Jan 22, 2024, when EOPT took effect (it is not retroactive); returns due earlier keep 25%. EOPT also removed the 25% surcharge for filing at the wrong venue. The 50% surcharge covers willful neglect to file AND willfully false/fraudulent returns (underdeclaring sales by more than 30% or overstating deductions by more than 30% is prima facie fraud) and is NOT reduced for micro/small taxpayers (only the 25% drops to 10%). The 25% also applies to unpaid deficiency assessments and partial payments, not just late returns."
   },
   "interest": {
-    "value": { "standardAnnualRate": 0.12, "microSmallAnnualRate": 0.06, "convention": "simple interest, actual days / 365" },
-    "legalBasis": ["NIRC Sec 249, as amended by RA 10963 (double the BSP legal rate of 6%)", "RR 21-2018", "NIRC Sec 249(D) (no simultaneous deficiency + delinquency interest)", "RA 11976 (EOPT); 50% of the rate for micro & small taxpayers"],
+    "value": {
+      "standardAnnualRate": 0.12,
+      "standardFrom": "2018-01-01",
+      "priorAnnualRate": 0.20,
+      "microSmallAnnualRate": 0.06,
+      "microSmallFrom": "2024-01-22"
+    },
+    "legalBasis": ["NIRC Sec 249, as amended by RA 10963 (double the BSP legal rate of 6%)", "NIRC Sec 249 before RA 10963 (20% a year, for days before Jan 1, 2018)", "RR 21-2018", "NIRC Sec 249(D) (no simultaneous deficiency + delinquency interest)", "RA 11976 (EOPT); 50% of the rate for micro & small taxpayers"],
     "confidence": "verified",
-    "notes": "12% per annum confirmed current as of Aug 2026 (in force since TRAIN, 2018). Deficiency and delinquency interest never run simultaneously."
+    "notes": "12% per annum confirmed current as of Aug 2026 (in force since TRAIN, Jan 1, 2018); days before Jan 1, 2018 are charged at the old 20%, so a period that spans that date is split. Micro & small taxpayers pay 6% on returns due on or after Jan 22, 2024 (EOPT is not retroactive). Deficiency and delinquency interest never run simultaneously."
+  },
+  "interestDayCount": {
+    "value": { "daysInYear": 365, "startsAfter": "rolledDueDate", "convention": "simple interest, actual days / 365" },
+    "legalBasis": ["NIRC Sec 249(A) (interest runs from the date prescribed for payment until full payment)", "RR 21-2018", "RMC 65-2016 (a deadline on a weekend or holiday moves to the next working day)"],
+    "confidence": "needs_review",
+    "notes": "Interest counts each day from the day after the due date through the payment date. When the due date falls on a weekend or holiday it first moves to the next working day, and interest counts from the day after that working day (RMC 65-2016). Days are divided by 365, also in leap years: this is a default not yet confirmed against the RR 21-2018 illustrations or eBIRForms (on a 366-day basis, a year late across Feb 29 gives ₱12,000.00 instead of ₱12,032.88 per ₱100,000 at 12%). When the rate changes during the period (20% to 12% on Jan 1, 2018), each part is computed and rounded to the centavo separately and the parts are added."
+  },
+  "eoptTransition": {
+    "value": { "reducedRatesBasis": "rolledDueDate", "taxDueBeforeStillUnpaid": "dueDateRatesForWholePeriod" },
+    "legalBasis": ["RA 11976 (EOPT), effective Jan 22, 2024 (prospective)", "RR 6-2024 (effective Apr 27, 2024)"],
+    "confidence": "needs_review",
+    "notes": "Micro & small taxpayers get the 10% surcharge and 6% interest only for returns due on or after Jan 22, 2024 (the due date after moving off a weekend or holiday). Default not yet confirmed: tax that fell due before Jan 22, 2024 and is still unpaid after it keeps the rates in force on its due date (25% surcharge, 12% interest) for the whole period, with no switch to 6%. Also unconfirmed: whether returns due between Jan 22 and Apr 26, 2024 (before RR 6-2024 took effect) get the reduced rates; the calculator gives them."
   },
   "compromiseTiers": {
     "value": [

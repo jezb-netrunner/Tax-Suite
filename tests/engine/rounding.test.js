@@ -220,28 +220,29 @@ describe('payroll lines are centavo-exact', () => {
 })
 
 describe('penalty lines are centavo-exact and the total is their sum', () => {
-  it('TB:W17 ₱12,345.67, 30 days, medium/large: total ₱20,553.86', () => {
-    const r = estimatePenalty({ taxDue: 12345.67, daysLate: 30, microSmall: false })
+  it('TB:W17 ₱12,345.67, 30 days (Apr 15 -> May 15, 2026), medium/large: total ₱20,553.86', () => {
+    const r = estimatePenalty({ taxDue: 12345.67, dueDate: '2026-04-15', paymentDate: '2026-05-15', microSmall: false })
     expect(r.surcharge).toBe(3086.42)
     expect(r.interest).toBe(121.77)
     expect(r.compromise).toBe(5000)
     expect(r.total).toBe(20553.86)
   })
-  it('TB:W12 ₱33,333, 17 days: total ₱51,852.55', () => {
-    const r = estimatePenalty({ taxDue: 33333, daysLate: 17 })
+  it('TB:W12 ₱33,333, 17 days (Apr 15 -> May 2, 2026): total ₱51,852.55', () => {
+    const r = estimatePenalty({ taxDue: 33333, dueDate: '2026-04-15', paymentDate: '2026-05-02' })
     expect(r.surcharge).toBe(8333.25)
     expect(r.interest).toBe(186.3)
     expect(r.total).toBe(51852.55)
   })
-  it('TB:W13 ₱5,000,001, 365 days: total ₱6,900,001.37', () => {
-    const r = estimatePenalty({ taxDue: 5000001, daysLate: 365 })
+  it('TB:W13 ₱5,000,001, 365 days (Apr 15, 2025 -> Apr 15, 2026): total ₱6,900,001.37', () => {
+    const r = estimatePenalty({ taxDue: 5000001, dueDate: '2025-04-15', paymentDate: '2026-04-15' })
     expect(r.surcharge).toBe(1250000.25)
     expect(r.interest).toBe(600000.12)
     expect(r.compromise).toBe(50000)
     expect(r.total).toBe(6900001.37)
   })
-  it('huge amounts stay exact (BigInt): ₱999,999,999,999.99 × 12% × 3,650 days', () => {
-    const r = estimatePenalty({ taxDue: 999999999999.99, daysLate: 3650 })
+  it('huge amounts stay exact (BigInt): ₱999,999,999,999.99 × 12% × 3,650 days (Jan 2, 2018 -> Dec 31, 2027)', () => {
+    const r = estimatePenalty({ taxDue: 999999999999.99, dueDate: '2018-01-02', paymentDate: '2027-12-31' })
+    expect(r.daysLate).toBe(3650)
     expect(r.interest).toBe(1199999999999.99)
   })
 })
