@@ -22,6 +22,8 @@ const PCT_RATE = businessTax.percentageTaxRate.value
  *   opex            deductible operating expenses
  *   totalAssets     total assets excluding land (for the 20% small-corp test)
  *   cwt             creditable withholding (2307s)
+ *   quarterlyPaid   income tax already paid on this year's 1702Q returns
+ *   priorYearCredits excess credits carried over from last year's annual return
  *   registrationYear  year operations began (MCIT from the 4th year after)
  *   taxYear         taxable year being estimated
  *   vatRegistered
@@ -37,13 +39,22 @@ export function estimateCorporation(in_) {
   const costOfSalesC = line(in_.costOfSales)
   const opexC = line(in_.opex)
   const cwtC = line(in_.cwt)
+  // H06: credits against the annual 1702-RT. Quarterly 1702Q amounts are
+  // entered by the user; this estimator does not compute them.
+  const quarterlyPaidC = line(in_.quarterlyPaid)
+  const priorYearCreditsC = line(in_.priorYearCredits)
+  const creditItems = [
+    { label: 'Less: creditable tax withheld (2307s)', c: cwtC },
+    { label: 'Less: income tax paid on this year\'s quarterly returns (1702Q)', c: quarterlyPaidC },
+    { label: 'Less: excess credits carried over from last year', c: priorYearCreditsC },
+  ].filter(x => x.c > 0)
+  const creditsC = creditItems.reduce((t, x) => t + x.c, 0)
   const grossIncomeC = Math.max(0, grossSalesC - costOfSalesC)
   const taxableIncomeC = Math.max(0, grossIncomeC - opexC)
 
   const grossSales = P(grossSalesC)
   const costOfSales = P(costOfSalesC)
   const opex = P(opexC)
-  const cwt = P(cwtC)
   const grossIncome = P(grossIncomeC)
   const taxableIncome = P(taxableIncomeC)
 
@@ -100,9 +111,9 @@ export function estimateCorporation(in_) {
   r('Income tax due', incomeTaxDue, { strong: true, rule: true })
   if (!vat && pct > 0) r('Percentage tax (3% of gross)', pct, { strong: true, sub: 'Non-VAT corporation under the ₱3M threshold (Form 2551Q).' })
   if (vat) r('Value-added tax', null, { sub: 'VAT (12%) is computed separately on sales less creditable input VAT.' })
-  if (cwt > 0) {
-    r('Less: creditable tax withheld (2307s)', -cwt)
-    const net = P(incomeTaxDueC - cwtC)
+  if (creditsC > 0) {
+    for (const x of creditItems) r(x.label, -P(x.c))
+    const net = P(incomeTaxDueC - creditsC)
     if (net >= 0) r('Income tax still payable', net, { strong: true })
     else r('Overpayment: refund or carry over', -net, { strong: true, sub: 'The carry-over election, once made on the annual return, is irrevocable (NIRC Sec 76).' })
   }
@@ -120,7 +131,8 @@ export function estimateCorporation(in_) {
     pct,
     vat,
     overThreshold,
-    netPayable: P(incomeTaxDueC - cwtC),
+    credits: P(creditsC),
+    netPayable: P(incomeTaxDueC - creditsC),
     totalAnnualTax: P(incomeTaxDueC + pctC),
     rows,
     references: [...corp.rcit.legalBasis, ...corp.mcit.legalBasis],

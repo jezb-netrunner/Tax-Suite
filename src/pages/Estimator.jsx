@@ -91,6 +91,7 @@ function IndividualEstimator({ app, mixed }) {
     vatRegistered: p.vatRegistered, mixed,
     compensationTaxable: mixed ? v.compensationTaxable : 0,
     compensationWithheld: mixed ? v.compensationWithheld : 0,
+    quarterlyPaid: v.quarterlyPaid, priorYearCredits: v.priorYearCredits,
   }), [v, p.vatRegistered, mixed])
 
   return (
@@ -102,7 +103,12 @@ function IndividualEstimator({ app, mixed }) {
           <NumField label="Tax withheld by clients (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
           {mixed && <NumField label="Taxable compensation · year" value={v.compensationTaxable} onChange={x => set('compensationTaxable', x)} prefix="₱" hint="After mandatory contributions and non-taxable benefits; see box 21 of your 2316." />}
           {mixed && <NumField label="Tax withheld by employer" value={v.compensationWithheld} onChange={x => set('compensationWithheld', x)} prefix="₱" />}
+          <NumField label="Income tax already paid on this year's quarterly returns (1701Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
+          <NumField label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
+        <p className="cite" style={{ marginTop: '14px' }}>
+          Quarterly amounts are not computed here. Enter the income tax you have already paid on this year's 1701Q returns, and it is subtracted from what you pay with the annual return.
+        </p>
       </div>
 
       {r.overThreshold && (
@@ -213,6 +219,9 @@ function FormPreview({ r }) {
             <span className="mono" style={{ fontSize: '13.5px', fontWeight: 600 }}>{separate.value}</span>
           </div>
         )}
+        {!ar.creditLines.some(c => c.label.includes('1701Q')) && (
+          <p className="cite" style={{ marginTop: '10px' }}>This is before any income tax paid on this year's 1701Q returns. Quarterly amounts are not computed here; enter what you paid above.</p>
+        )}
         <p className="cite" style={{ marginTop: '10px' }}>Line numbering varies by form revision, so amounts are labeled by meaning rather than box number.</p>
       </div>
     </div>
@@ -288,7 +297,12 @@ function CorporationEstimator({ app }) {
           <NumField label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" />
           <NumField label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint="For the 20% small-corporation test." />
           <NumField label="Creditable tax withheld (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
+          <NumField label="Income tax already paid on this year's quarterly returns (1702Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
+          <NumField label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
+        <p className="cite" style={{ marginTop: '14px' }}>
+          Quarterly amounts are not computed here. Enter the income tax already paid on this year's 1702Q returns, and it is subtracted from what you pay with the annual return (1702-RT).
+        </p>
       </div>
       <div style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
         <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
@@ -391,7 +405,7 @@ export default function Estimator() {
 
       <Disclaimer>
         These figures are estimates computed from published rates and schedules; they don't account for your
-        complete facts (special deductions, incentives, prior-year credits, local specifics) and are not tax or
+        complete facts (special deductions, incentives, local specifics) and are not tax or
         legal advice. Have a CPA review your numbers before you rely on them for filing or payment.
       </Disclaimer>
     </div>

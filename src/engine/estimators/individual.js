@@ -33,6 +33,8 @@ export function gradTax(taxable) {
  *   compensationTaxable  (mixed only) annual TAXABLE compensation — after
  *                        mandatory contributions and non-taxable benefits
  *   compensationWithheld (mixed only) tax already withheld by the employer
+ *   quarterlyPaid    income tax already paid on this year's 1701Q returns
+ *   priorYearCredits excess credits carried over from last year's annual return
  */
 export function estimateIndividual(in_) {
   const { vatRegistered = false, mixed = false } = in_
@@ -83,9 +85,16 @@ export function estimateIndividual(in_) {
   // Percentage tax is paid quarterly on Form 2551Q and never netted against them.
   const cwtC = line(in_.cwt)
   const compWithheldC = mixed ? line(in_.compensationWithheld) : 0
+  // H06: what was already paid this year on the quarterly 1701Q returns, and
+  // excess credits carried over from last year's annual return. The quarterly
+  // amounts are entered by the user; this estimator does not compute them.
+  const quarterlyPaidC = line(in_.quarterlyPaid)
+  const priorYearCreditsC = line(in_.priorYearCredits)
   const creditItems = [
     { label: 'Less: tax withheld by clients (2307s)', c: cwtC },
     { label: 'Less: tax withheld by employer', c: compWithheldC },
+    { label: 'Less: income tax paid on this year\'s quarterly returns (1701Q)', c: quarterlyPaidC },
+    { label: 'Less: excess credits carried over from last year', c: priorYearCreditsC },
   ].filter(x => x.c > 0)
   const creditsC = creditItems.reduce((t, x) => t + x.c, 0)
   const creditLines = creditItems.map(x => ({ label: x.label, value: P(x.c) }))
