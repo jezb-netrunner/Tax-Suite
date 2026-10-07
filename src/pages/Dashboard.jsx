@@ -280,7 +280,7 @@ export default function Dashboard() {
                             <div style={{ fontWeight: 600, fontSize: '14.5px', marginTop: '7px' }}>{d.obligation.title}</div>
                             {isUnconfirmed(d) && <div style={{ marginTop: '5px' }}><ItemBadge item={d} /></div>}
                             <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>{d.obligation.desc}</div>
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '9px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '9px', alignItems: 'center', flexWrap: 'wrap' }}>
                               {d.obligation.form && d.obligation.form !== '—' && <FormCode form={d.obligation.form} />}
                               <AgencyTag agency={d.obligation.agency} />
                               {d.shifted && <span style={{ fontSize: '11.5px', color: 'var(--dim)' }}>moved from {fmtDate(d.rawDate)}</span>}
@@ -594,15 +594,17 @@ const FREQ_LABEL = {
   annual_fixed: 'Annual', annual_fy: 'Annual', once: 'One-time',
 }
 
+// H15: on wide screens date | title and description | tags in one line; below
+// 720 px the tags move under the description and wrap (see .dl-row in app.css).
 function DeadlineRow({ d, showFreq }) {
   return (
-    <div className="frow" style={{ display: 'block' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{ textAlign: 'center', flexShrink: 0, width: '44px' }}>
+    <div className="frow dl-row">
+      <div className="dl-row-main">
+        <div className="dl-date">
           <div className="mono" style={{ fontSize: '17px', fontWeight: 600 }}>{d.date.getDate()}</div>
           <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--dim)' }}>{fmtMonthShort(d.date)}</div>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="dl-body">
           <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{d.obligation.title}{d.label ? ` · ${d.label}` : ''}</div>
           {isUnconfirmed(d) && <div style={{ marginTop: '5px' }}><ItemBadge item={d} /></div>}
           <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>
@@ -612,12 +614,14 @@ function DeadlineRow({ d, showFreq }) {
           <ExtendedNote d={d} />
           <RollNote d={d} />
         </div>
-        {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}
-        <AgencyTag agency={d.obligation.agency} />
-        {d.obligation.form && d.obligation.form !== '—' && <FormCode form={d.obligation.form} />}
+        <div className="dl-tags">
+          {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}
+          <AgencyTag agency={d.obligation.agency} />
+          {d.obligation.form && d.obligation.form !== '—' && <FormCode form={d.obligation.form} />}
+        </div>
       </div>
       {/* Full width under the title, so the notes stay readable on phones. */}
-      <div style={{ paddingLeft: '60px' }}><DeadlineDetails d={d} /></div>
+      <div className="dl-more"><DeadlineDetails d={d} /></div>
     </div>
   )
 }

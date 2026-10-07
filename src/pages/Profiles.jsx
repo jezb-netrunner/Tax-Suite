@@ -244,12 +244,13 @@ export default function ProfilesPage() {
           <div className="empty-note">No profiles yet. Create one to get a personalized calendar, estimates, and checklist.</div>
         )}
         {app.profiles.map(p => (
-          <div key={p.id} className="frow">
+          // H15: below 720 px the buttons move under the name (see .profile-row).
+          <div key={p.id} className="frow profile-row">
             <div className="avatar" aria-hidden="true" style={{ cursor: 'default' }}>{(p.name || '?').trim().charAt(0).toUpperCase()}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: '14.5px' }}>
+            <div className="profile-row-body">
+              <div style={{ fontWeight: 600, fontSize: '14.5px', overflowWrap: 'anywhere' }}>
                 {p.name}
-                {app.active && app.active.id === p.id && <span className="tag" style={{ marginLeft: '10px', background: 'var(--accSoft)', color: 'var(--accInk)' }}>active</span>}
+                {app.active && app.active.id === p.id && <span className="tag" style={{ marginLeft: '10px', background: 'var(--accSoft)', color: 'var(--accInk)', display: 'inline-block' }}>active</span>}
               </div>
               <div style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '2px' }}>
                 {PROFILE_TYPES[p.type]?.name}
@@ -258,12 +259,12 @@ export default function ProfilesPage() {
               </div>
             </div>
             {confirmId === p.id ? (
-              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <div className="profile-row-actions">
                 <button className="btn sm danger" onClick={async () => { await app.remove(p.id); setConfirmId(null) }}>Delete</button>
                 <button className="btn sm ghost" onClick={() => setConfirmId(null)}>Keep</button>
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <div className="profile-row-actions">
                 {(!app.active || app.active.id !== p.id) && (
                   <button className="btn sm ghost" onClick={() => app.setActive(p.id)}>Use</button>
                 )}

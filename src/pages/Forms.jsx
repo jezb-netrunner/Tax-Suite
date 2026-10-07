@@ -80,17 +80,18 @@ export default function FormsPage() {
           const isOpen = openForm === f.code
           return (
             <div key={f.code} className={isOpen ? undefined : 'click'} style={{ border: `1.5px solid ${isOpen ? 'var(--acc)' : 'var(--line)'}`, borderRadius: '13px', background: 'var(--sf)', overflow: 'hidden', transition: 'border-color .15s, box-shadow .2s' }}>
-              <div role="button" tabIndex={0} aria-expanded={isOpen}
+              {/* H15: below 720 px the code and the +/– sit on top, then the
+                  name and who files it, then the due-date text (it wraps). */}
+              <div role="button" tabIndex={0} aria-expanded={isOpen} className="form-row-head"
                 onClick={() => setOpenForm(isOpen ? null : f.code)}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenForm(isOpen ? null : f.code) } }}
-                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 18px', cursor: 'pointer' }}>
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenForm(isOpen ? null : f.code) } }}>
                 <span className="formcode">{f.code}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="form-row-body">
                   <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{f.name}</div>
                   <div style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '2px' }}>{f.who}</div>
                 </div>
-                <span className="mono" style={{ fontSize: '12px', color: 'var(--mut)', whiteSpace: 'nowrap', flexShrink: 0 }}>{f.when}</span>
-                <span className="mono" style={{ fontSize: '18px', color: 'var(--dim)', width: '16px', textAlign: 'center', flexShrink: 0 }} aria-hidden="true">{isOpen ? '–' : '+'}</span>
+                <span className="mono form-when">{f.when}</span>
+                <span className="mono form-toggle" aria-hidden="true">{isOpen ? '–' : '+'}</span>
               </div>
               {isOpen && (
                 <div className="acc-body" style={{ padding: '0 18px 18px', borderTop: '1px solid var(--line2)' }}>
