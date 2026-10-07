@@ -1,5 +1,6 @@
 // SSS / PhilHealth / Pag-IBIG monthly contribution math.
-// Parameters live in src/data/rules/contributions.json.
+// Parameters live in src/data/rules/contributions.json. Each agency has its
+// own contribution base (see employeeMandatoryDeductions below).
 //
 // Amounts are computed in whole centavos (src/lib/money.js) and each share is
 // rounded half-up to the centavo. PhilHealth: the employee share is half the
@@ -86,13 +87,31 @@ export function pagibigMonthly(monthlyComp) {
   return { base: P(p.baseC), employee: P(p.employeeC), employer: P(p.employerC) }
 }
 
+// C05: each agency has its own base (contributions.json):
+//   SSS         basic pay + regular allowances, commissions and other regular pay
+//               (RA 11199 Sec 8(f)); the MSC caps it at ₱35,000
+//   PhilHealth  basic salary (the first argument)
+//   Pag-IBIG    monthly compensation (basic + regular pay; needs_review), fund salary capped at ₱10,000
+// Without the second argument every agency uses the one figure (e.g. the
+// Tools calculator's "start from gross").
+function bases(monthlyBasic, { sssCompensation, pagibigCompensation } = {}) {
+  return {
+    sss: sssCompensation ?? monthlyBasic,
+    philhealth: monthlyBasic,
+    pagibig: pagibigCompensation ?? monthlyBasic,
+  }
+}
+
 // Mandatory employee-share deductions for withholding-tax purposes.
-export function employeeMandatoryDeductions(monthlySalary) {
-  const sss = C(sssEmployee(monthlySalary).employee)
-  const ph = philhealthC(monthlySalary).employeeC
-  const pi = pagibigC(monthlySalary).employeeC
+export function employeeMandatoryDeductions(monthlyBasic, other = {}) {
+  const b = bases(monthlyBasic, other)
+  const s = sssEmployee(b.sss)
+  const sss = C(s.employee)
+  const ph = philhealthC(b.philhealth).employeeC
+  const pi = pagibigC(b.pagibig).employeeC
   return {
     sss: P(sss),
+    sssMsc: s.msc,
     philhealth: P(ph),
     pagibig: P(pi),
     total: P(sss + ph + pi),
@@ -100,10 +119,11 @@ export function employeeMandatoryDeductions(monthlySalary) {
 }
 
 // Full employer-side cost for one employee.
-export function employerContributions(monthlySalary) {
-  const sss = C(sssEmployee(monthlySalary).employer) // includes EC
-  const ph = philhealthC(monthlySalary).employerC
-  const pi = pagibigC(monthlySalary).employerC
+export function employerContributions(monthlyBasic, other = {}) {
+  const b = bases(monthlyBasic, other)
+  const sss = C(sssEmployee(b.sss).employer) // includes EC
+  const ph = philhealthC(b.philhealth).employerC
+  const pi = pagibigC(b.pagibig).employerC
   return {
     sss: P(sss),
     philhealth: P(ph),

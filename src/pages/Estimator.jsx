@@ -421,6 +421,18 @@ function MinimumWageFields({ v, set }) {
   )
 }
 
+// C05: SSS counts regular pay; one-time or liquidated items are taxed but do
+// not count for SSS. The regular box keeps the old 'monthlyAllowances' key so
+// saved figures carry over.
+function AllowanceFields({ v, set }) {
+  return (
+    <>
+      <NumField emptyValue={null} label="Regular allowances / commissions · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" hint="Taxable pay received every month: allowances you don't liquidate, commissions and other regular pay. Counts for SSS. Leave out de minimis benefits." />
+      <NumField emptyValue={null} label="One-time or liquidated items · month" value={v.monthlyOtherTaxable} onChange={x => set('monthlyOtherTaxable', x)} prefix="₱" hint="Taxable one-time pay, or the taxable part of allowances you liquidate with receipts. Does not count for SSS." />
+    </>
+  )
+}
+
 function EmployeeEstimator({ app }) {
   const p = app.active
   const [v, set] = useInputs(app, 'employee', {})
@@ -440,7 +452,7 @@ function EmployeeEstimator({ app }) {
           {mwe
             ? <MinimumWageFields v={v} set={set} />
             : <NumField emptyValue={null} label="Monthly basic salary" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />}
-          <NumField emptyValue={null} label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" hint="Regular taxable extras, excluding de minimis benefits." />
+          <AllowanceFields v={v} set={set} />
           <NumField emptyValue={null} label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint="First ₱90,000 is tax-exempt." />
         </div>
         {p.type === 'mixed' && (
@@ -538,7 +550,7 @@ function PayrollEstimator({ app }) {
           {mwe
             ? <MinimumWageFields v={v} set={set} />
             : <NumField emptyValue={null} label="Employee monthly basic pay" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />}
-          <NumField emptyValue={null} label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" />
+          <AllowanceFields v={v} set={set} />
         </div>
       </div>
       {!hasFigures ? (

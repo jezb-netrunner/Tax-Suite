@@ -41,7 +41,14 @@ function dailyRateText(pesos) {
  *   payFactor          paid days a year: 365 | 313 | 261
  *   mweExtraPay        holiday, overtime, night-differential and hazard pay a month (MWE only; tax-free)
  *   monthlyBasic       basic monthly salary (ignored for an MWE: the minimum wage replaces it)
- *   monthlyAllowances  other taxable pay a month
+ *   monthlyAllowances  regular allowances, commissions and other regular taxable pay a month
+ *                      (counts for SSS and Pag-IBIG: C05)
+ *   monthlyOtherTaxable one-time or liquidated taxable items a month (taxed; not counted for SSS)
+ *
+ * Contribution bases (C05): SSS on basic + regular pay (+ an MWE's holiday,
+ * overtime, night-differential and hazard pay: all actual remuneration under
+ * RA 11199 Sec 8(f)); PhilHealth on basic; Pag-IBIG on the same monthly
+ * compensation as SSS before the caps (needs_review).
  *
  * Taxable pay: everything except the tax-free pay, less the employee's
  * mandatory contributions to the extent the tax-free pay does not already
@@ -57,18 +64,26 @@ export function monthlyPay(in_) {
   const basicC = mwe ? minimumWageC : C(in_.monthlyBasic || 0)
   const extraC = mwe ? C(in_.mweExtraPay || 0) : 0
   const allowancesC = C(in_.monthlyAllowances || 0)
-  const grossC = basicC + extraC + allowancesC
+  const otherTaxableC = C(in_.monthlyOtherTaxable || 0)
+  const grossC = basicC + extraC + allowancesC + otherTaxableC
   const exemptC = minimumWageC + extraC
 
-  const ded = employeeMandatoryDeductions(fromCentavos(basicC))
+  const regularPayC = basicC + extraC + allowancesC
+  const bases = { sssCompensation: fromCentavos(regularPayC), pagibigCompensation: fromCentavos(regularPayC) }
+  const ded = employeeMandatoryDeductions(fromCentavos(basicC), bases)
   const dedC = C(ded.total)
   const dedFromTaxableC = Math.max(0, dedC - exemptC)
   const taxableC = Math.max(0, grossC - exemptC - dedFromTaxableC)
   return {
-    mwe, factor, dailyRate, minimumWageC, basicC, extraC, allowancesC, grossC, exemptC,
-    ded, dedC, exemptAfterSharesC: exemptC - Math.min(dedC, exemptC), taxableC,
+    mwe, factor, dailyRate, minimumWageC, basicC, extraC, allowancesC, otherTaxableC, grossC, exemptC,
+    bases, ded, dedC, exemptAfterSharesC: exemptC - Math.min(dedC, exemptC), taxableC,
     minimumWageText: `${dailyRateText(dailyRate)} × ${factor} days ÷ 12`,
   }
+}
+
+// Shown under the SSS line on both tabs.
+export function sssBaseNote(msc) {
+  return `Monthly salary credit ${formatCentavos(toCentavos(msc)).replace(/\.00$/, '')}: basic pay plus regular allowances and commissions, up to ₱35,000 (RA 11199). One-time or liquidated items do not count.`
 }
 
 /**
@@ -100,7 +115,7 @@ export function estimatePayroll(in_) {
   const perPeriodWithholdingC = bracketTaxCentavos(table, perPeriodTaxableC)
   const monthlyWithholdingC = mulFrac(perPeriodWithholdingC, num, den)
 
-  const er = employerContributions(P(pay.basicC))
+  const er = employerContributions(P(pay.basicC), pay.bases)
   const totalCostC = payC + C(er.total)
   const monthlyTaxable = P(monthlyTaxableC)
   const perPeriodWithholding = P(perPeriodWithholdingC)
@@ -119,7 +134,7 @@ export function estimatePayroll(in_) {
   }
   r('Monthly taxable compensation', monthlyTaxable, { rule: true })
   r('Withholding tax to remit (1601-C)', monthlyWithholding, { strong: true, sub: 'Revised withholding table effective 2023; remit by the 10th of the following month (Jan 15 for December).' })
-  r('Employer SSS share (incl. EC)', er.sss)
+  r('Employer SSS share (incl. EC)', er.sss, { sub: sssBaseNote(ded.sssMsc) })
   r('Employer PhilHealth share', er.philhealth)
   r('Employer Pag-IBIG share', er.pagibig)
   r('Total employer cost this month', P(totalCostC), { strong: true, rule: true })

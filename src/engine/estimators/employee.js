@@ -9,7 +9,7 @@
 import incomeTax from '../../data/rules/income-tax.json'
 import wcomp from '../../data/rules/withholding-compensation.json'
 import { bracketTaxCentavos } from '../tax.js'
-import { monthlyPay } from './payroll.js'
+import { monthlyPay, sssBaseNote } from './payroll.js'
 import { toCentavos, fromCentavos } from '../../lib/money.js'
 
 const BR = incomeTax.graduatedBrackets.value
@@ -19,7 +19,8 @@ const TABLES = wcomp.tables.value
 /**
  * @param {Object} in_
  *   monthlyBasic       basic monthly salary
- *   monthlyAllowances  other TAXABLE monthly compensation (de minimis excluded)
+ *   monthlyAllowances  regular TAXABLE allowances / commissions a month (count for SSS; de minimis excluded)
+ *   monthlyOtherTaxable one-time or liquidated TAXABLE items a month (do not count for SSS)
  *   bonusesAnnual      13th month + other benefits for the year (cash)
  *   mwe, mweDailyRate, payFactor, mweExtraPay
  *                      minimum wage earner: statutory daily rate × paid days a
@@ -58,8 +59,9 @@ export function estimateEmployee(in_) {
   } else {
     r('Monthly basic pay', P(pay.basicC))
   }
-  if (pay.allowancesC) r('Taxable allowances / other pay', P(pay.allowancesC))
-  r('Less: SSS employee share', -ded.sss)
+  if (pay.allowancesC) r('Regular allowances / commissions', P(pay.allowancesC))
+  if (pay.otherTaxableC) r('One-time or liquidated items', P(pay.otherTaxableC))
+  r('Less: SSS employee share', -ded.sss, { sub: sssBaseNote(ded.sssMsc) })
   r('Less: PhilHealth employee share', -ded.philhealth)
   r('Less: Pag-IBIG employee share', -ded.pagibig)
   if (pay.mwe) {

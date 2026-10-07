@@ -13,9 +13,10 @@
         { "mscBelow": 15000, "amount": 10 },
         { "mscBelow": null, "amount": 30 }
       ],
-      "selfEmployedRate": 0.15
+      "selfEmployedRate": 0.15,
+      "compensationBase": "basic pay plus regular allowances, commissions and other regular pay (all actual remuneration), capped by the ₱35,000 MSC; one-time or liquidated items excluded"
     },
-    "legalBasis": ["RA 11199 (Social Security Act of 2018) Sec 4; 15% is the final scheduled step, in force since 2025", "SSS Circular 2024-006 (employers) and companions 2024-007/008/009/010; the 2025 schedule, still operative for 2026"],
+    "legalBasis": ["RA 11199 (Social Security Act of 2018) Sec 4; 15% is the final scheduled step, in force since 2025", "RA 11199 Sec 8(f) and its IRR (compensation: all actual remuneration, including the mandated cost of living allowance)", "SSS Circular 2024-006 (employers) and companions 2024-007/008/009/010; the 2025 schedule, still operative for 2026"],
     "confidence": "verified",
     "notes": "Re-verified Aug 26, 2026: no 2026 circular supersedes the 2025 schedule and no law suspends the 15%: employer 10% / employee 5%; MSC ₱5,000–₱35,000 in ₱500 steps; the portion above ₱20,000 funds the Mandatory Provident Fund (WISP/MPF). Self-employed, voluntary, and OFW members pay the full 15% themselves (voluntary members have no EC premium). Employer-paid EC: ₱10 below ₱15,000 MSC, ₱30 at or above, confirmed against the 2025 SSS table."
   },
@@ -48,5 +49,11 @@
     "legalBasis": ["RA 9679 (HDMF Law)", "HDMF Circular 460; maximum fund salary ₱10,000 effective Feb 2024, still governing in 2026"],
     "confidence": "verified",
     "notes": "Re-verified Aug 26, 2026: employees earning ≤₱1,500/month contribute 1%, otherwise 2%; employers always 2%; both computed on a fund salary capped at ₱10,000 (max ₱200 + ₱200 = ₱400). Self-employed members contribute on the same schedule based on declared income, shouldering both shares."
+  },
+  "pagibigCompensationBase": {
+    "value": "monthly compensation: basic pay plus regular allowances and commissions (one-time or liquidated items excluded), before the ₱10,000 fund-salary cap",
+    "legalBasis": ["RA 9679 (HDMF Law)", "HDMF Circular 460", "Owner default, Oct 7, 2026 (REVIEW.md C05): which pay items count is not confirmed"],
+    "confidence": "needs_review",
+    "notes": "The employee and employer calculators compute Pag-IBIG on the same monthly compensation as SSS (basic pay plus regular allowances and commissions), capped at ₱10,000. Because of the cap this only changes the result for pay of ₱10,000 a month or less (and the 1% / 2% split at ₱1,500). Confirm with Pag-IBIG which pay items count."
   }
 }
