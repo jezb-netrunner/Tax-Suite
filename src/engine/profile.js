@@ -145,6 +145,14 @@ export function withInputs(profile, key, values) {
   return { ...profile, inputs: { ...(profile.inputs || {}), [key]: values } }
 }
 
+// C07: a copy of the profile with only the given figures of one estimator
+// mode changed ({ field: value }; null clears a box), merged onto the figures
+// already stored for that mode. Two tabs on the same mode then keep each
+// other's figures.
+export function withChangedInputs(profile, key, changes) {
+  return withInputs(profile, key, { ...(profile.inputs?.[key] || {}), ...changes })
+}
+
 // Flags consumed by obligation `appliesTo` predicates.
 export function profileFlags(p) {
   const f = new Set()

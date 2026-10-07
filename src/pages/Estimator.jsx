@@ -8,8 +8,8 @@ import { estimateCorporation, estimateCorporateQuarter, corporateTaxYears, taxab
 import { estimatePayroll, DEFAULT_PAY_FACTOR, PAY_FACTORS, PAY_PERIODS, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions, selfEmployedMonthlyEarnings } from '../engine/estimators/contributions.js'
 import { fromISO, taxableYearQuarters } from '../engine/dates.js'
-import { withInputs } from '../engine/profile.js'
-import { createInputSaver } from '../lib/inputSaver.js'
+import { withChangedInputs } from '../engine/profile.js'
+import { createInputSaver, figuresToShow } from '../lib/inputSaver.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
 import { RT, percentText, payFactorText } from '../engine/ruleText.js'
@@ -61,7 +61,8 @@ const NOTE_STYLE = { marginTop: '12px', fontSize: '12.5px', color: 'var(--ink)',
 // Per-profile input memory so returning users see their numbers.
 // Persists 900ms after the last keystroke to avoid write storms.
 //
-// Four things this has to get right, because one account holds many clients:
+// Things this has to get right, because one account holds many clients and
+// the app may be open in several tabs:
 //  - Seed from the profile these inputs belong to. The estimator subtree is
 //    keyed by profile id (see Estimator below), so switching clients remounts
 //    and re-seeds rather than showing the previous client's figures.
@@ -69,23 +70,31 @@ const NOTE_STYLE = { marginTop: '12px', fontSize: '12.5px', color: 'var(--ink)',
 //    save time), never write back this tab's copy of the whole profile: that
 //    undid renames and settings saved in another tab, and re-created profiles
 //    deleted there.
+//  - C07: within inputs[key], save only the boxes this tab changed, merged
+//    onto the stored figures (withChangedInputs), and show the stored figures
+//    again when another tab changes them and this tab has nothing waiting to
+//    be saved (figuresToShow). Two tabs on the same mode then keep each
+//    other's figures.
 //  - M06: save pending figures at once when the page is hidden, closed or
 //    reloaded, and when the estimator is left (createInputSaver).
 //  - M06: a failed save shows "Couldn't save your figures." (SaveNotice).
-function useInputs(app, key, defaults) {
+function useInputs(app, key) {
   const profileId = app.active?.id ?? null
   const saved = app.active?.inputs?.[key]
-  const [vals, setVals] = useState({ ...defaults, ...(saved || {}) })
+  const [vals, setVals] = useState(() => ({ ...(saved || {}) }))
   // The newest app state, for saves that run after this render.
   const appRef = React.useRef(app)
   appRef.current = app
   const saver = React.useRef(null)
+  // Counts finished saves, so the stored figures are checked again after one.
+  const [savesDone, setSavesDone] = useState(0)
 
   React.useEffect(() => {
     if (!profileId) return undefined
     const s = createInputSaver({
-      save: values => appRef.current.updateProfile(profileId, p => withInputs(p, key, values)),
+      save: changes => appRef.current.updateProfile(profileId, p => withChangedInputs(p, key, changes)),
       onError: e => appRef.current.reportSaveProblem(e),
+      onSettled: () => setSavesDone(n => n + 1),
     })
     saver.current = s
     return () => {
@@ -94,10 +103,17 @@ function useInputs(app, key, defaults) {
     }
   }, [key, profileId])
 
+  // C07: figures saved in another tab (the profile list reloads on the
+  // storage event) replace what this tab shows, unless this tab's own changes
+  // are still waiting or being saved.
+  React.useEffect(() => {
+    const busy = saver.current ? saver.current.busy() : false
+    setVals(shown => figuresToShow(shown, saved, busy))
+  }, [saved, savesDone])
+
   function update(k, v) {
-    const next = { ...vals, [k]: v }
-    setVals(next)
-    if (saver.current) saver.current.schedule(next)
+    setVals(cur => ({ ...cur, [k]: v }))
+    if (saver.current) saver.current.schedule({ [k]: v })
   }
 
   return [vals, update]
@@ -106,7 +122,7 @@ function useInputs(app, key, defaults) {
 function IndividualEstimator({ app, mixed, onOpenTab }) {
   const p = app.active
   // M05: no sample figures; boxes start empty.
-  const [v, set] = useInputs(app, mixed ? 'mixed' : 'individual', {})
+  const [v, set] = useInputs(app, mixed ? 'mixed' : 'individual')
   const taxYear = useManilaToday().getFullYear()
   // Mixed income: compensation comes from the Compensation side tab when it is
   // filled, otherwise from this tab's own boxes.
@@ -492,7 +508,7 @@ function AllowanceFields({ v, set }) {
 
 function EmployeeEstimator({ app }) {
   const p = app.active
-  const [v, set] = useInputs(app, 'employee', {})
+  const [v, set] = useInputs(app, 'employee')
   // The minimum-wage option is offered on employee profiles. A mixed-income
   // profile's Compensation side tab feeds the annual return, so it stays off there.
   const showMwe = p.type === 'employee'
@@ -548,7 +564,7 @@ function fmtISO(isoDate) {
 
 function CorporationEstimator({ app, onPrintYear }) {
   const p = app.active
-  const [v, set] = useInputs(app, 'corporation', {})
+  const [v, set] = useInputs(app, 'corporation')
   const hasFigures = Number(v.grossSales) > 0
   // C06: current or previous taxable year; default = the return due next.
   const today = useManilaToday()
@@ -731,7 +747,7 @@ function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
 }
 
 function PayrollEstimator({ app }) {
-  const [v, set] = useInputs(app, 'payroll', {})
+  const [v, set] = useInputs(app, 'payroll')
   const mwe = Boolean(v.mwe)
   const r = useMemo(() => estimatePayroll({
     ...v, mwe, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0,
