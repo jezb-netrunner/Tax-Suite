@@ -452,7 +452,9 @@ export function compensationForMixed(own = {}, employee = null) {
   const ownTaxable = filled(own.compensationTaxable) ? Number(own.compensationTaxable) : null
   const ownWithheld = filled(own.compensationWithheld) ? Number(own.compensationWithheld) : null
   if (employee && Number(employee.monthlyBasic) > 0) {
-    const e = estimateEmployee(employee)
+    // The minimum-wage option is not offered on a mixed-income profile (C04),
+    // so a switch saved while the profile was an employee profile is ignored.
+    const e = estimateEmployee({ ...employee, mwe: false })
     // Compared as whole-peso return lines, the way the figures are shown and used.
     const differ = (a, b) => a !== null && toWholePesos(toCentavos(a)) !== toWholePesos(toCentavos(b))
     return {

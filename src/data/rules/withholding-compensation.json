@@ -79,9 +79,18 @@
     "notes": "Payslip, withholding and contribution lines are rounded half-up to the centavo (₱3.195 -> ₱3.20), computed exactly in whole centavos, and 12-month totals are 12 × the rounded monthly figure. Confirm against the current 1601-C and 2316 instructions."
   },
   "mweExempt": {
-    "value": true,
-    "legalBasis": ["NIRC Sec 24(A)(2), as amended by RA 9504", "RR 10-2008"],
+    "value": {
+      "exemptItems": ["statutory minimum wage", "holiday pay", "overtime pay", "night-shift differential", "hazard pay"],
+      "payFactors": [365, 313, 261]
+    },
+    "legalBasis": ["NIRC Sec 24(A)(2), as amended by RA 9504 and RA 10963", "RR 11-2018", "Soriano v. Secretary of Finance, G.R. No. 184450, Jan 24, 2017"],
     "confidence": "verified",
-    "notes": "Statutory minimum wage earners are exempt from income tax on their SMW, plus holiday pay, overtime, night differential, and hazard pay; no withholding applies."
+    "notes": "Statutory minimum wage earners (MWEs) are exempt from income tax on their statutory minimum wage, plus holiday pay, overtime pay, night-shift differential and hazard pay, and no tax is withheld on these. Other pay (taxable allowances, commissions) stays taxable, and so do 13th-month pay and other benefits above ₱90,000; receiving them does not cancel the exemption on the minimum wage (Soriano v. Secretary of Finance struck down the RR 10-2008 rule that said it did). The Employee and Payroll calculators apply this when 'Minimum wage earner' is switched on: monthly minimum wage = statutory daily rate × paid days a year (365, 313 or 261) ÷ 12, rounded to the centavo."
+  },
+  "mweContributions": {
+    "value": "An MWE's SSS, PhilHealth and Pag-IBIG shares are taken from the tax-free minimum wage, so they do not reduce the taxable other pay",
+    "legalBasis": ["NIRC Sec 32(B)(7)(f)", "App assumption, Oct 7, 2026, pending CPA confirmation"],
+    "confidence": "needs_review",
+    "notes": "For a minimum wage earner with other taxable pay, the calculators tax the other pay in full and treat the employee's mandatory contributions as paid out of the exempt minimum wage (the cautious reading: it never shows less tax). Confirm against the BIR Form 2316 and alphalist instructions whether the contributions should instead reduce the taxable other pay."
   }
 }

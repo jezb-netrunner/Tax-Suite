@@ -4,9 +4,11 @@ import { useApp } from '../state/AppState.jsx'
 import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation } from '../engine/estimators/corporation.js'
-import { estimatePayroll } from '../engine/estimators/payroll.js'
+import { estimatePayroll, DEFAULT_PAY_FACTOR } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions } from '../engine/estimators/contributions.js'
-import { NumField, SelectField, Disclaimer } from '../components/ui.jsx'
+import wcomp from '../data/rules/withholding-compensation.json'
+import { fromISO } from '../engine/dates.js'
+import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 
@@ -375,23 +377,83 @@ function SelfContributionsCard({ monthly }) {
   )
 }
 
+// C04: minimum wage earner inputs (owner decision 9: the user enters the
+// statutory daily rate and the paid days a year).
+const PAY_FACTOR_OPTIONS = [
+  ['365', '365 (paid every day)'],
+  ['313', '313 (six-day week)'],
+  ['261', '261 (five-day week)'],
+]
+const PAY_FACTOR_HINT = '365 if paid for every day of the year, rest days included (most monthly-paid workers); 313 for a six-day week; 261 for a five-day week.'
+
+function minimumWageHint() {
+  const m = wcomp.minimumWageReference.value
+  const from = fromISO(m.effective).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return `Use the minimum wage for your region and industry. ${m.region}: ₱${m.dailyNonAgriculture} a day (non-agriculture) from ${from}; other regions have their own wage orders.`
+}
+
+function MinimumWageSwitch({ v, set, who }) {
+  return (
+    <div style={{ marginBottom: '14px' }}>
+      <Switch
+        on={Boolean(v.mwe)}
+        onChange={x => set('mwe', x)}
+        title="Minimum wage earner"
+        desc={`Switch on if ${who} paid the statutory minimum wage. The minimum wage and holiday, overtime, night-differential and hazard pay are then tax-free; other pay and 13th-month pay and bonuses above ₱90,000 are still taxed.`}
+      />
+    </div>
+  )
+}
+
+function MinimumWageFields({ v, set }) {
+  return (
+    <>
+      <NumField emptyValue={null} label="Statutory daily minimum wage" value={v.mweDailyRate} onChange={x => set('mweDailyRate', x)} prefix="₱" lg hint={minimumWageHint()} />
+      <SelectField
+        label="Paid days a year"
+        value={String(v.payFactor ?? DEFAULT_PAY_FACTOR)}
+        onChange={x => set('payFactor', Number(x))}
+        options={PAY_FACTOR_OPTIONS}
+        hint={`${PAY_FACTOR_HINT} Monthly minimum wage = daily rate × paid days a year ÷ 12.`}
+      />
+      <NumField emptyValue={null} label="Holiday, overtime, night-differential and hazard pay · month" value={v.mweExtraPay} onChange={x => set('mweExtraPay', x)} prefix="₱" hint="Tax-free for a minimum wage earner." />
+    </>
+  )
+}
+
 function EmployeeEstimator({ app }) {
+  const p = app.active
   const [v, set] = useInputs(app, 'employee', {})
+  // The minimum-wage option is offered on employee profiles. A mixed-income
+  // profile's Compensation side tab feeds the annual return, so it stays off there.
+  const showMwe = p.type === 'employee'
+  const mwe = showMwe && Boolean(v.mwe)
   const r = useMemo(() => estimateEmployee({
-    ...v, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0, bonusesAnnual: v.bonusesAnnual ?? 0,
-  }), [v])
-  const hasFigures = Number(v.monthlyBasic) > 0
+    ...v, mwe, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0, bonusesAnnual: v.bonusesAnnual ?? 0,
+  }), [v, mwe])
+  const hasFigures = mwe ? Number(v.mweDailyRate) > 0 : Number(v.monthlyBasic) > 0
   return (
     <>
       <div className="card pad">
+        {showMwe && <MinimumWageSwitch v={v} set={set} who="you are" />}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
-          <NumField emptyValue={null} label="Monthly basic salary" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />
+          {mwe
+            ? <MinimumWageFields v={v} set={set} />
+            : <NumField emptyValue={null} label="Monthly basic salary" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />}
           <NumField emptyValue={null} label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" hint="Regular taxable extras, excluding de minimis benefits." />
           <NumField emptyValue={null} label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint="First ₱90,000 is tax-exempt." />
         </div>
+        {p.type === 'mixed' && (
+          <p className="cite" style={{ marginTop: '14px' }}>
+            The minimum wage earner option is on employee profiles and on the Payroll tab. If you earn the minimum wage
+            and also have business income, have a CPA check how the exemption applies to you.
+          </p>
+        )}
       </div>
       {!hasFigures ? (
-        <EnterFigures>Start with your monthly basic salary. Your payslip and annual tax appear here as you type.</EnterFigures>
+        <EnterFigures>{mwe
+          ? 'Start with the statutory daily minimum wage. Your payslip and annual tax appear here as you type.'
+          : 'Start with your monthly basic salary. Your payslip and annual tax appear here as you type.'}</EnterFigures>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
           <div className="card pad">
@@ -463,20 +525,26 @@ function CorporationEstimator({ app }) {
 
 function PayrollEstimator({ app }) {
   const [v, set] = useInputs(app, 'payroll', {})
+  const mwe = Boolean(v.mwe)
   const r = useMemo(() => estimatePayroll({
-    ...v, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0,
-  }), [v])
-  const hasFigures = Number(v.monthlyBasic) > 0
+    ...v, mwe, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0,
+  }), [v, mwe])
+  const hasFigures = mwe ? Number(v.mweDailyRate) > 0 : Number(v.monthlyBasic) > 0
   return (
     <>
       <div className="card pad">
+        <MinimumWageSwitch v={v} set={set} who="this employee is" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
-          <NumField emptyValue={null} label="Employee monthly basic pay" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />
+          {mwe
+            ? <MinimumWageFields v={v} set={set} />
+            : <NumField emptyValue={null} label="Employee monthly basic pay" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />}
           <NumField emptyValue={null} label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" />
         </div>
       </div>
       {!hasFigures ? (
-        <EnterFigures>Start with the employee's monthly basic pay. The withholding and true cost appear here as you type.</EnterFigures>
+        <EnterFigures>{mwe
+          ? 'Start with the statutory daily minimum wage. The withholding and true cost appear here as you type.'
+          : 'Start with the employee\'s monthly basic pay. The withholding and true cost appear here as you type.'}</EnterFigures>
       ) : (
         <div className="card pad" style={{ marginTop: '20px' }}>
           <h3 className="sec-h">Withholding &amp; true cost for this employee</h3>
