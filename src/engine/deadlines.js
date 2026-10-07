@@ -189,6 +189,76 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
   return out
 }
 
+// ---------------------------------------------------------------------------
+// Filed / overdue state (M09). Marks are saved on the profile:
+//   profile.filed          { [filedKey]: 'YYYY-MM-DD' marked }  dated deadlines
+//   profile.checklistDone  { [obligation id]: 'YYYY-MM-DD' }     checklist items
+// The key of a dated deadline is its id: obligation id + the date set by law
+// (before any weekend move or extension), so it never changes for a period.
+
+export const OVERDUE_DAYS = 60
+
+export function filedKey(d) {
+  return d.id
+}
+
+export function isFiled(profile, d) {
+  return Boolean(profile && profile.filed && profile.filed[filedKey(d)])
+}
+
+// 'filed' | 'n/a' (an optional item the taxpayer says does not apply) | null
+export function filedStatus(profile, d) {
+  const v = profile && profile.filed && profile.filed[filedKey(d)]
+  if (!v) return null
+  return v === 'n/a' ? 'n/a' : 'filed'
+}
+
+// A copy of the profile with the mark set (on) or removed (off). The mark is
+// the Manila date it was set, or 'n/a' when status is 'n/a'.
+export function withFiled(profile, key, on, today, status = 'filed') {
+  const filed = { ...(profile.filed || {}) }
+  if (on) filed[key] = status === 'n/a' ? 'n/a' : iso(today)
+  else delete filed[key]
+  return { ...profile, filed }
+}
+
+// The same for several keys at once ("Mark all as filed" and its Undo).
+export function withFiledMany(profile, keys, on, today) {
+  return keys.reduce((p, key) => withFiled(p, key, on, today), profile)
+}
+
+/**
+ * Deadlines whose (moved) due date has passed in the last `days` days and that
+ * are not marked filed, oldest first, each with daysOverdue (1 = due yesterday).
+ */
+export function overdueDeadlines(obligations, profile, { today, holidays, rollOver, days = OVERDUE_DAYS }) {
+  const list = generateDeadlines(obligations, profile, {
+    from: addDays(today, -days), to: addDays(today, -1), holidays, refDate: today, rollOver,
+  })
+  return list
+    .filter(d => !isFiled(profile, d))
+    .map(d => ({ ...d, daysOverdue: -d.daysAway }))
+}
+
+// Income-tax rail: 'filed' (or 'n/a') only when the user marked it; otherwise
+// 'passed' once the due date has gone by, else 'due'.
+export function railStatus(profile, d, today) {
+  const marked = filedStatus(profile, d)
+  if (marked) return marked
+  return d.date < today ? 'passed' : 'due'
+}
+
+export function isChecked(profile, ob) {
+  return Boolean(profile && profile.checklistDone && profile.checklistDone[ob.id])
+}
+
+export function withChecked(profile, obligationId, on, today) {
+  const done = { ...(profile.checklistDone || {}) }
+  if (on) done[obligationId] = iso(today)
+  else delete done[obligationId]
+  return { ...profile, checklistDone: done }
+}
+
 // Years in [from, to] whose holidays are not yet proclaimed in the rulebook
 // (their dates skip weekends and the holidays fixed by law only). `calendar`
 // is a holiday calendar from makeHolidayCalendar; a plain Set has no

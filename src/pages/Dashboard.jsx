@@ -1,11 +1,15 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS, HOLIDAY_SET } from '../lib/deadlineData.js'
-import { generateDeadlines, unproclaimedYears, holidayGapNote } from '../engine/deadlines.js'
+import {
+  generateDeadlines, unproclaimedYears, holidayGapNote, overdueDeadlines, OVERDUE_DAYS,
+  filedKey, filedStatus, withFiled, withFiledMany, railStatus,
+} from '../engine/deadlines.js'
 import { profileFlags } from '../engine/profile.js'
 import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
+import { useProfileMarks } from '../lib/useProfileMarks.js'
 import { AgencyTag } from '../components/ui.jsx'
 import { PROFILE_TYPES } from '../engine/profile.js'
 
@@ -49,6 +53,29 @@ export default function Dashboard() {
   // Years in the window whose holidays are not yet proclaimed (M07).
   const gapYears = unproclaimedYears(HOLIDAY_SET, t, windowEnd)
   const gapNote = holidayGapNote(gapYears)
+
+  // Filed marks (M09): `pv` is the profile with any not-yet-saved marks.
+  const { profile: pv, update: updateMarks, error: markError } = useProfileMarks(app)
+  const [lastMark, setLastMark] = useState(null) // { d, on, status } for the status line + Undo
+  const undoRef = useRef(null)
+  const overdue = useMemo(
+    () => (pv ? overdueDeadlines(OBLIGATIONS, pv, { today: t, holidays: HOLIDAY_SET }) : []),
+    [pv, t]
+  )
+  const recentlyMarked = useMemo(() => {
+    if (!pv) return []
+    return generateDeadlines(OBLIGATIONS, pv, {
+      from: addDays(t, -OVERDUE_DAYS), to: addDays(t, -1), holidays: HOLIDAY_SET, refDate: t,
+    }).filter(d => filedStatus(pv, d))
+  }, [pv, t])
+  function mark(d, on, status = 'filed') {
+    updateMarks(prof => withFiled(prof, filedKey(d), on, t, status))
+    setLastMark({ d, on, status })
+  }
+  function markMany(list, on) {
+    updateMarks(prof => withFiledMany(prof, list.map(filedKey), on, t))
+    setLastMark({ many: list, on })
+  }
 
   if (!app.profilesReady) return null
   if (!p && app.loadError) {
@@ -136,6 +163,10 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+
+        {markError && <div className="form-err" role="alert" style={{ marginBottom: '16px' }}>{markError}</div>}
+        <MarkStatus lastMark={lastMark} onMark={mark} onMarkMany={markMany} undoRef={undoRef} />
+        <OverdueSection items={overdue} recent={recentlyMarked} profile={pv} onMark={mark} onMarkMany={markMany} undoRef={undoRef} />
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 440px', minWidth: 0 }}>
@@ -275,28 +306,8 @@ export default function Dashboard() {
           <div style={{ flex: '1 1 300px', maxWidth: '340px' }}>
             {!isEmployee && fullYear.length > 0 && (
               <div className="card tight">
-                <div style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '-.01em' }}>{t.getFullYear()} income-tax filings</div>
-                <div style={{ height: '6px', borderRadius: '3px', background: 'var(--line)', margin: '14px 0 16px', overflow: 'hidden' }}>
-                  <div style={{ width: `${Math.round(fullYear.filter(d => d.date < t).length / fullYear.length * 100)}%`, height: '100%', background: 'var(--acc)', borderRadius: '3px' }}></div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                  {fullYear.map(d => {
-                    const done = d.date < t
-                    return (
-                      <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={done
-                          ? { width: 18, height: 18, borderRadius: '50%', background: 'var(--acc)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, flexShrink: 0 }
-                          : { width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--line)', flexShrink: 0 }}>{done ? '✓' : ''}</span>
-                        <span style={{ fontSize: '13px', color: done ? 'var(--mut)' : 'var(--ink)', fontWeight: done ? 400 : 600 }}>
-                          {d.obligation.form} {d.label || ''} · {done ? 'passed' : 'due'} {fmtDate(d.date)}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--dim)', lineHeight: 1.5 }}>
-                  “Passed” means the due date has gone by; confirm the filing was actually made.
-                </div>
+                <h2 id="rail-h" style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '-.01em' }}>{t.getFullYear()} income-tax filings</h2>
+                <FilingRail items={fullYear} profile={pv} today={t} onMark={mark} />
               </div>
             )}
 
@@ -338,6 +349,194 @@ export default function Dashboard() {
 }
 
 const fmtDay = d => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+const itemName = d => `${d.obligation.title}${d.label ? ` · ${d.label}` : ''}`
+const daysOverdueLabel = n => (n === 1 ? '1 day overdue' : `${n} days overdue`)
+
+// Status line after marking or unmarking, with Undo. Always rendered (empty
+// until the first mark) so screen readers announce each change.
+function MarkStatus({ lastMark, onMark, onMarkMany, undoRef }) {
+  const many = lastMark && lastMark.many
+  return (
+    <div aria-live="polite" style={lastMark ? { fontSize: '13px', marginBottom: '12px', padding: '9px 13px', borderRadius: '9px', background: 'var(--accSoft)', color: 'var(--accInk)' } : undefined}>
+      {lastMark && (
+        <>
+          {many
+            ? (lastMark.on ? <>Marked {many.length} items as filed. </> : <>{many.length} items are no longer marked. </>)
+            : lastMark.on
+              ? <>Marked “{itemName(lastMark.d)}” as {lastMark.status === 'n/a' ? 'not applicable' : 'filed'}. </>
+              : <>“{itemName(lastMark.d)}” is no longer marked. </>}
+          <button ref={undoRef} className="linkbtn" style={{ fontSize: '13px', minHeight: '24px' }}
+            onClick={() => (many ? onMarkMany(many, !lastMark.on) : onMark(lastMark.d, !lastMark.on, lastMark.status))}>
+            Undo
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+// Overdue (M09): passed due dates of the last 60 days that are not marked
+// filed. Each can be marked filed (an optional item can be marked "doesn't
+// apply"); recently marked items can be unmarked. After a click, focus moves
+// to the next item (or to Undo) so keyboard users keep their place.
+const OVERDUE_SHOWN = 5
+
+function OverdueSection({ items, recent, profile, onMark, onMarkMany, undoRef }) {
+  const btnRefs = useRef({})
+  const [focusTo, setFocusTo] = useState(null)
+  const [showAll, setShowAll] = useState(false)
+
+  useEffect(() => {
+    if (!focusTo) return
+    const el = focusTo === 'undo' ? undoRef.current : btnRefs.current[focusTo]
+    if (el) el.focus()
+    setFocusTo(null)
+  }, [focusTo, items, undoRef])
+
+  if (!items.length && !recent.length) return null
+
+  const shown = showAll ? items : items.slice(0, OVERDUE_SHOWN)
+
+  function markAll() {
+    onMarkMany(items, true)
+    setFocusTo('undo')
+  }
+
+  function markItem(d, status) {
+    const i = items.findIndex(x => x.id === d.id)
+    const next = items[i + 1] || items[i - 1]
+    onMark(d, true, status)
+    setFocusTo(next ? next.id : 'undo')
+  }
+
+  return (
+    <section aria-labelledby="overdue-h" className="card" style={{ marginBottom: '22px', padding: '16px 18px', borderLeft: items.length ? '3px solid var(--bad)' : undefined }}>
+      <h2 id="overdue-h" style={{ fontSize: '15px', fontWeight: 700, color: items.length ? 'var(--bad)' : 'var(--ink)' }}>
+        {items.length ? `Overdue (${items.length})` : 'Nothing overdue'}
+      </h2>
+      <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px', lineHeight: 1.55 }}>
+        {items.length
+          ? <>Due dates from the last {OVERDUE_DAYS} days that are not marked as filed. Already filed? Mark it as filed. If not, file and pay as soon as you can: the surcharge and interest grow every day. <Link to="/tools" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Estimate the penalty</Link></>
+          : <>Every due date of the last {OVERDUE_DAYS} days is marked as filed.</>}
+      </p>
+      {items.length > 0 && (
+        <ul id="overdue-list" className="list-card" style={{ listStyle: 'none', margin: '12px 0 0', padding: 0 }}>
+          {shown.map(d => (
+            <li key={d.id} className="frow" style={{ flexWrap: 'wrap', rowGap: '10px' }}>
+              <div style={{ textAlign: 'center', flexShrink: 0, width: '44px' }}>
+                <div className="mono" style={{ fontSize: '17px', fontWeight: 600 }}>{d.date.getDate()}</div>
+                <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--mut)' }}>{fmtMonthShort(d.date)}</div>
+              </div>
+              <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{itemName(d)}</div>
+                <div style={{ fontSize: '13px', color: 'var(--bad)', marginTop: '2px', fontWeight: 600 }}>
+                  {daysOverdueLabel(d.daysOverdue)} <span style={{ color: 'var(--mut)', fontWeight: 400 }}>· was due {fmtDay(d.date)}{d.obligation.form && d.obligation.form !== '—' ? ` · ${d.obligation.form}` : ''}</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button ref={el => { btnRefs.current[d.id] = el }} className="btn sm"
+                  aria-label={`Mark as filed: ${itemName(d)}`} onClick={() => markItem(d, 'filed')}>
+                  Mark as filed
+                </button>
+                {d.obligation.conditional && (
+                  <button className="btn sm ghost" aria-label={`Does not apply to me: ${itemName(d)}`} onClick={() => markItem(d, 'n/a')}>
+                    Doesn’t apply to me
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {items.length > 1 && (
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+          {items.length > OVERDUE_SHOWN && (
+            <button className="btn sm ghost" aria-expanded={showAll} aria-controls="overdue-list" onClick={() => setShowAll(v => !v)}>
+              {showAll ? `Show the first ${OVERDUE_SHOWN} only` : `Show all ${items.length} overdue`}
+            </button>
+          )}
+          <button className="btn sm ghost" onClick={markAll}>Mark all {items.length} as filed</button>
+        </div>
+      )}
+      {recent.length > 0 && (
+        <details style={{ marginTop: '12px' }}>
+          <summary style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accInk)', cursor: 'pointer', minHeight: '24px' }}>
+            Marked in the last {OVERDUE_DAYS} days ({recent.length})
+          </summary>
+          <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {recent.map(d => (
+              <li key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', fontSize: '13px' }}>
+                <span style={{ flex: '1 1 200px', minWidth: 0 }}>
+                  {itemName(d)} · due {fmtDate(d.date)} · <b>{filedStatus(profile, d) === 'n/a' ? 'doesn’t apply' : 'filed'}</b>
+                </span>
+                <button className="linkbtn" style={{ fontSize: '13px', minHeight: '24px' }}
+                  aria-label={`Unmark: ${itemName(d)}`} onClick={() => onMark(d, false)}>
+                  Unmark
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
+  )
+}
+
+// Income-tax rail (M09): a tick only for items marked filed; a neutral clock
+// for dates that passed without a mark; an empty ring for dates to come.
+function RailIcon({ status }) {
+  const base = { width: 18, height: 18, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }
+  if (status === 'filed') return <span aria-hidden="true" style={{ ...base, background: 'var(--acc)', color: '#fff' }}>✓</span>
+  if (status === 'n/a') return <span aria-hidden="true" style={{ ...base, background: 'var(--line)', color: 'var(--ink)' }}>–</span>
+  if (status === 'passed') {
+    return (
+      <span aria-hidden="true" style={{ ...base, background: 'var(--line)' }}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#4a5a6a" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="6" cy="6" r="4.8" /><path d="M6 3.4V6l1.8 1.2" />
+        </svg>
+      </span>
+    )
+  }
+  return <span aria-hidden="true" style={{ ...base, border: '2px solid var(--line)' }} />
+}
+
+const RAIL_TEXT = { filed: 'filed · due', 'n/a': 'doesn’t apply · due', passed: 'date passed', due: 'due' }
+
+function FilingRail({ items, profile, today, onMark }) {
+  const statuses = items.map(d => railStatus(profile, d, today))
+  const done = statuses.filter(st => st === 'filed' || st === 'n/a').length
+  return (
+    <>
+      <div aria-hidden="true" style={{ height: '6px', borderRadius: '3px', background: 'var(--line)', margin: '14px 0 6px', overflow: 'hidden' }}>
+        <div style={{ width: `${Math.round(done / items.length * 100)}%`, height: '100%', background: 'var(--acc)', borderRadius: '3px' }}></div>
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--mut)', marginBottom: '12px' }}>{done} of {items.length} marked filed</div>
+      <ul aria-labelledby="rail-h" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {items.map((d, i) => {
+          const st = statuses[i]
+          const textId = `rail-${d.id}`
+          return (
+            <li key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <RailIcon status={st} />
+              <span id={textId} style={{ flex: 1, minWidth: 0, fontSize: '13px', color: st === 'due' ? 'var(--ink)' : 'var(--mut)', fontWeight: st === 'due' ? 600 : 400 }}>
+                {d.obligation.form} {d.label || ''} · {RAIL_TEXT[st]} {fmtDate(d.date)}
+              </span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--mut)', cursor: 'pointer', minHeight: '24px', flexShrink: 0 }}>
+                <input type="checkbox" checked={st === 'filed'} aria-describedby={textId}
+                  onChange={e => onMark(d, e.target.checked)}
+                  style={{ width: '16px', height: '16px', margin: 0, accentColor: 'var(--acc)' }} />
+                Filed
+              </label>
+            </li>
+          )
+        })}
+      </ul>
+      <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--mut)', lineHeight: 1.5 }}>
+        Tick “Filed” once a return is filed. A grey clock means the date has passed and the return is not marked as filed.
+      </div>
+    </>
+  )
+}
 
 // LGU, SEC and DOLE dates (and 13th-month pay) are not moved to the next
 // working day (M08). Their note is always shown; when the date itself is a
