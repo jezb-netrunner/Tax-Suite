@@ -4,6 +4,7 @@ import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES, defaultProfile } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
 import { manilaToday } from '../engine/dates.js'
+import { registrationYearOptions, registrationYearChoice } from '../engine/estimators/corporation.js'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -167,14 +168,13 @@ function WizardForm({ app, editing }) {
                   <SelectField label="Taxable year ends in" value={String(p.fiscalYearEndMonth)}
                     onChange={v => set('fiscalYearEndMonth', Number(v))}
                     options={MONTHS.map((m, i) => [String(i + 1), i + 1 === 12 ? 'December (calendar year)' : m])} />
-                  <SelectField label="Year operations began" value={String(p.registrationYear || '')}
+                  {/* H13: same profile field (registrationYear); a saved year before 1998 shows as "1997 or earlier". */}
+                  <SelectField label="Year registered with the BIR (for MCIT)" value={registrationYearChoice(p.registrationYear)}
                     onChange={v => set('registrationYear', v ? Number(v) : null)}
-                    options={[['', 'Not sure'], ...Array.from({ length: 30 }, (_, i) => {
-                      const y = manilaToday().getFullYear() - i
-                      return [String(y), String(y)]
-                    })]} />
+                    options={registrationYearOptions(manilaToday().getFullYear())}
+                    hint="The year on your BIR Certificate of Registration (Form 2303), even if your first sale came later." />
                 </div>
-                <p className="cite" style={{ marginTop: '10px' }}>The start year drives the 2% minimum corporate income tax (MCIT), which begins in the fourth taxable year after operations commence.</p>
+                <p className="cite" style={{ marginTop: '10px' }}>The 2% minimum corporate income tax (MCIT) starts in the fourth taxable year after the year the corporation registered with the BIR (RR 9-98). If you are not sure, the estimator shows both the regular tax and the MCIT.</p>
               </>
             )}
           </div>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
@@ -537,11 +537,19 @@ function CorporationEstimator({ app }) {
           <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
             <b style={{ color: 'var(--ink)' }}>{r.period.label}.</b> Annual return (1702-RT) due {fmtISO(r.period.annualDue)}.
           </p>
+          {r.mcitWarning && (
+            <div className="mini-warn" role="note" style={{ marginTop: '10px' }}>
+              <b>Check the MCIT.</b> {r.mcitWarning}
+              {p.id && <>{' '}<Link to={`/profiles/${p.id}/edit`}>Edit the profile</Link></>}
+            </div>
+          )}
           <div style={{ marginTop: '10px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
-              {r.usesMcit
-                ? <>The 2% MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
-                : <>Income tax due: {money(r.incomeTaxDue)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitApplies ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
+              {r.mcitStatus === 'unknown' && r.usesMcit
+                ? <>Income tax due: {money(r.incomeTaxDue)} if the 2% MCIT applies, or {money(r.rcit)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate if it does not apply yet.</>
+                : r.usesMcit
+                  ? <>The 2% MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
+                  : <>Income tax due: {money(r.incomeTaxDue)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitStatus !== 'notYet' ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
               {!r.vat && r.pct > 0 && <> Plus {money(r.pct)} percentage tax (non-VAT).</>}
               {r.vatNotIncluded && <> {r.vatNote}</>}
             </span>

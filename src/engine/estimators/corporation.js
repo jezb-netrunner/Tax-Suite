@@ -7,7 +7,7 @@
 
 import corp from '../../data/rules/corporate.json'
 import businessTax from '../../data/rules/business-tax.json'
-import { toCentavos, fromCentavos, toWholePesos, mulRate } from '../../lib/money.js'
+import { toCentavos, fromCentavos, toWholePesos, mulRate, formatPesos } from '../../lib/money.js'
 import { manilaToday, mkDate, lastDayOfMonth, shiftToBusinessDay, iso } from '../dates.js'
 import { HOLIDAY_SET } from '../../lib/deadlineData.js'
 
@@ -51,6 +51,24 @@ export function taxablePeriod(year, fiscalYearEndMonth = 12, holidays = HOLIDAY_
   }
 }
 
+// H13: choices for the profile's "Year registered with the BIR (for MCIT)":
+// every year from the current Manila year down to 1998, plus "1997 or earlier"
+// (stored as 1997). Any earlier saved year (1900-1997) shows as that option;
+// for MCIT purposes they are all the same (MCIT applied long ago).
+export const EARLIEST_LISTED_YEAR = 1998
+
+export function registrationYearOptions(currentYear) {
+  const years = []
+  for (let y = currentYear; y >= EARLIEST_LISTED_YEAR; y--) years.push([String(y), String(y)])
+  return [['', 'Not sure'], ...years, [String(EARLIEST_LISTED_YEAR - 1), `${EARLIEST_LISTED_YEAR - 1} or earlier`]]
+}
+
+export function registrationYearChoice(saved) {
+  if (saved === null || saved === undefined || saved === '' || !Number.isFinite(Number(saved))) return ''
+  const y = Number(saved)
+  return y < EARLIEST_LISTED_YEAR ? String(EARLIEST_LISTED_YEAR - 1) : String(y)
+}
+
 /**
  * C06: the taxable years the corporate estimator offers: the current one
  * (containing `today`, a Manila calendar date) and the previous one. The
@@ -82,7 +100,8 @@ export function corporateTaxYears({ today = manilaToday(), fiscalYearEndMonth = 
  *   cwt             creditable withholding (2307s)
  *   quarterlyPaid   income tax already paid on this year's 1702Q returns
  *   priorYearCredits excess credits carried over from last year's annual return
- *   registrationYear  year operations began (MCIT from the 4th year after)
+ *   registrationYear  year registered with the BIR (MCIT from the 4th taxable year
+ *                   after it, RR 9-98); null = not set: MCIT is shown in case it applies
  *   taxYear         taxable year being estimated, named by the calendar year it
  *                   ends in (default: the year whose annual return is due next,
  *                   by the Manila date; see corporateTaxYears)
@@ -139,12 +158,21 @@ export function estimateCorporation(in_) {
   const rcitRate = smallCorp ? RCIT.smallCorpRate : RCIT.standardRate
   const rcitC = toWholePesos(mulRate(taxableIncomeC, rcitRate))
 
-  // MCIT applies beginning the 4th taxable year immediately following the
-  // year operations commenced (e.g. began 2022 → MCIT from TY 2026).
-  const mcitApplies = registrationYear != null && taxYear >= registrationYear + 4
-  const mcitC = mcitApplies ? toWholePesos(mulRate(grossIncomeC, MCIT.rate)) : 0
-  const usesMcit = mcitApplies && mcitC > rcitC
+  // H13: MCIT applies beginning the 4th taxable year immediately following the
+  // year of BIR registration (RR 9-98; e.g. registered 2022 → MCIT from TY 2026).
+  // When the year is not set, MCIT is still computed and shown next to RCIT,
+  // and the tax due assumes it applies (owner default: never show less).
+  const mcitStatus = registrationYear == null ? 'unknown' : taxYear >= registrationYear + 4 ? 'applies' : 'notYet'
+  const mcitApplies = mcitStatus === 'applies'
+  const mcitCounts = mcitStatus !== 'notYet'
+  const mcitC = mcitCounts ? toWholePesos(mulRate(grossIncomeC, MCIT.rate)) : 0
+  const usesMcit = mcitCounts && mcitC > rcitC
   const incomeTaxDueC = Math.max(rcitC, mcitC)
+  const mcitWarning = mcitStatus !== 'unknown'
+    ? null
+    : usesMcit
+      ? `The year registered with the BIR is not set on the profile. If the corporation is in its 4th taxable year after that year or later, MCIT applies and income tax due is ${formatPesos(mcitC)} (2% MCIT); if not, it is ${formatPesos(rcitC)} (regular rate). Set the year on the profile (RR 9-98).`
+      : `The year registered with the BIR is not set on the profile, but the regular tax (${formatPesos(rcitC)}) is higher than the 2% MCIT (${formatPesos(mcitC)}), so the tax due is the same either way.`
 
   // The ₱3M test uses the actual sales, not the rounded line.
   const overThreshold = toCentavos(in_.grossSales || 0) > toCentavos(VAT_THRESHOLD)
@@ -176,16 +204,21 @@ export function estimateCorporation(in_) {
         ? 'MCIT exceeds RCIT this year, so you pay the MCIT; the excess credits against RCIT for the next 3 years (NIRC Sec 27(E)).'
         : 'RCIT is higher, so the regular tax applies (NIRC Sec 27(E)).',
     })
-  } else if (registrationYear != null) {
+  } else if (mcitStatus === 'notYet') {
     r('Minimum corporate income tax', null, {
-      sub: `Not yet applicable: MCIT starts with ${taxablePeriod(registrationYear + 4, fiscalYearEndMonth).name}, the 4th taxable year after operations began.`,
+      sub: `Not yet applicable: MCIT starts with ${taxablePeriod(registrationYear + 4, fiscalYearEndMonth).name}, the 4th taxable year after the year of BIR registration (RR 9-98).`,
     })
   } else {
-    r('Minimum corporate income tax', null, {
-      sub: 'Set "year operations began" on the profile to check the 2% MCIT (applies from the 4th taxable year).',
+    r('Minimum corporate income tax @ 2% of gross income, if it applies', mcit, {
+      strong: usesMcit,
+      sub: 'The year registered with the BIR is not set on the profile. MCIT applies from the 4th taxable year after that year (RR 9-98), so it is shown in case it applies.',
     })
   }
-  r('Income tax due', incomeTaxDue, { strong: true, rule: true })
+  r(mcitStatus === 'unknown' && usesMcit ? 'Income tax due, if MCIT applies' : 'Income tax due', incomeTaxDue, {
+    strong: true,
+    rule: true,
+    sub: mcitStatus === 'unknown' && usesMcit ? `If MCIT does not apply yet, income tax due is the regular tax of ${formatPesos(rcitC)}.` : undefined,
+  })
   if (!vat && pct > 0) r('Percentage tax (3% of gross)', pct, { strong: true, sub: 'Non-VAT corporation under the ₱3M threshold (Form 2551Q).' })
   // H05 (owner decision 4): VAT is not computed here.
   if (vat) r('Value-added tax', null, { sub: 'Not included in this estimate. VAT (12% of sales less creditable input VAT) is filed quarterly on Form 2550Q.' })
@@ -205,9 +238,11 @@ export function estimateCorporation(in_) {
     smallCorp,
     rcitRate,
     rcit,
+    mcitStatus,
     mcitApplies,
     mcit,
     usesMcit,
+    mcitWarning,
     incomeTaxDue,
     pct,
     vat,
