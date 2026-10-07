@@ -8,12 +8,70 @@
 import corp from '../../data/rules/corporate.json'
 import businessTax from '../../data/rules/business-tax.json'
 import { toCentavos, fromCentavos, toWholePesos, mulRate } from '../../lib/money.js'
-import { manilaToday } from '../dates.js'
+import { manilaToday, mkDate, lastDayOfMonth, shiftToBusinessDay, iso } from '../dates.js'
+import { HOLIDAY_SET } from '../../lib/deadlineData.js'
 
 const RCIT = corp.rcit.value
 const MCIT = corp.mcit.value
 const VAT_THRESHOLD = businessTax.vatThreshold.value
 const PCT_RATE = businessTax.percentageTaxRate.value
+// C06: the 2% MCIT and 3% percentage tax apply to periods from this date. Earlier
+// periods used 1% (Jul 2020 to Jun 2023) and are not supported (owner decision 1).
+const RATES_FROM = MCIT.currentRatesFrom
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+export const EARLIER_YEARS_NOTE = 'Not supported: MCIT and percentage-tax rates differed (1% from Jul 2020 to Jun 2023). This estimator covers the current and the previous taxable year only.'
+
+/**
+ * A corporation's taxable year, named by the calendar year in which it ends.
+ * The annual return (1702-RT) is due on the 15th day of the 4th month after
+ * year-end, moved to the next working day (weekends and listed holidays).
+ */
+export function taxablePeriod(year, fiscalYearEndMonth = 12, holidays = HOLIDAY_SET) {
+  const m = Number(fiscalYearEndMonth) || 12
+  const calendar = m === 12
+  const start = calendar ? mkDate(year, 1, 1) : mkDate(year - 1, m + 1, 1)
+  const end = lastDayOfMonth(year, m)
+  const due = shiftToBusinessDay(mkDate(year, m + 4, 15), holidays)
+  const short = d => `${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`
+  return {
+    year,
+    fiscalYearEndMonth: m,
+    calendar,
+    start: iso(start),
+    end: iso(end),
+    annualDue: iso(due),
+    label: calendar
+      ? `Taxable year ${year} (January to December ${year})`
+      : `Fiscal year ${MONTH_NAMES[start.getMonth()]} ${start.getFullYear()} to ${MONTH_NAMES[m - 1]} ${year}`,
+    option: calendar ? String(year) : `${short(start)} to ${short(end)}`,
+    name: calendar ? `TY ${year}` : `the fiscal year ending ${MONTH_NAMES[m - 1]} ${year}`,
+    supported: iso(start) >= RATES_FROM,
+  }
+}
+
+/**
+ * C06: the taxable years the corporate estimator offers: the current one
+ * (containing `today`, a Manila calendar date) and the previous one. The
+ * default is the year whose annual return is due next: the previous year
+ * until its (rolled-over) due date has passed, then the current year.
+ */
+export function corporateTaxYears({ today = manilaToday(), fiscalYearEndMonth = 12, holidays = HOLIDAY_SET } = {}) {
+  const m = Number(fiscalYearEndMonth) || 12
+  const y = today.getFullYear()
+  const current = m === 12 || today.getMonth() + 1 <= m ? y : y + 1
+  const previous = current - 1
+  const cur = taxablePeriod(current, m, holidays)
+  const prev = taxablePeriod(previous, m, holidays)
+  const defaultYear = iso(today) <= prev.annualDue ? previous : current
+  return {
+    current,
+    previous,
+    defaultYear,
+    options: [cur, prev].map(p => ({ ...p, dueDate: p.annualDue })),
+  }
+}
 
 /**
  * @param {Object} in_
@@ -25,13 +83,32 @@ const PCT_RATE = businessTax.percentageTaxRate.value
  *   quarterlyPaid   income tax already paid on this year's 1702Q returns
  *   priorYearCredits excess credits carried over from last year's annual return
  *   registrationYear  year operations began (MCIT from the 4th year after)
- *   taxYear         taxable year being estimated
+ *   taxYear         taxable year being estimated, named by the calendar year it
+ *                   ends in (default: the year whose annual return is due next,
+ *                   by the Manila date; see corporateTaxYears)
+ *   fiscalYearEndMonth  12 for a calendar year
  *   vatRegistered
  */
 export function estimateCorporation(in_) {
   const { totalAssets = 0, registrationYear = null, vatRegistered = false } = in_
-  // Default: the current calendar year in Manila (not the device's time zone).
-  const taxYear = in_.taxYear ?? manilaToday().getFullYear()
+  const fiscalYearEndMonth = Number(in_.fiscalYearEndMonth) || 12
+  const taxYear = in_.taxYear ?? corporateTaxYears({ fiscalYearEndMonth }).defaultYear
+  const period = taxablePeriod(taxYear, fiscalYearEndMonth)
+  if (!period.supported) {
+    // Owner decision 1: no dated rate tables before Jul 2023, so no figures.
+    return {
+      supported: false,
+      taxYear,
+      period,
+      message: EARLIER_YEARS_NOTE,
+      rcit: null,
+      mcit: null,
+      incomeTaxDue: null,
+      netPayable: null,
+      rows: [],
+      references: [...corp.mcit.legalBasis],
+    }
+  }
   const line = pesos => toWholePesos(toCentavos(pesos || 0))
   const P = fromCentavos
 
@@ -101,7 +178,7 @@ export function estimateCorporation(in_) {
     })
   } else if (registrationYear != null) {
     r('Minimum corporate income tax', null, {
-      sub: `Not yet applicable: MCIT starts in TY ${registrationYear + 4}, the 4th taxable year after operations began.`,
+      sub: `Not yet applicable: MCIT starts with ${taxablePeriod(registrationYear + 4, fiscalYearEndMonth).name}, the 4th taxable year after operations began.`,
     })
   } else {
     r('Minimum corporate income tax', null, {
@@ -120,6 +197,9 @@ export function estimateCorporation(in_) {
   }
 
   return {
+    supported: true,
+    taxYear,
+    period,
     grossIncome,
     taxableIncome,
     smallCorp,

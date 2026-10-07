@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
-import { estimateCorporation } from '../engine/estimators/corporation.js'
+import { estimateCorporation, corporateTaxYears, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
 import { estimatePayroll, DEFAULT_PAY_FACTOR } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions } from '../engine/estimators/contributions.js'
 import wcomp from '../data/rules/withholding-compensation.json'
@@ -483,22 +483,42 @@ function EmployeeEstimator({ app }) {
   )
 }
 
+function fmtISO(isoDate) {
+  return fromISO(isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 function CorporationEstimator({ app }) {
   const p = app.active
   const [v, set] = useInputs(app, 'corporation', {})
   const hasFigures = Number(v.grossSales) > 0
-  const taxYear = useManilaToday().getFullYear()
-  const r = useMemo(() => estimateCorporation({
+  // C06: current or previous taxable year; default = the return due next.
+  const today = useManilaToday()
+  const fy = p.fiscalYearEndMonth || 12
+  const years = useMemo(() => corporateTaxYears({ today, fiscalYearEndMonth: fy }), [today, fy])
+  const choice = v.taxYear === 'earlier'
+    ? 'earlier'
+    : years.options.some(o => o.year === v.taxYear) ? v.taxYear : years.defaultYear
+  const earlier = choice === 'earlier'
+  const dueNext = years.options.find(o => o.year === years.defaultYear)
+  const r = useMemo(() => (earlier ? null : estimateCorporation({
     ...v,
     totalAssets: v.totalAssets ?? 0,
     registrationYear: p.registrationYear,
-    taxYear,
+    taxYear: choice,
+    fiscalYearEndMonth: fy,
     vatRegistered: p.vatRegistered,
-  }), [v, p, taxYear])
+  })), [v, p, choice, fy, earlier])
   return (
     <>
       <div className="card pad">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
+          <SelectField
+            label="Taxable year"
+            value={String(choice)}
+            onChange={x => set('taxYear', x === 'earlier' ? 'earlier' : Number(x))}
+            options={[...years.options.map(o => [String(o.year), o.option]), ['earlier', 'An earlier year']]}
+            hint={`Starts on the year whose annual return (1702-RT) is due next: ${dueNext.label}, due ${fmtISO(dueNext.dueDate)}.`}
+          />
           <NumField emptyValue={null} label="Gross sales / revenue · year" value={v.grossSales} onChange={x => set('grossSales', x)} prefix="₱" lg />
           <NumField emptyValue={null} label="Cost of sales / services" value={v.costOfSales} onChange={x => set('costOfSales', x)} prefix="₱" />
           <NumField emptyValue={null} label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" />
@@ -511,11 +531,16 @@ function CorporationEstimator({ app }) {
           Quarterly amounts are not computed here. Enter the income tax already paid on this year's 1702Q returns, and it is subtracted from what you pay with the annual return (1702-RT).
         </p>
       </div>
-      {!hasFigures ? (
+      {earlier ? (
+        <div className="mini-warn" role="note" style={{ marginTop: '16px' }}>{EARLIER_YEARS_NOTE}</div>
+      ) : !hasFigures ? (
         <EnterFigures>Start with gross sales or revenue for the year. Your estimate appears here as you type.</EnterFigures>
       ) : (
         <>
-          <div style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
+          <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
+            <b style={{ color: 'var(--ink)' }}>{r.period.label}.</b> Annual return (1702-RT) due {fmtISO(r.period.annualDue)}.
+          </p>
+          <div style={{ marginTop: '10px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
               {r.usesMcit
                 ? <>The 2% MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>

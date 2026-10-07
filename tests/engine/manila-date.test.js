@@ -107,10 +107,20 @@ describe('BUG:W7 countdown for a user outside the Philippines', () => {
   })
 })
 
+// C06 changed the default from "this calendar year" to "the year whose annual
+// return is due next", so the Manila boundary that matters is the due date.
 describe('corporate estimator default taxable year follows Manila', () => {
-  it('00:30 Jan 1, 2027 Manila: TY 2027, so a 2023 start year already has MCIT', () => {
+  const figures = { grossSales: 10000000, costOfSales: 4000000, opex: 5900000, totalAssets: 50000000, registrationYear: 2023 }
+  it('00:30 Jan 1, 2027 Manila: TY 2026 is still the return due next (Apr 15, 2027), so no MCIT yet for a 2023 registration', () => {
     at('2026-12-31T16:30:00Z')
-    const r = estimateCorporation({ grossSales: 10000000, costOfSales: 4000000, opex: 5900000, totalAssets: 50000000, registrationYear: 2023 })
+    const r = estimateCorporation(figures)
+    expect(r.taxYear).toBe(2026)
+    expect(r.mcitApplies).toBe(false)
+  })
+  it('00:30 Apr 16, 2027 Manila (Apr 15 in UTC): TY 2027, so a 2023 start year now has MCIT', () => {
+    at('2027-04-15T16:30:00Z')
+    const r = estimateCorporation(figures)
+    expect(r.taxYear).toBe(2027)
     expect(r.mcitApplies).toBe(true)
   })
 })
