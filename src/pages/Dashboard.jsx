@@ -21,7 +21,7 @@ function NoProfile() {
         </h2>
         <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: '#cdddea', marginTop: '11px', maxWidth: '480px' }}>
           Answer a few questions about the taxpayer (employee, freelancer, sole prop, or corporation) and
-          Present Value lays out every BIR, LGU, SSS, PhilHealth, and Pag-IBIG date that applies, with the
+          JEZ Tax Suite lays out every BIR, LGU, SSS, PhilHealth, and Pag-IBIG date that applies, with the
           math and the legal basis behind each one.
         </p>
         <button className="btn-light" onClick={() => nav('/profiles/new')}>Set up your first profile →</button>

@@ -1,6 +1,6 @@
-# Present Value: Philippine Tax Suite
+# JEZ Tax Suite
 
-A multi-tenant SaaS web app from **The Present Value** that gives Philippine taxpayers
+**JEZ Tax Suite** is a multi-tenant web app that gives Philippine taxpayers
 (MSME owners, freelancers/professionals, employers, corporations, and the bookkeepers who
 serve them) three integrated tools:
 
@@ -97,6 +97,6 @@ one table, JSONB profile data, RLS restricting every row to its owner.
 - `legacy/index.html`: the previous single-file app, kept for reference
 - `project/`: original design source bundle, kept for reference
 
-> **Disclaimer:** Present Value provides estimates and reminders, not tax or legal advice,
+> **Disclaimer:** JEZ Tax Suite provides estimates and reminders, not tax or legal advice,
 > and does not replace review by a CPA. Verify dates and amounts with the agency before
 > filing or paying.

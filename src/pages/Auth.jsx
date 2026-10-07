@@ -63,7 +63,7 @@ export default function AuthPage() {
           </div>
         </form>
         <p style={{ fontSize: '11.5px', color: 'var(--dim)', textAlign: 'center', marginTop: '16px', lineHeight: 1.6 }}>
-          Present Value provides estimates and reminders, not tax or legal advice.
+          JEZ Tax Suite provides estimates and reminders, not tax or legal advice.
         </p>
       </div>
     </div>

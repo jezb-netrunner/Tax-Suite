@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "Present Value — Philippine tax compliance suite: deadline tracker, tax estimator, and compliance checklist for MSMEs, freelancers, employers, and their accountants.",
+  "description": "JEZ Tax Suite — Philippine tax compliance suite: deadline tracker, tax estimator, and compliance checklist for MSMEs, freelancers, employers, and their accountants.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

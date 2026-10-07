@@ -13,7 +13,7 @@ export default function BlogPage() {
     return (
       <div className="page wrap" style={{ paddingTop: '34px', paddingBottom: '64px' }}>
         <div style={{ marginBottom: '26px' }}>
-          <div className="mono" style={{ fontSize: '11.5px', fontWeight: 500, letterSpacing: '.13em', textTransform: 'uppercase', color: 'var(--acc)' }}>The Present Value Journal</div>
+          <div className="mono" style={{ fontSize: '11.5px', fontWeight: 500, letterSpacing: '.13em', textTransform: 'uppercase', color: 'var(--acc)' }}>The JEZ Tax Suite Journal</div>
           <h1 style={{ fontSize: '30px', fontWeight: 800, letterSpacing: '-.025em', marginTop: '10px' }}>Plain-language tax, for people who'd rather be working</h1>
         </div>
         <div className="card click" onClick={() => nav(`/blog/${featured.id}`)} style={{ borderRadius: '16px', overflow: 'hidden', display: 'flex', flexWrap: 'wrap' }}>

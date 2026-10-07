@@ -88,7 +88,7 @@ export default function App() {
         <header className="hdr">
           <div className="brand">
             <div className="brand-mark">₱</div>
-            <span className="brand-name">Present Value</span>
+            <span className="brand-name">JEZ Tax Suite</span>
           </div>
         </header>
         <main style={{ flex: 1 }}><AuthPage /></main>
@@ -111,7 +111,7 @@ export default function App() {
         <div className="hdr-left">
           <div className="brand">
             <div className="brand-mark">₱</div>
-            <span className="brand-name">Present Value</span>
+            <span className="brand-name">JEZ Tax Suite</span>
           </div>
           <nav className="nav" aria-label="Main">
             {links.map(([to, label]) => (
@@ -142,7 +142,7 @@ export default function App() {
 
       <footer className="ftr">
         <p>
-          <b>Present Value</b> provides estimates and reminders, not tax or legal advice, and does not replace
+          <b>JEZ Tax Suite</b> provides estimates and reminders, not tax or legal advice, and does not replace
           review by a CPA. Rules follow Philippine tax law as amended through the TRAIN Law (RA 10963),
           CREATE (RA 11534), CREATE MORE (RA 12066), and the Ease of Paying Taxes Act (RA 11976), plus current
           BIR, SSS, PhilHealth, Pag-IBIG, SEC, and LGU issuances. Every figure's legal basis and verification
