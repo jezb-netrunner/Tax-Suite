@@ -5,6 +5,7 @@ import { PROFILE_TYPES, defaultProfile } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
 import { manilaToday } from '../engine/dates.js'
 import { registrationYearOptions, registrationYearChoice } from '../engine/estimators/corporation.js'
+import { regimeCardText } from '../engine/wizardText.js'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -57,6 +58,8 @@ function WizardForm({ app, editing }) {
   const isBiz = p.type === 'individual' || p.type === 'mixed'
   const isCorp = p.type === 'corporation'
   const steps = p.type === 'employee' ? 3 : 4
+  // H08: card text depends on the profile type (mixed income files 1701).
+  const regimeText = regimeCardText({ type: p.type, vatRegistered: p.vatRegistered })
 
   async function finish() {
     setBusy(true); setErr(null)
@@ -127,15 +130,15 @@ function WizardForm({ app, editing }) {
                     <div className="opt-grid" style={{ marginTop: '10px' }}>
                       <button type="button" className={'opt-card' + (p.regime === '8pct' ? ' on' : '')} aria-pressed={p.regime === '8pct'} onClick={() => set('regime', '8pct')}>
                         <div className="t">8% flat tax</div>
-                        <div className="d">8% on gross{p.type === 'individual' ? ' above ₱250,000' : ''}, in lieu of graduated rates and percentage tax. Elected each year on the Q1 return.</div>
+                        <div className="d">{regimeText['8pct']}</div>
                       </button>
                       <button type="button" className={'opt-card' + (p.regime === 'graduated_osd' ? ' on' : '')} aria-pressed={p.regime === 'graduated_osd'} onClick={() => set('regime', 'graduated_osd')}>
                         <div className="t">Graduated + OSD</div>
-                        <div className="d">Graduated rates on income after the 40% Optional Standard Deduction, plus 3% percentage tax.</div>
+                        <div className="d">{regimeText.graduated_osd}</div>
                       </button>
                       <button type="button" className={'opt-card' + (p.regime === 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime === 'graduated_itemized'} onClick={() => set('regime', 'graduated_itemized')}>
                         <div className="t">Graduated + itemized</div>
-                        <div className="d">Graduated rates on income after actual documented expenses, plus 3% percentage tax.</div>
+                        <div className="d">{regimeText.graduated_itemized}</div>
                       </button>
                     </div>
                   </div>
@@ -146,11 +149,11 @@ function WizardForm({ app, editing }) {
                     <div className="opt-grid" style={{ marginTop: '10px' }}>
                       <button type="button" className={'opt-card' + (p.regime !== 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime !== 'graduated_itemized'} onClick={() => set('regime', 'graduated_osd')}>
                         <div className="t">Graduated + OSD</div>
-                        <div className="d">40% Optional Standard Deduction: simpler books, files 1701A.</div>
+                        <div className="d">{regimeText.graduated_osd}</div>
                       </button>
                       <button type="button" className={'opt-card' + (p.regime === 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime === 'graduated_itemized'} onClick={() => set('regime', 'graduated_itemized')}>
                         <div className="t">Graduated + itemized</div>
-                        <div className="d">Actual documented expenses: files the full 1701.</div>
+                        <div className="d">{regimeText.graduated_itemized}</div>
                       </button>
                     </div>
                   </div>
