@@ -124,7 +124,9 @@ export function estimatePayroll(in_) {
   const monthlyWithholdingC = mulFrac(perPeriodWithholdingC, num, den)
 
   const er = employerContributions(P(pay.basicC), pay.bases)
-  const totalCostC = payC + C(er.total)
+  // M12: the mandatory 13th-month pay accrues every month: 1/12 of basic (PD 851).
+  const thirteenthC = mulFrac(pay.basicC, 1, 12)
+  const totalCostC = payC + C(er.total) + thirteenthC
   const monthlyTaxable = P(monthlyTaxableC)
   const perPeriodWithholding = P(perPeriodWithholdingC)
   const monthlyWithholding = P(monthlyWithholdingC)
@@ -145,7 +147,8 @@ export function estimatePayroll(in_) {
   r('Employer SSS share (incl. EC)', er.sss, { sub: sssBaseNote(ded.sssMsc) })
   r('Employer PhilHealth share', er.philhealth)
   r('Employer Pag-IBIG share', er.pagibig)
-  r('Total employer cost this month', P(totalCostC), { strong: true, rule: true })
+  r('Accrued 13th-month pay (1/12 of basic)', P(thirteenthC), { sub: 'PD 851: the 13th-month pay is one-twelfth of the basic salary earned in the year, so set this aside every month.' })
+  r('Total employer cost this month', P(totalCostC), { strong: true, rule: true, sub: 'Pay, employer contributions and the 13th-month accrual. Other benefits (leave, bonuses, benefits in kind) are not included.' })
 
   return {
     minimumWage: P(pay.minimumWageC),
@@ -155,6 +158,7 @@ export function estimatePayroll(in_) {
     monthlyWithholding,
     employeeDeductions: ded,
     employerContributions: er,
+    thirteenthMonthAccrual: P(thirteenthC),
     totalMonthlyCost: P(totalCostC),
     rows,
     references: [...wcomp.tables.legalBasis, ...(pay.mwe ? wcomp.mweExempt.legalBasis : [])],

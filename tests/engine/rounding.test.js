@@ -208,7 +208,11 @@ describe('payroll lines are centavo-exact', () => {
     expect(r.monthlyWithholding).toBe(3.2)
     expect(r.perPeriodWithholding).toBe(3.2)
     expect(r.employerContributions.philhealth).toBe(568.7)
-    expect(r.totalMonthlyCost).toBe(22748 + r.employerContributions.total)
+    // M12: the total includes the 13th-month accrual, 22,748 ÷ 12 = 1,895.666… -> 1,895.67:
+    // 22,748 + employer 3,048.70 (SSS 2,280 + PhilHealth 568.70 + Pag-IBIG 200) + 1,895.67 = 27,692.37
+    expect(r.employerContributions.total).toBe(3048.7)
+    expect(r.thirteenthMonthAccrual).toBe(1895.67)
+    expect(r.totalMonthlyCost).toBe(27692.37)
   })
   it('weekly period: per-period taxable and withholding are centavo amounts', () => {
     const r = estimatePayroll({ monthlyBasic: 30000, period: 'weekly' })
