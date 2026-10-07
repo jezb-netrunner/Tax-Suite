@@ -27,6 +27,14 @@ export function payFactorOf(f) {
   return n
 }
 
+// H10: the NCR rates quoted under the minimum wage earner's daily-rate box.
+export function minimumWageReferenceNote() {
+  const m = wcomp.minimumWageReference.value
+  const [y, mo, d] = m.effective.split('-').map(Number)
+  const from = new Date(y, mo - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return `${m.region} (${m.order}, from ${from}): ₱${m.dailyNonAgriculture} a day for non-agriculture; ₱${m.dailyAgricultureAndSmall} for ${m.agricultureAndSmallCovers}. Other regions have their own wage orders.`
+}
+
 // '₱755' or '₱755.50' (no '.00' on a whole-peso daily rate).
 function dailyRateText(pesos) {
   return formatCentavos(toCentavos(pesos)).replace(/\.00$/, '')

@@ -4,9 +4,8 @@ import { useApp } from '../state/AppState.jsx'
 import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation, corporateTaxYears, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
-import { estimatePayroll, DEFAULT_PAY_FACTOR } from '../engine/estimators/payroll.js'
+import { estimatePayroll, DEFAULT_PAY_FACTOR, minimumWageReferenceNote } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions } from '../engine/estimators/contributions.js'
-import wcomp from '../data/rules/withholding-compensation.json'
 import { fromISO } from '../engine/dates.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
@@ -387,9 +386,7 @@ const PAY_FACTOR_OPTIONS = [
 const PAY_FACTOR_HINT = '365 if paid for every day of the year, rest days included (most monthly-paid workers); 313 for a six-day week; 261 for a five-day week.'
 
 function minimumWageHint() {
-  const m = wcomp.minimumWageReference.value
-  const from = fromISO(m.effective).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  return `Use the minimum wage for your region and industry. ${m.region}: ₱${m.dailyNonAgriculture} a day (non-agriculture) from ${from}; other regions have their own wage orders.`
+  return `Use the minimum wage for your region and industry. ${minimumWageReferenceNote()}`
 }
 
 function MinimumWageSwitch({ v, set, who }) {
