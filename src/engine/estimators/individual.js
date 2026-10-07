@@ -13,6 +13,7 @@ import businessTax from '../../data/rules/business-tax.json'
 import { bracketTax, bracketTaxCentavos } from '../tax.js'
 import { toCentavos, fromCentavos, toWholePesos, mulRate, mulFrac, groupThousands } from '../../lib/money.js'
 import { manilaToday } from '../dates.js'
+import { estimateEmployee } from './employee.js'
 
 const BR = incomeTax.graduatedBrackets.value
 const EIGHT = incomeTax.eightPercent.value
@@ -412,5 +413,43 @@ export function estimateIndividual(in_) {
       ...incomeTax.eightPercent.legalBasis,
       ...businessTax.percentageTaxRate.legalBasis,
     ],
+  }
+}
+
+/**
+ * M05: where a mixed-income earner's compensation figures come from.
+ * The Compensation side tab (employee estimator inputs) wins when its monthly
+ * salary is filled: annual taxable compensation and the annual tax, which the
+ * employer withholds by December after the year-end adjustment. Otherwise the
+ * Mixed tab's own boxes are used. `differs` flags own boxes that are filled
+ * and disagree with the Compensation side tab.
+ *
+ * @param {Object} own        Mixed tab inputs { compensationTaxable, compensationWithheld } (blank = null)
+ * @param {Object} employee   Compensation side tab inputs, or null
+ */
+export function compensationForMixed(own = {}, employee = null) {
+  const filled = x => x !== null && x !== undefined && x !== '' && Number.isFinite(Number(x))
+  const ownTaxable = filled(own.compensationTaxable) ? Number(own.compensationTaxable) : null
+  const ownWithheld = filled(own.compensationWithheld) ? Number(own.compensationWithheld) : null
+  if (employee && Number(employee.monthlyBasic) > 0) {
+    const e = estimateEmployee(employee)
+    // Compared as whole-peso return lines, the way the figures are shown and used.
+    const differ = (a, b) => a !== null && toWholePesos(toCentavos(a)) !== toWholePesos(toCentavos(b))
+    return {
+      source: 'compensationTab',
+      taxable: e.annualTaxable,
+      withheld: e.annualTax,
+      ownTaxable,
+      ownWithheld,
+      differs: differ(ownTaxable, e.annualTaxable) || differ(ownWithheld, e.annualTax),
+    }
+  }
+  return {
+    source: ownTaxable !== null || ownWithheld !== null ? 'own' : 'none',
+    taxable: ownTaxable ?? 0,
+    withheld: ownWithheld ?? 0,
+    ownTaxable,
+    ownWithheld,
+    differs: false,
   }
 }

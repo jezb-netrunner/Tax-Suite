@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { estimateIndividual, MONTHS } from '../engine/estimators/individual.js'
+import { estimateIndividual, compensationForMixed, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation } from '../engine/estimators/corporation.js'
 import { estimatePayroll } from '../engine/estimators/payroll.js'
@@ -38,6 +38,18 @@ function BasisNote({ refs }) {
     </p>
   )
 }
+
+// M05: every mode starts with empty boxes; until the main figure is typed the
+// results area shows this prompt instead of made-up sample figures.
+function EnterFigures({ children }) {
+  return (
+    <div className="card pad empty-note" style={{ marginTop: '16px' }}>
+      <b style={{ color: 'var(--ink)' }}>Enter your figures.</b> {children} Nothing is saved to this profile until you type a figure.
+    </div>
+  )
+}
+
+const NOTE_STYLE = { marginTop: '12px', fontSize: '12.5px', color: 'var(--ink)', background: '#eef3f8', borderRadius: '9px', padding: '10px 13px', lineHeight: 1.5 }
 
 // Per-profile input memory so returning users see their numbers.
 // Persists 900ms after the last keystroke to avoid write storms.
@@ -81,23 +93,31 @@ function useInputs(app, key, defaults) {
   return [vals, update]
 }
 
-function IndividualEstimator({ app, mixed }) {
+function IndividualEstimator({ app, mixed, onOpenTab }) {
   const p = app.active
-  const [v, set] = useInputs(app, mixed ? 'mixed' : 'individual', {
-    gross: 480000, expenses: 180000, cwt: 0, compensationTaxable: 600000, compensationWithheld: 62500,
-  })
+  // M05: no sample figures; boxes start empty.
+  const [v, set] = useInputs(app, mixed ? 'mixed' : 'individual', {})
   const taxYear = useManilaToday().getFullYear()
+  // Mixed income: compensation comes from the Compensation side tab when it is
+  // filled, otherwise from this tab's own boxes.
+  const employeeInputs = p.inputs?.employee
+  const comp = useMemo(
+    () => (mixed ? compensationForMixed(v, employeeInputs) : null),
+    [mixed, v, employeeInputs],
+  )
+  const showOwnComp = mixed && (comp.source !== 'compensationTab' || comp.ownTaxable !== null || comp.ownWithheld !== null)
+  const hasFigures = Number(v.gross) > 0 || Number(v.otherIncome) > 0 || (mixed && comp.taxable > 0)
   const r = useMemo(() => estimateIndividual({
     gross: v.gross, expenses: v.expenses, cwt: v.cwt,
     vatRegistered: p.vatRegistered, mixed,
-    compensationTaxable: mixed ? v.compensationTaxable : 0,
-    compensationWithheld: mixed ? v.compensationWithheld : 0,
+    compensationTaxable: mixed ? comp.taxable : 0,
+    compensationWithheld: mixed ? comp.withheld : 0,
     quarterlyPaid: v.quarterlyPaid, priorYearCredits: v.priorYearCredits,
     crossedMonth: v.crossedMonth, salesThroughCrossMonth: v.salesThroughCrossMonth,
     eightPercentPaid: v.eightPercentPaid, taxYear,
     otherIncome: v.otherIncome, subjectToOtherPercentageTax: v.otherPercentageTax === 'yes',
     nolcoPrior: v.nolcoPrior,
-  }), [v, p.vatRegistered, mixed, taxYear])
+  }), [v, comp, p.vatRegistered, mixed, taxYear])
 
   // The profile's regime, unless the figures override it.
   const opt8 = r.options.find(o => o.key === '8pct')
@@ -113,16 +133,36 @@ function IndividualEstimator({ app, mixed }) {
     <>
       <div className="card pad">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
-          <NumField label="Business gross sales / receipts · year" value={v.gross} onChange={x => set('gross', x)} prefix="₱" lg />
-          <NumField label="Itemized expenses" value={v.expenses} onChange={x => set('expenses', x)} prefix="₱" />
-          <NumField label="NOLCO from prior years" value={v.nolcoPrior} onChange={x => set('nolcoPrior', x)} prefix="₱" hint="Unused net operating losses from the last 3 years. Used only in the itemized option, and only against business income. Losses from 2020 and 2021 may carry over for 5 years (RA 11494); check with your CPA." />
-          <NumField label="Other non-operating income (not subject to final tax)" value={v.otherIncome} onChange={x => set('otherIncome', x)} prefix="₱" hint="Income outside your main business. Leave out bank interest and other income already taxed at a final rate." />
-          <NumField label="Tax withheld by clients (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
-          {mixed && <NumField label="Taxable compensation · year" value={v.compensationTaxable} onChange={x => set('compensationTaxable', x)} prefix="₱" hint="After mandatory contributions and non-taxable benefits; see box 21 of your 2316." />}
-          {mixed && <NumField label="Tax withheld by employer" value={v.compensationWithheld} onChange={x => set('compensationWithheld', x)} prefix="₱" />}
-          <NumField label="Income tax already paid on this year's quarterly returns (1701Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
-          <NumField label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
+          <NumField emptyValue={null} label="Business gross sales / receipts · year" value={v.gross} onChange={x => set('gross', x)} prefix="₱" lg />
+          <NumField emptyValue={null} label="Itemized expenses" value={v.expenses} onChange={x => set('expenses', x)} prefix="₱" />
+          <NumField emptyValue={null} label="NOLCO from prior years" value={v.nolcoPrior} onChange={x => set('nolcoPrior', x)} prefix="₱" hint="Unused net operating losses from the last 3 years. Used only in the itemized option, and only against business income. Losses from 2020 and 2021 may carry over for 5 years (RA 11494); check with your CPA." />
+          <NumField emptyValue={null} label="Other non-operating income (not subject to final tax)" value={v.otherIncome} onChange={x => set('otherIncome', x)} prefix="₱" hint="Income outside your main business. Leave out bank interest and other income already taxed at a final rate." />
+          <NumField emptyValue={null} label="Tax withheld by clients (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
+          {showOwnComp && <NumField emptyValue={null} label="Taxable compensation · year" value={v.compensationTaxable} onChange={x => set('compensationTaxable', x)} prefix="₱" hint="After mandatory contributions and non-taxable benefits; see box 21 of your 2316." />}
+          {showOwnComp && <NumField emptyValue={null} label="Tax withheld by employer" value={v.compensationWithheld} onChange={x => set('compensationWithheld', x)} prefix="₱" />}
+          <NumField emptyValue={null} label="Income tax already paid on this year's quarterly returns (1701Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
+          <NumField emptyValue={null} label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
+        {mixed && comp.source === 'compensationTab' && (
+          <div role="note" style={NOTE_STYLE}>
+            Compensation comes from the Compensation side tab: taxable compensation {money(comp.taxable)} and tax withheld
+            by your employer {money(comp.withheld)} (the year's tax, which your employer withholds by December).{' '}
+            <button type="button" className="linkbtn" onClick={() => onOpenTab('employee')}>Open the Compensation side tab</button>
+          </div>
+        )}
+        {mixed && comp.differs && (
+          <div className="mini-warn" role="alert">
+            The compensation figures typed on this tab
+            ({[comp.ownTaxable !== null && `taxable ${money(comp.ownTaxable)}`, comp.ownWithheld !== null && `withheld ${money(comp.ownWithheld)}`].filter(Boolean).join(', ')})
+            differ from the Compensation side tab ({money(comp.taxable)} taxable, {money(comp.withheld)} withheld).
+            This estimate uses the Compensation side tab. Clear the boxes here, or change that tab, so they match.
+          </div>
+        )}
+        {mixed && comp.source !== 'compensationTab' && (
+          <p className="cite" style={{ marginTop: '12px' }}>
+            If you fill in the Compensation side tab, your compensation figures are taken from there.
+          </p>
+        )}
         <div style={{ marginTop: '18px', maxWidth: '560px' }}>
           <SelectField
             label="Is the business subject to other percentage taxes (NIRC Secs 117-127)?"
@@ -150,100 +190,110 @@ function IndividualEstimator({ app, mixed }) {
         </div>
       )}
 
-      {r.crossing && (
-        <div className="card pad" style={{ marginTop: '16px' }}>
-          <h3 className="sec-h">Your sales passed ₱3,000,000 this year</h3>
-          <div className="mini-warn" role="note">
-            The whole year moves to graduated rates: the 8% option is not available this year, and any 8% income tax
-            already paid on your 1701Q is credited. The 3% percentage tax still applies to your sales from {r.crossing.span}.
-            {' '}<b>VAT applies from {r.crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
-            registration) before the end of the month after the month your sales passed ₱3,000,000.
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
-            <SelectField
-              label="Month your sales passed ₱3,000,000"
-              value={v.crossedMonth ? String(v.crossedMonth) : ''}
-              onChange={x => set('crossedMonth', x ? Number(x) : null)}
-              options={[
-                ['', `Not sure: assume even monthly sales (${MONTHS[r.crossing.evenMonth - 1]})`],
-                ...MONTHS.map((m, i) => [String(i + 1), m]),
-              ]}
-            />
-            <NumField label={`Sales from ${r.crossing.span}`} value={v.salesThroughCrossMonth} emptyValue={null} onChange={x => set('salesThroughCrossMonth', x)} prefix="₱" hint="Optional. If blank, the year's sales are spread evenly by month." />
-            <NumField label="8% income tax already paid on 1701Q this year" value={v.eightPercentPaid} onChange={x => set('eightPercentPaid', x)} prefix="₱" hint="Credited against this year's graduated income tax. Don't count it again in the quarterly-payments box above." />
-          </div>
-          {r.crossing.warnings.map(w => <div key={w} className="mini-warn" role="alert">{w}</div>)}
-        </div>
-      )}
-
-      {r.nolco.note && (
-        <div className="mini-warn" role="note" style={{ marginTop: '16px' }}>{r.nolco.note}</div>
-      )}
-
-      <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
-        <b style={{ color: 'var(--ink)' }}>{r.ratesLabel}.</b> {r.ratesNote}
-      </p>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '14px', marginTop: '12px' }}>
-        {r.options.map(c => {
-          const isBest = c.eligible && c === r.best
-          return (
-            <div key={c.key} style={{
-              borderRadius: '13px', padding: '18px',
-              border: isBest ? '1.5px solid var(--acc)' : '1.5px solid var(--line)',
-              background: isBest ? 'var(--accSoft)' : 'var(--sf)',
-              opacity: c.eligible ? 1 : 0.6,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                <span style={{ fontWeight: 700, fontSize: '14.5px' }}>{c.name}</span>
-                {isBest && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: 'var(--good)', color: '#fff' }}>Lowest</span>}
-                {!c.eligible && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: '#eef3f8', color: 'var(--mut)' }}>N/A</span>}
+      {!hasFigures ? (
+        <EnterFigures>
+          {mixed
+            ? 'Start with your business gross sales and your taxable compensation for the year (or fill in the Compensation side tab). Your estimate appears here as you type.'
+            : 'Start with your gross sales or receipts for the year. Your estimate appears here as you type.'}
+        </EnterFigures>
+      ) : (
+        <>
+          {r.crossing && (
+            <div className="card pad" style={{ marginTop: '16px' }}>
+              <h3 className="sec-h">Your sales passed ₱3,000,000 this year</h3>
+              <div className="mini-warn" role="note">
+                The whole year moves to graduated rates: the 8% option is not available this year, and any 8% income tax
+                already paid on your 1701Q is credited. The 3% percentage tax still applies to your sales from {r.crossing.span}.
+                {' '}<b>VAT applies from {r.crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
+                registration) before the end of the month after the month your sales passed ₱3,000,000.
               </div>
-              <div className="mono" style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-.01em', marginTop: '10px', color: isBest ? 'var(--accInk)' : 'var(--ink)' }}>{c.eligible ? money(c.total) : '—'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '3px' }}>{!c.eligible ? c.reason : c.vatNotIncluded ? r.vatNote : 'estimated annual tax'}</div>
-              <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--line2)', display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12.5px', color: 'var(--mut)' }}>Income tax</span>
-                  <span className="mono" style={{ fontSize: '12.5px', fontWeight: 600 }}>{c.eligible ? money(c.incomeTax) : '—'}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12.5px', color: 'var(--mut)' }}>Business tax</span>
-                  <span className="mono" style={{ fontSize: '12.5px', fontWeight: 600 }}>
-                    {!c.eligible || c.businessTax.kind === 'vat' ? '—' : c.businessTax.kind === 'pct' ? money(c.businessTax.amount) : '₱0'}
-                  </span>
-                </div>
-                {c.eligible && c.businessTax.kind === 'vat' && (
-                  <div style={{ fontSize: '11.5px', color: 'var(--mut)' }}>VAT (2550Q) not included.</div>
-                )}
-                {c.eligible && c.businessTax.vatFrom && (
-                  <div style={{ fontSize: '11.5px', color: 'var(--mut)' }}>Percentage tax to {r.crossing.monthName}; VAT from {c.businessTax.vatFrom} not included.</div>
-                )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
+                <SelectField
+                  label="Month your sales passed ₱3,000,000"
+                  value={v.crossedMonth ? String(v.crossedMonth) : ''}
+                  onChange={x => set('crossedMonth', x ? Number(x) : null)}
+                  options={[
+                    ['', `Not sure: assume even monthly sales (${MONTHS[r.crossing.evenMonth - 1]})`],
+                    ...MONTHS.map((m, i) => [String(i + 1), m]),
+                  ]}
+                />
+                <NumField emptyValue={null} label={`Sales from ${r.crossing.span}`} value={v.salesThroughCrossMonth} onChange={x => set('salesThroughCrossMonth', x)} prefix="₱" hint="Optional. If blank, the year's sales are spread evenly by month." />
+                <NumField emptyValue={null} label="8% income tax already paid on 1701Q this year" value={v.eightPercentPaid} onChange={x => set('eightPercentPaid', x)} prefix="₱" hint="Credited against this year's graduated income tax. Don't count it again in the quarterly-payments box above." />
               </div>
-              <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--dim)' }}>Files: {c.forms}</div>
+              {r.crossing.warnings.map(w => <div key={w} className="mini-warn" role="alert">{w}</div>)}
             </div>
-          )
-        })}
-      </div>
+          )}
 
-      <div style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px', display: 'flex', alignItems: 'center', gap: '13px' }}>
-        <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--good)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>✓</span>
-        <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
-          {r.best.name} is the cheapest eligible option at {money(r.best.total)}
-          {r.savingsVsNext > 0 ? `, saving ${money(r.savingsVsNext)} versus the next best.` : '.'}
-          {r.vatNotIncluded && <>{' '}{r.vatNote}</>}
-          {' '}{regimeNote}
-        </span>
-      </div>
+          {r.nolco.note && (
+            <div className="mini-warn" role="note" style={{ marginTop: '16px' }}>{r.nolco.note}</div>
+          )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
-        <div className="card pad">
-          <h3 className="sec-h">How we got there: {r.best.name}</h3>
-          <Rows rows={r.rows} />
-          <BasisNote refs={r.references} />
-        </div>
-        <FormPreview r={r} />
-      </div>
-      <SelfContributionsCard monthly={Math.round(v.gross / 12)} />
+          <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
+            <b style={{ color: 'var(--ink)' }}>{r.ratesLabel}.</b> {r.ratesNote}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '14px', marginTop: '12px' }}>
+            {r.options.map(c => {
+              const isBest = c.eligible && c === r.best
+              return (
+                <div key={c.key} style={{
+                  borderRadius: '13px', padding: '18px',
+                  border: isBest ? '1.5px solid var(--acc)' : '1.5px solid var(--line)',
+                  background: isBest ? 'var(--accSoft)' : 'var(--sf)',
+                  opacity: c.eligible ? 1 : 0.6,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <span style={{ fontWeight: 700, fontSize: '14.5px' }}>{c.name}</span>
+                    {isBest && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: 'var(--good)', color: '#fff' }}>Lowest</span>}
+                    {!c.eligible && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: '#eef3f8', color: 'var(--mut)' }}>N/A</span>}
+                  </div>
+                  <div className="mono" style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-.01em', marginTop: '10px', color: isBest ? 'var(--accInk)' : 'var(--ink)' }}>{c.eligible ? money(c.total) : '—'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '3px' }}>{!c.eligible ? c.reason : c.vatNotIncluded ? r.vatNote : 'estimated annual tax'}</div>
+                  <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--line2)', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '12.5px', color: 'var(--mut)' }}>Income tax</span>
+                      <span className="mono" style={{ fontSize: '12.5px', fontWeight: 600 }}>{c.eligible ? money(c.incomeTax) : '—'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '12.5px', color: 'var(--mut)' }}>Business tax</span>
+                      <span className="mono" style={{ fontSize: '12.5px', fontWeight: 600 }}>
+                        {!c.eligible || c.businessTax.kind === 'vat' ? '—' : c.businessTax.kind === 'pct' ? money(c.businessTax.amount) : '₱0'}
+                      </span>
+                    </div>
+                    {c.eligible && c.businessTax.kind === 'vat' && (
+                      <div style={{ fontSize: '11.5px', color: 'var(--mut)' }}>VAT (2550Q) not included.</div>
+                    )}
+                    {c.eligible && c.businessTax.vatFrom && (
+                      <div style={{ fontSize: '11.5px', color: 'var(--mut)' }}>Percentage tax to {r.crossing.monthName}; VAT from {c.businessTax.vatFrom} not included.</div>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--dim)' }}>Files: {c.forms}</div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px', display: 'flex', alignItems: 'center', gap: '13px' }}>
+            <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--good)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>✓</span>
+            <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
+              {r.best.name} is the cheapest eligible option at {money(r.best.total)}
+              {r.savingsVsNext > 0 ? `, saving ${money(r.savingsVsNext)} versus the next best.` : '.'}
+              {r.vatNotIncluded && <>{' '}{r.vatNote}</>}
+              {' '}{regimeNote}
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
+            <div className="card pad">
+              <h3 className="sec-h">How we got there: {r.best.name}</h3>
+              <Rows rows={r.rows} />
+              <BasisNote refs={r.references} />
+            </div>
+            <FormPreview r={r} />
+          </div>
+          <SelfContributionsCard monthly={Math.round((Number(v.gross) || 0) / 12)} />
+        </>
+      )}
     </>
   )
 }
@@ -321,40 +371,47 @@ function SelfContributionsCard({ monthly }) {
 }
 
 function EmployeeEstimator({ app }) {
-  const [v, set] = useInputs(app, 'employee', { monthlyBasic: 30000, monthlyAllowances: 0, bonusesAnnual: 30000 })
-  const r = useMemo(() => estimateEmployee(v), [v])
+  const [v, set] = useInputs(app, 'employee', {})
+  const r = useMemo(() => estimateEmployee({
+    ...v, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0, bonusesAnnual: v.bonusesAnnual ?? 0,
+  }), [v])
+  const hasFigures = Number(v.monthlyBasic) > 0
   return (
     <>
       <div className="card pad">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
-          <NumField label="Monthly basic salary" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />
-          <NumField label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" hint="Regular taxable extras, excluding de minimis benefits." />
-          <NumField label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint="First ₱90,000 is tax-exempt." />
+          <NumField emptyValue={null} label="Monthly basic salary" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />
+          <NumField emptyValue={null} label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" hint="Regular taxable extras, excluding de minimis benefits." />
+          <NumField emptyValue={null} label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint="First ₱90,000 is tax-exempt." />
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
-        <div className="card pad">
-          <h3 className="sec-h">Your monthly payslip</h3>
-          <Rows fmt="centavo" rows={r.rows} />
+      {!hasFigures ? (
+        <EnterFigures>Start with your monthly basic salary. Your payslip and annual tax appear here as you type.</EnterFigures>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
+          <div className="card pad">
+            <h3 className="sec-h">Your monthly payslip</h3>
+            <Rows fmt="centavo" rows={r.rows} />
+          </div>
+          <div className="card pad">
+            <h3 className="sec-h">Your year, annualized</h3>
+            <Rows fmt="centavo" rows={r.annualRows} />
+            <BasisNote refs={r.references} />
+          </div>
         </div>
-        <div className="card pad">
-          <h3 className="sec-h">Your year, annualized</h3>
-          <Rows fmt="centavo" rows={r.annualRows} />
-          <BasisNote refs={r.references} />
-        </div>
-      </div>
+      )}
     </>
   )
 }
 
 function CorporationEstimator({ app }) {
   const p = app.active
-  const [v, set] = useInputs(app, 'corporation', {
-    grossSales: 10000000, costOfSales: 4000000, opex: 3000000, totalAssets: 50000000, cwt: 0,
-  })
+  const [v, set] = useInputs(app, 'corporation', {})
+  const hasFigures = Number(v.grossSales) > 0
   const taxYear = useManilaToday().getFullYear()
   const r = useMemo(() => estimateCorporation({
     ...v,
+    totalAssets: v.totalAssets ?? 0,
     registrationYear: p.registrationYear,
     taxYear,
     vatRegistered: p.vatRegistered,
@@ -363,52 +420,65 @@ function CorporationEstimator({ app }) {
     <>
       <div className="card pad">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
-          <NumField label="Gross sales / revenue · year" value={v.grossSales} onChange={x => set('grossSales', x)} prefix="₱" lg />
-          <NumField label="Cost of sales / services" value={v.costOfSales} onChange={x => set('costOfSales', x)} prefix="₱" />
-          <NumField label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" />
-          <NumField label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint="For the 20% small-corporation test." />
-          <NumField label="Creditable tax withheld (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
-          <NumField label="Income tax already paid on this year's quarterly returns (1702Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
-          <NumField label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
+          <NumField emptyValue={null} label="Gross sales / revenue · year" value={v.grossSales} onChange={x => set('grossSales', x)} prefix="₱" lg />
+          <NumField emptyValue={null} label="Cost of sales / services" value={v.costOfSales} onChange={x => set('costOfSales', x)} prefix="₱" />
+          <NumField emptyValue={null} label="Operating expenses" value={v.opex} onChange={x => set('opex', x)} prefix="₱" />
+          <NumField emptyValue={null} label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint="For the 20% small-corporation test." />
+          <NumField emptyValue={null} label="Creditable tax withheld (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
+          <NumField emptyValue={null} label="Income tax already paid on this year's quarterly returns (1702Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
+          <NumField emptyValue={null} label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
         <p className="cite" style={{ marginTop: '14px' }}>
           Quarterly amounts are not computed here. Enter the income tax already paid on this year's 1702Q returns, and it is subtracted from what you pay with the annual return (1702-RT).
         </p>
       </div>
-      <div style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
-        <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
-          {r.usesMcit
-            ? <>The 2% MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
-            : <>Income tax due: {money(r.incomeTaxDue)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitApplies ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
-          {!r.vat && r.pct > 0 && <> Plus {money(r.pct)} percentage tax (non-VAT).</>}
-          {r.vatNotIncluded && <> {r.vatNote}</>}
-        </span>
-      </div>
-      <div className="card pad" style={{ marginTop: '20px' }}>
-        <h3 className="sec-h">How we got there</h3>
-        <Rows rows={r.rows} />
-        <BasisNote refs={r.references} />
-      </div>
+      {!hasFigures ? (
+        <EnterFigures>Start with gross sales or revenue for the year. Your estimate appears here as you type.</EnterFigures>
+      ) : (
+        <>
+          <div style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
+            <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
+              {r.usesMcit
+                ? <>The 2% MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
+                : <>Income tax due: {money(r.incomeTaxDue)} at the {Math.round(r.rcitRate * 100)}% {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitApplies ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
+              {!r.vat && r.pct > 0 && <> Plus {money(r.pct)} percentage tax (non-VAT).</>}
+              {r.vatNotIncluded && <> {r.vatNote}</>}
+            </span>
+          </div>
+          <div className="card pad" style={{ marginTop: '20px' }}>
+            <h3 className="sec-h">How we got there</h3>
+            <Rows rows={r.rows} />
+            <BasisNote refs={r.references} />
+          </div>
+        </>
+      )}
     </>
   )
 }
 
 function PayrollEstimator({ app }) {
-  const [v, set] = useInputs(app, 'payroll', { monthlyBasic: 25000, monthlyAllowances: 0 })
-  const r = useMemo(() => estimatePayroll(v), [v])
+  const [v, set] = useInputs(app, 'payroll', {})
+  const r = useMemo(() => estimatePayroll({
+    ...v, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0,
+  }), [v])
+  const hasFigures = Number(v.monthlyBasic) > 0
   return (
     <>
       <div className="card pad">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
-          <NumField label="Employee monthly basic pay" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />
-          <NumField label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" />
+          <NumField emptyValue={null} label="Employee monthly basic pay" value={v.monthlyBasic} onChange={x => set('monthlyBasic', x)} prefix="₱" lg />
+          <NumField emptyValue={null} label="Taxable allowances · month" value={v.monthlyAllowances} onChange={x => set('monthlyAllowances', x)} prefix="₱" />
         </div>
       </div>
-      <div className="card pad" style={{ marginTop: '20px' }}>
-        <h3 className="sec-h">Withholding &amp; true cost for this employee</h3>
-        <Rows fmt="centavo" rows={r.rows} />
-        <BasisNote refs={r.references} />
-      </div>
+      {!hasFigures ? (
+        <EnterFigures>Start with the employee's monthly basic pay. The withholding and true cost appear here as you type.</EnterFigures>
+      ) : (
+        <div className="card pad" style={{ marginTop: '20px' }}>
+          <h3 className="sec-h">Withholding &amp; true cost for this employee</h3>
+          <Rows fmt="centavo" rows={r.rows} />
+          <BasisNote refs={r.references} />
+        </div>
+      )}
     </>
   )
 }
@@ -469,7 +539,7 @@ export default function Estimator() {
           otherwise one client's saved figures would linger under another's. */}
       <React.Fragment key={`${p.id || 'local'}:${active}`}>
         {active === 'individual' && <IndividualEstimator app={app} mixed={false} />}
-        {active === 'mixed' && <IndividualEstimator app={app} mixed={true} />}
+        {active === 'mixed' && <IndividualEstimator app={app} mixed={true} onOpenTab={setTab} />}
         {active === 'employee' && <EmployeeEstimator app={app} />}
         {active === 'corporation' && <CorporationEstimator app={app} />}
         {active === 'payroll' && <PayrollEstimator app={app} />}
