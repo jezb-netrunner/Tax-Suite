@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { estimateIndividual } from '../engine/estimators/individual.js'
+import { estimateIndividual, MONTHS } from '../engine/estimators/individual.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation } from '../engine/estimators/corporation.js'
 import { estimatePayroll } from '../engine/estimators/payroll.js'
 import { selfEmployedMonthlyContributions } from '../engine/estimators/contributions.js'
-import { NumField, Disclaimer } from '../components/ui.jsx'
+import { NumField, SelectField, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 
@@ -86,13 +86,23 @@ function IndividualEstimator({ app, mixed }) {
   const [v, set] = useInputs(app, mixed ? 'mixed' : 'individual', {
     gross: 480000, expenses: 180000, cwt: 0, compensationTaxable: 600000, compensationWithheld: 62500,
   })
+  const taxYear = useManilaToday().getFullYear()
   const r = useMemo(() => estimateIndividual({
     gross: v.gross, expenses: v.expenses, cwt: v.cwt,
     vatRegistered: p.vatRegistered, mixed,
     compensationTaxable: mixed ? v.compensationTaxable : 0,
     compensationWithheld: mixed ? v.compensationWithheld : 0,
     quarterlyPaid: v.quarterlyPaid, priorYearCredits: v.priorYearCredits,
-  }), [v, p.vatRegistered, mixed])
+    crossedMonth: v.crossedMonth, salesThroughCrossMonth: v.salesThroughCrossMonth,
+    eightPercentPaid: v.eightPercentPaid, taxYear,
+  }), [v, p.vatRegistered, mixed, taxYear])
+
+  // The profile's regime, unless the figures override it.
+  const regimeNote = p.regime === '8pct' && r.crossing
+    ? 'Your profile says the 8% option, but because sales passed ₱3,000,000 the whole year is taxed at graduated rates.'
+    : p.regime === '8pct' && p.vatRegistered
+      ? 'Your profile says the 8% option, but it is not available to VAT-registered taxpayers.'
+      : `Note: the regime on this profile is ${p.regime === '8pct' ? 'the 8% option' : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
 
   return (
     <>
@@ -111,11 +121,29 @@ function IndividualEstimator({ app, mixed }) {
         </p>
       </div>
 
-      {r.overThreshold && (
-        <div style={{ marginTop: '16px' }} className="mini-warn">
-          You're above the <b>₱3,000,000 VAT threshold</b>, so the 8% option and the 3% percentage tax no longer apply,
-          and VAT registration is mandatory (register before the end of the month after the month you crossed it).
-          Income-tax figures below exclude VAT, which is computed separately on sales less input VAT.
+      {r.crossing && (
+        <div className="card pad" style={{ marginTop: '16px' }}>
+          <h3 className="sec-h">Your sales passed ₱3,000,000 this year</h3>
+          <div className="mini-warn" role="note">
+            The whole year moves to graduated rates: the 8% option is not available this year, and any 8% income tax
+            already paid on your 1701Q is credited. The 3% percentage tax still applies to your sales from {r.crossing.span}.
+            {' '}<b>VAT applies from {r.crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
+            registration) before the end of the month after the month your sales passed ₱3,000,000.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
+            <SelectField
+              label="Month your sales passed ₱3,000,000"
+              value={v.crossedMonth ? String(v.crossedMonth) : ''}
+              onChange={x => set('crossedMonth', x ? Number(x) : null)}
+              options={[
+                ['', `Not sure: assume even monthly sales (${MONTHS[r.crossing.evenMonth - 1]})`],
+                ...MONTHS.map((m, i) => [String(i + 1), m]),
+              ]}
+            />
+            <NumField label={`Sales from ${r.crossing.span}`} value={v.salesThroughCrossMonth} emptyValue={null} onChange={x => set('salesThroughCrossMonth', x)} prefix="₱" hint="Optional. If blank, the year's sales are spread evenly by month." />
+            <NumField label="8% income tax already paid on 1701Q this year" value={v.eightPercentPaid} onChange={x => set('eightPercentPaid', x)} prefix="₱" hint="Credited against this year's graduated income tax. Don't count it again in the quarterly-payments box above." />
+          </div>
+          {r.crossing.warnings.map(w => <div key={w} className="mini-warn" role="alert">{w}</div>)}
         </div>
       )}
 
@@ -135,7 +163,7 @@ function IndividualEstimator({ app, mixed }) {
                 {!c.eligible && <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: '100px', background: '#eef3f8', color: 'var(--mut)' }}>N/A</span>}
               </div>
               <div className="mono" style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-.01em', marginTop: '10px', color: isBest ? 'var(--accInk)' : 'var(--ink)' }}>{c.eligible ? money(c.total) : '—'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '3px' }}>{c.eligible ? 'estimated annual tax' : 'Over ₱3M / VAT: not available'}</div>
+              <div style={{ fontSize: '12px', color: 'var(--mut)', marginTop: '3px' }}>{c.eligible ? 'estimated annual tax' : c.reason}</div>
               <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--line2)', display: 'flex', flexDirection: 'column', gap: '7px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '12.5px', color: 'var(--mut)' }}>Income tax</span>
@@ -147,6 +175,9 @@ function IndividualEstimator({ app, mixed }) {
                     {!c.eligible ? '—' : c.businessTax.kind === 'vat' ? 'VAT 12%' : c.businessTax.kind === 'pct' ? money(c.businessTax.amount) : '₱0'}
                   </span>
                 </div>
+                {c.eligible && c.businessTax.vatFrom && (
+                  <div style={{ fontSize: '11.5px', color: 'var(--mut)' }}>Percentage tax to {r.crossing.monthName}; VAT from {c.businessTax.vatFrom} not included.</div>
+                )}
               </div>
               <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--dim)' }}>Files: {c.forms}</div>
             </div>
@@ -159,7 +190,7 @@ function IndividualEstimator({ app, mixed }) {
         <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
           {r.best.name} is the cheapest eligible option at {money(r.best.total)}
           {r.savingsVsNext > 0 ? `, saving ${money(r.savingsVsNext)} versus the next best.` : '.'}
-          {' '}Note: the regime on this profile is {p.regime === '8pct' ? 'the 8% option' : 'graduated rates'}, and the election locks for the year on the Q1 filing.
+          {' '}{regimeNote}
         </span>
       </div>
 
@@ -195,11 +226,10 @@ function FormPreview({ r }) {
       strong: true,
     },
   ]
-  const separate = best.businessTax.kind === 'pct'
-    ? { label: 'Percentage tax: paid quarterly on 2551Q, not with the annual return', value: money(ar.percentageTax) }
-    : best.businessTax.kind === 'vat'
-      ? { label: 'Business tax (VAT, separate 2550Q)', value: 'VAT 12%' }
-      : null
+  const separate = []
+  if (best.businessTax.kind === 'pct') separate.push({ label: 'Percentage tax: paid quarterly on 2551Q, not with the annual return', value: money(ar.percentageTax) })
+  if (best.businessTax.vatFrom) separate.push({ label: `VAT from ${best.businessTax.vatFrom} (2550Q): not included in this estimate`, value: '—' })
+  if (best.businessTax.kind === 'vat') separate.push({ label: 'Business tax (VAT, separate 2550Q)', value: 'VAT 12%' })
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
       <div style={{ background: '#f3f7fb', borderBottom: '1px solid var(--line)', padding: '15px 18px' }}>
@@ -213,12 +243,12 @@ function FormPreview({ r }) {
             <span className="mono" style={{ fontSize: '13.5px', fontWeight: f.strong ? 700 : 600 }}>{f.value}</span>
           </div>
         ))}
-        {separate && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 0', marginTop: '6px', borderTop: '1px dashed var(--line)' }}>
-            <span style={{ flex: 1, fontSize: '13px', color: 'var(--mut)' }}>{separate.label}</span>
-            <span className="mono" style={{ fontSize: '13.5px', fontWeight: 600 }}>{separate.value}</span>
+        {separate.map((f, i) => (
+          <div key={'s' + i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 0', marginTop: i ? 0 : '6px', borderTop: i ? '1px solid var(--line2)' : '1px dashed var(--line)' }}>
+            <span style={{ flex: 1, fontSize: '13px', color: 'var(--mut)' }}>{f.label}</span>
+            <span className="mono" style={{ fontSize: '13.5px', fontWeight: 600 }}>{f.value}</span>
           </div>
-        )}
+        ))}
         {!ar.creditLines.some(c => c.label.includes('1701Q')) && (
           <p className="cite" style={{ marginTop: '10px' }}>This is before any income tax paid on this year's 1701Q returns. Quarterly amounts are not computed here; enter what you paid above.</p>
         )}

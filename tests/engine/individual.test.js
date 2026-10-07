@@ -40,12 +40,15 @@ describe('CWT crediting and overpayment', () => {
 })
 
 describe('VAT threshold guard', () => {
-  it('8% unavailable above ₱3M gross', () => {
-    const r = estimateIndividual({ gross: 3500000, expenses: 1000000 })
-    expect(r.vat).toBe(true)
+  it('8% unavailable above ₱3M gross; percentage tax still due until VAT starts (H04)', () => {
+    // RR 8-2018 / owner decision 6: the 3% percentage tax applies to sales from
+    // January through the month the ₱3M was passed. Even sales of ₱3,500,000
+    // pass ₱3M in November: 3,500,000 × 11/12 = 3,208,333 -> 3% = ₱96,250.
+    // VAT applies from December (not computed).
+    const r = estimateIndividual({ gross: 3500000, expenses: 1000000, taxYear: 2026 })
+    expect(r.overThreshold).toBe(true)
     expect(r.options.find(o => o.key === '8pct').eligible).toBe(false)
-    // no percentage tax when VAT applies
-    expect(r.options.find(o => o.key === 'osd').businessTax.kind).toBe('vat')
+    expect(r.options.find(o => o.key === 'osd').businessTax).toEqual({ kind: 'pct', amount: 96250, vatFrom: 'December 2026' })
   })
   it('VAT-registered below threshold also loses 8% and PT', () => {
     const r = estimateIndividual({ gross: 1000000, vatRegistered: true })

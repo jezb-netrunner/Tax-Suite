@@ -11,13 +11,16 @@
 import incomeTax from '../../data/rules/income-tax.json'
 import businessTax from '../../data/rules/business-tax.json'
 import { bracketTax, bracketTaxCentavos } from '../tax.js'
-import { toCentavos, fromCentavos, toWholePesos, mulRate } from '../../lib/money.js'
+import { toCentavos, fromCentavos, toWholePesos, mulRate, mulFrac, groupThousands } from '../../lib/money.js'
+import { manilaToday } from '../dates.js'
 
 const BR = incomeTax.graduatedBrackets.value
 const EIGHT = incomeTax.eightPercent.value
 const OSD = incomeTax.osd.value
 const VAT_THRESHOLD = businessTax.vatThreshold.value
 const PCT_RATE = businessTax.percentageTaxRate.value
+export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const pesoText = c => '₱' + groupThousands(Math.round(c / 100))
 
 export function gradTax(taxable) {
   return bracketTax(BR, taxable)
@@ -35,9 +38,16 @@ export function gradTax(taxable) {
  *   compensationWithheld (mixed only) tax already withheld by the employer
  *   quarterlyPaid    income tax already paid on this year's 1701Q returns
  *   priorYearCredits excess credits carried over from last year's annual return
+ *   crossedMonth     (non-VAT, sales over ₱3M) month 1-12 the ₱3M was passed;
+ *                    empty -> the month even monthly sales would pass it
+ *   salesThroughCrossMonth  optional sales from January to the end of that month
+ *                    (empty -> the year's sales prorated evenly by month)
+ *   eightPercentPaid (sales over ₱3M) 8% income tax already paid on 1701Q this year
+ *   taxYear          taxable year (default: the current year in Manila)
  */
 export function estimateIndividual(in_) {
   const { vatRegistered = false, mixed = false } = in_
+  const taxYear = in_.taxYear ?? manilaToday().getFullYear()
   // Whole-peso form lines, held in centavos (multiples of 100).
   const line = pesos => toWholePesos(toCentavos(pesos || 0))
   const P = fromCentavos
@@ -50,9 +60,53 @@ export function estimateIndividual(in_) {
   const compensationTaxable = P(compC)
 
   // The ₱3M test uses the actual sales (₱3,000,000.01 is over), not the rounded line.
-  const overThreshold = toCentavos(in_.gross || 0) > toCentavos(VAT_THRESHOLD)
+  const salesC = toCentavos(in_.gross || 0)
+  const thresholdC = toCentavos(VAT_THRESHOLD)
+  const overThreshold = salesC > thresholdC
   const vat = vatRegistered || overThreshold
   const eligible8 = !vat
+  const eligible8Reason = vatRegistered
+    ? 'Not available to VAT-registered taxpayers.'
+    : overThreshold ? 'Not available: sales are over ₱3,000,000.' : null
+
+  // H04 (RR 8-2018, owner decision 6): a non-VAT taxpayer whose sales pass ₱3M
+  // during the year. The whole year is on graduated rates, the 3% percentage
+  // tax applies to sales from January to the end of the month the ₱3M was
+  // passed, and VAT applies from the following month (not computed here).
+  let crossing = null
+  let ptBaseC = grossC
+  if (!vatRegistered && overThreshold) {
+    const given = Number(in_.crossedMonth)
+    const validMonth = Number.isInteger(given) && given >= 1 && given <= 12
+    // Even monthly sales pass ₱3M in the first month m with sales × m / 12 > ₱3M.
+    const evenMonth = Math.min(12, Math.floor((12 * thresholdC) / salesC) + 1)
+    const month = validMonth ? given : evenMonth
+    const span = month === 1 ? 'January' : `January to ${MONTHS[month - 1]}`
+    const warnings = []
+    const enteredC = line(in_.salesThroughCrossMonth)
+    if (enteredC > 0) {
+      ptBaseC = enteredC
+      if (enteredC > grossC) {
+        ptBaseC = grossC
+        warnings.push(`Sales from ${span} can't be more than the year's gross sales (${pesoText(grossC)}); ${pesoText(grossC)} is used.`)
+      } else if (enteredC <= thresholdC) {
+        warnings.push(`Sales from ${span} should be more than ₱3,000,000, since that is the month the threshold was passed.`)
+      }
+    } else {
+      ptBaseC = toWholePesos(mulFrac(grossC, month, 12))
+    }
+    crossing = {
+      month,
+      monthName: MONTHS[month - 1],
+      span,
+      assumedEvenSales: !validMonth,
+      evenMonth,
+      ptBase: P(ptBaseC),
+      ptBaseProrated: !(enteredC > 0),
+      vatFrom: month === 12 ? `January ${taxYear + 1}` : `${MONTHS[month]} ${taxYear}`,
+      warnings,
+    }
+  }
 
   const gradLine = taxableC => toWholePesos(bracketTaxCentavos(BR, taxableC))
 
@@ -64,7 +118,8 @@ export function estimateIndividual(in_) {
   const base8C = Math.max(0, grossC - toCentavos(allowance8))
   const tax8C = toWholePesos(mulRate(base8C, EIGHT.rate))
 
-  const pctC = vat ? 0 : toWholePesos(mulRate(grossC, PCT_RATE))
+  const pctC = vatRegistered ? 0
+    : toWholePesos(mulRate(ptBaseC, PCT_RATE))
 
   const osdDeductionC = toWholePesos(mulRate(grossC, OSD.rate))
   const osdNetC = grossC - osdDeductionC
@@ -90,9 +145,12 @@ export function estimateIndividual(in_) {
   // amounts are entered by the user; this estimator does not compute them.
   const quarterlyPaidC = line(in_.quarterlyPaid)
   const priorYearCreditsC = line(in_.priorYearCredits)
+  // H04: 8% payments made before the ₱3M was passed are credited in full.
+  const eightPaidC = crossing ? line(in_.eightPercentPaid) : 0
   const creditItems = [
     { label: 'Less: tax withheld by clients (2307s)', c: cwtC },
     { label: 'Less: tax withheld by employer', c: compWithheldC },
+    { label: 'Less: 8% income tax already paid on 1701Q this year', c: eightPaidC },
     { label: 'Less: income tax paid on this year\'s quarterly returns (1701Q)', c: quarterlyPaidC },
     { label: 'Less: excess credits carried over from last year', c: priorYearCreditsC },
   ].filter(x => x.c > 0)
@@ -127,11 +185,20 @@ export function estimateIndividual(in_) {
     value: P(compC + itemNetC),
   }]
 
+  // Business tax under the graduated options: VAT all year when registered;
+  // percentage tax (part of the year, then VAT) when the ₱3M is crossed.
+  const gradBusinessTax = vatRegistered ? { kind: 'vat', amount: null }
+    : crossing ? { kind: 'pct', amount: pct, vatFrom: crossing.vatFrom }
+      : { kind: 'pct', amount: pct }
+  const businessForms = vatRegistered ? ' + 2550Q' : crossing ? ' + 2551Q + 2550Q' : ' + 2551Q'
+  const businessBasis = vatRegistered ? ['NIRC Sec 106/108'] : crossing ? ['NIRC Sec 116', 'NIRC Sec 106/108'] : ['NIRC Sec 116']
+
   const options = [
     {
       key: '8pct',
       name: mixed ? '8% on business income' : '8% flat tax',
       eligible: eligible8,
+      reason: eligible8Reason,
       incomeTax: inc8,
       businessTax: { kind: 'none', amount: 0 },
       total: inc8,
@@ -145,24 +212,24 @@ export function estimateIndividual(in_) {
       name: 'Graduated + OSD (40%)',
       eligible: true,
       incomeTax: incOsd,
-      businessTax: vat ? { kind: 'vat', amount: null } : { kind: 'pct', amount: pct },
-      total: P(incOsdC + (vat ? 0 : pctC)),
-      forms: (mixed ? '1701Q + 1701' : '1701Q + 1701A') + (vat ? ' + 2550Q' : ' + 2551Q'),
+      businessTax: gradBusinessTax,
+      total: P(incOsdC + pctC),
+      forms: (mixed ? '1701Q + 1701' : '1701Q + 1701A') + businessForms,
       returnForm: mixed ? '1701' : '1701A',
       taxable: taxableOsd,
-      basis: ['NIRC Sec 24(A)(2)(a); Sec 34(L)', vat ? 'NIRC Sec 106/108' : 'NIRC Sec 116'],
+      basis: ['NIRC Sec 24(A)(2)(a); Sec 34(L)', ...businessBasis],
     },
     {
       key: 'itemized',
       name: 'Graduated + itemized',
       eligible: true,
       incomeTax: incItem,
-      businessTax: vat ? { kind: 'vat', amount: null } : { kind: 'pct', amount: pct },
-      total: P(incItemC + (vat ? 0 : pctC)),
-      forms: '1701Q + 1701' + (vat ? ' + 2550Q' : ' + 2551Q'),
+      businessTax: gradBusinessTax,
+      total: P(incItemC + pctC),
+      forms: '1701Q + 1701' + businessForms,
       returnForm: '1701',
       taxable: taxableItem,
-      basis: ['NIRC Sec 24(A)(2)(a); Sec 34(A)', vat ? 'NIRC Sec 106/108' : 'NIRC Sec 116'],
+      basis: ['NIRC Sec 24(A)(2)(a); Sec 34(A)', ...businessBasis],
     },
   ]
 
@@ -220,7 +287,14 @@ export function estimateIndividual(in_) {
       if (mixed) r('Plus: taxable compensation', compensationTaxable)
       r('Graduated income tax', incItem, { strong: true })
     }
-    if (opt.businessTax.kind === 'pct') {
+    if (opt.businessTax.kind === 'pct' && crossing) {
+      r(`Percentage tax (3% of sales ${crossing.span})`, opt.businessTax.amount, {
+        strong: true,
+        sub: `NIRC Sec 116. Paid quarterly on Form 2551Q, not with the annual return. Sales from ${crossing.span}: ${pesoText(ptBaseC)}` +
+          (crossing.ptBaseProrated ? ' (the year\'s sales spread evenly by month).' : '.'),
+      })
+      r('Value-added tax', null, { sub: `VAT applies from ${crossing.vatFrom}: not included in this estimate.` })
+    } else if (opt.businessTax.kind === 'pct') {
       r(`Percentage tax (3% of gross)`, opt.businessTax.amount, { strong: true, sub: 'NIRC Sec 116. Percentage tax: paid quarterly on Form 2551Q, not with the annual return.' })
     }
     if (opt.businessTax.kind === 'vat') {
@@ -239,8 +313,11 @@ export function estimateIndividual(in_) {
 
   const annualReturn = annualReturnFor(best)
   return {
+    taxYear,
     vat,
+    vatRegistered,
     overThreshold,
+    crossing,
     options,
     best,
     savingsVsNext: runnersUp.length ? diff(runnersUp[0], best.total) : null,
