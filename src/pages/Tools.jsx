@@ -64,7 +64,7 @@ export default function ToolsPage() {
             { label: 'Basic tax due', value: money2(penDue) },
             { label: `Surcharge (${Math.round(pen.surRate * 100)}%, NIRC Sec 248${penEopt ? ', reduced by EOPT' : ''})`, value: money2(pen.surcharge) },
             { label: `Interest · ${penDays} days @ ${Math.round(pen.intRate * 100)}%/yr (NIRC Sec 249)`, value: money2(pen.interest) },
-            { label: `Compromise penalty (RMO 7-2015 schedule${penEopt ? ', 50% off' : ''})`, value: money2(pen.compromise) },
+            { label: 'Compromise penalty (RMO 7-2015 schedule)', value: money2(pen.compromise) },
           ].map((row, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
               <span style={{ fontSize: '13.5px', color: 'var(--mut)' }}>{row.label}</span>

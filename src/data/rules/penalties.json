@@ -24,9 +24,9 @@
       { "taxDueUpTo": 5000000, "amount": 40000 },
       { "taxDueUpTo": null, "amount": 50000 }
     ],
-    "legalBasis": ["RMO 7-2015 Annex A (failure to file/pay), confirmed still the operative schedule as of Aug 2026, superseding RMO 19-2007", "RA 11976 (EOPT) & RR 6-2024; 50% reduction for micro & small taxpayers"],
+    "legalBasis": ["RMO 7-2015 Annex A (failure to file/pay, NIRC Sec 255), confirmed still the operative schedule as of Aug 2026, superseding RMO 19-2007", "RR 6-2024: the 50% compromise reduction for micro & small taxpayers covers only invoicing violations (NIRC Secs 113, 237 and 238) not involving fraud, so it does not apply to late filing or payment"],
     "confidence": "verified",
-    "notes": "Compromise penalties are settlements in lieu of criminal prosecution and are consensual/negotiable; the schedule is the BIR's standard ask. The schedule follows RMO 7-2015 Annex A; still worth a CPA's eye before quoting a client."
+    "notes": "Compromise penalties are settlements in lieu of criminal prosecution and are consensual/negotiable; the schedule is the BIR's standard ask. The schedule follows RMO 7-2015 Annex A and is the same for every taxpayer size: late filing or payment is a Sec 255 violation, which the EOPT 50% reduction does not cover. A tax due of ₱0 (nil return filed late) falls in the first tier (₱1,000). Still worth a CPA's eye before quoting a client."
   },
   "classification": {
     "value": {
@@ -37,7 +37,7 @@
     },
     "legalBasis": ["RA 11976 (EOPT)", "RR 8-2024"],
     "confidence": "verified",
-    "notes": "Classification is by gross sales (business income only); micro & small taxpayers get the reduced surcharge/interest, halved Sec 250 penalties, and 50% off compromise penalties. The classification is independent of Top Withholding Agent designation; a 'small' taxpayer can still be a TWA."
+    "notes": "Classification is by gross sales (business income only); micro & small taxpayers get the reduced surcharge/interest, halved Sec 250 penalties, and 50% off the compromise penalty for invoicing violations only (Secs 113, 237 and 238, not involving fraud). The compromise for late filing or payment (Sec 255) is not reduced. The classification is independent of Top Withholding Agent designation; a 'small' taxpayer can still be a TWA."
   },
   "infoReturnPenalty": {
     "value": {
