@@ -14,7 +14,7 @@
       "microSmallAnnualRate": 0.06,
       "microSmallFrom": "2024-01-22"
     },
-    "legalBasis": ["NIRC Sec 249, as amended by RA 10963 (double the BSP legal rate of 6%)", "NIRC Sec 249 before RA 10963 (20% a year, for days before Jan 1, 2018)", "RR 21-2018", "NIRC Sec 249(D) (no simultaneous deficiency + delinquency interest)", "RA 11976 (EOPT); 50% of the rate for micro & small taxpayers"],
+    "legalBasis": ["NIRC Sec 249, as amended by RA 10963 (double the BSP legal rate of 6%)", "NIRC Sec 249 before RA 10963 (20% a year, for days before Jan 1, 2018)", "RR 21-2018", "NIRC Sec 249(A), as amended by RA 10963 (proviso: no simultaneous deficiency and delinquency interest)", "RA 11976 (EOPT); 50% of the rate for micro & small taxpayers"],
     "confidence": "verified",
     "notes": "12% per annum confirmed current as of Aug 2026 (in force since TRAIN, Jan 1, 2018); days before Jan 1, 2018 are charged at the old 20%, so a period that spans that date is split. Micro & small taxpayers pay 6% on returns due on or after Jan 22, 2024 (EOPT is not retroactive). Deficiency and delinquency interest never run simultaneously."
   },

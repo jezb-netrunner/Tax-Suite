@@ -479,7 +479,9 @@
       },
       "legalBasis": [
         "NIRC Sec 237-A, as amended by CREATE MORE (RA 12066)",
-        "RR 11-2025"
+        "RR 11-2025",
+        "RR 26-2025 (amends RR 11-2025; keeps the Dec 31, 2026 deadline)",
+        "RMC 98-2026 (Sept 22, 2026: coverage and operating rules)"
       ],
       "confidence": "needs_review",
       "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). The Dec 31, 2026 date for the first covered group was reconfirmed Aug 2026, but confirm whether this taxpayer is covered; until then SLSP/eSubmission duties continue unchanged."
@@ -1342,7 +1344,7 @@
       },
       "legalBasis": [
         "RA 11976 (EOPT), repealing NIRC Sec 236(B)",
-        "RMC 15-2024"
+        "RMC 14-2024"
       ],
       "confidence": "verified",
       "notes": "Effective January 22, 2024."
