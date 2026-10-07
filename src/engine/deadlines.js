@@ -26,6 +26,7 @@
 import { iso, fromISO, mkDate, lastDayOfMonth, addDays, shiftToBusinessDay, taxableYearQuarters, isWeekend, previousBusinessDay, nonWorkingReason, manilaToday } from './dates.js'
 import { profileFlags, obligationApplies } from './profile.js'
 import holidayRules from '../data/rules/holidays.json'
+import obligationRules from '../data/rules/obligations.json'
 
 // Weekend/holiday policy per agency (holidays.json rollOverByAgency):
 //   next_working_day — the deadline moves to the next working day (BIR, SSS,
@@ -38,6 +39,12 @@ import holidayRules from '../data/rules/holidays.json'
 const ROLL_OVER = holidayRules.rollOverByAgency
 const NO_SHIFT_NOTE = holidayRules.noShiftNote
 const STATUTORY_NOTE = ROLL_OVER.LGU.note
+
+// Deadline extensions issued after the fact (obligations.json "overrides"):
+// { obligationId, rawDate ('YYYY-MM-DD', the date set by law) or period
+// (e.g. 'TY 2025', 'Q3 2026'), newDate, basis }. The new date replaces the
+// usual (weekend-moved) date and is shown as "Extended to <date> by <basis>".
+const OVERRIDES = obligationRules.overrides || []
 
 function resolveDay(year, month, day) {
   return day === 'last' ? lastDayOfMonth(year, month) : mkDate(year, month, day)
@@ -137,21 +144,34 @@ function rawOccurrences(ob, profile, from, to) {
 // Saturday would disappear from the calendar on the Monday it is actually due.
 const SHIFT_LOOKBACK_DAYS = 21
 
+// An extension can move a date further than the weekend look-back, so scan
+// far enough back to catch the longest one (a period-named one: 4 months).
+function lookbackDays(overrides) {
+  let days = SHIFT_LOOKBACK_DAYS
+  for (const o of overrides) {
+    const ext = o.rawDate ? Math.round((fromISO(o.newDate) - fromISO(o.rawDate)) / 86400000) : 120
+    days = Math.max(days, ext + SHIFT_LOOKBACK_DAYS)
+  }
+  return days
+}
+
 /**
  * Generate the personalized deadline list.
  * @param {Array} obligations  rules from obligations.json
  * @param {Object} profile     taxpayer profile
  * @param {Object} opts        { from, to, holidays (Set<iso> or holiday calendar),
- *                              refDate, rollOver (default: the rulebook's policy per agency) }
+ *                              refDate, rollOver (default: the rulebook's policy per agency),
+ *                              overrides (default: the rulebook's extensions) }
  * @returns [{ id, obligation, date, rawDate, shifted, shiftReason, label, period, daysAway,
  *             rollOver: 'next_working_day'|'statutory_date'|'never_later',
  *             nonWorkingDay: 'weekend'|'holiday'|null  (only when the shown date is one),
- *             lastWorkingDayBefore: Date|null, rollNote: string|null }]
+ *             lastWorkingDayBefore: Date|null, rollNote: string|null,
+ *             extended: { basis, from: Date (the date it replaced), notes } | null }]
  */
-export function generateDeadlines(obligations, profile, { from, to, holidays, refDate, rollOver = ROLL_OVER }) {
+export function generateDeadlines(obligations, profile, { from, to, holidays, refDate, rollOver = ROLL_OVER, overrides = OVERRIDES }) {
   const flags = profileFlags(profile)
   const out = []
-  const scanFrom = addDays(from, -SHIFT_LOOKBACK_DAYS)
+  const scanFrom = addDays(from, -lookbackDays(overrides))
   for (const ob of obligations) {
     if (!obligationApplies(ob.appliesTo, flags)) continue
     if (ob.schedule.kind === 'ongoing' || ob.schedule.kind === 'info') continue
@@ -161,27 +181,30 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
     const rollNote = policy === 'never_later' ? NO_SHIFT_NOTE
       : policy === 'statutory_date' ? ((agencyRule && agencyRule.note) || STATUTORY_NOTE)
         : null
+    const obOverrides = overrides.filter(o => o.obligationId === ob.id)
     for (const occ of rawOccurrences(ob, profile, scanFrom, to)) {
-      const shiftedDate = policy === 'next_working_day' ? shiftToBusinessDay(occ.date, holidays) : occ.date
+      const usualDate = policy === 'next_working_day' ? shiftToBusinessDay(occ.date, holidays) : occ.date
+      const ov = obOverrides.find(o => (o.rawDate ? o.rawDate === iso(occ.date) : o.period === occ.period))
+      const dueDate = ov ? fromISO(ov.newDate) : usualDate
       // The effective due date decides membership in the window.
-      if (shiftedDate < from || shiftedDate > to) continue
-      const nonWorkingDay = policy === 'next_working_day' ? null : nonWorkingReason(occ.date, holidays)
+      if (dueDate < from || dueDate > to) continue
+      const shifted = !ov && iso(usualDate) !== iso(occ.date)
+      const nonWorkingDay = policy === 'next_working_day' ? null : nonWorkingReason(dueDate, holidays)
       out.push({
         id: `${ob.id}:${iso(occ.date)}`,
         obligation: ob,
         rawDate: occ.date,
-        date: shiftedDate,
-        shifted: iso(shiftedDate) !== iso(occ.date),
-        shiftReason: iso(shiftedDate) !== iso(occ.date)
-          ? (isWeekend(occ.date) ? 'weekend' : 'holiday')
-          : null,
+        date: dueDate,
+        shifted,
+        shiftReason: shifted ? (isWeekend(occ.date) ? 'weekend' : 'holiday') : null,
         label: occ.label,
         period: occ.period,
-        daysAway: refDate ? Math.round((shiftedDate - refDate) / 86400000) : null,
+        daysAway: refDate ? Math.round((dueDate - refDate) / 86400000) : null,
         rollOver: policy,
         nonWorkingDay,
-        lastWorkingDayBefore: nonWorkingDay ? previousBusinessDay(occ.date, holidays) : null,
+        lastWorkingDayBefore: nonWorkingDay ? previousBusinessDay(dueDate, holidays) : null,
         rollNote,
+        extended: ov ? { basis: ov.basis, from: usualDate, notes: ov.notes || null } : null,
       })
     }
   }

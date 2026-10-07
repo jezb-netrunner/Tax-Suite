@@ -179,8 +179,9 @@ describe('SAWT for taxpayers who receive 2307s', () => {
   it('individual claiming 2307 credits: SAWT rides each 1701Q and the annual return', () => {
     const p = { ...defaultProfile('individual'), name: 'T', regime: '8pct', receives2307: true }
     const d = datesOf(gen(p, '2026-01-01', '2027-04-30'), 'bir-sawt-individual')
-    // Annual (TY2025) Apr 15, then Q1–Q3 sharing the 1701Q shifts, then Annual (TY2026)
-    expect(d).toEqual(['2026-04-15', '2026-05-15', '2026-08-17', '2026-11-16', '2027-04-15'])
+    // Annual (TY2025) Apr 15 extended to May 15, 2026 by RMC 30-2026, then Q1–Q3
+    // sharing the 1701Q shifts, then Annual (TY2026)
+    expect(d).toEqual(['2026-05-15', '2026-05-15', '2026-08-17', '2026-11-16', '2027-04-15'])
   })
   it('no SAWT without the receives-2307 answer', () => {
     const p = { ...defaultProfile('individual'), name: 'T', regime: '8pct' }
@@ -252,8 +253,8 @@ describe('eAFS annual ITR attachment deadlines', () => {
     const p = { ...defaultProfile('individual'), name: 'T', regime: '8pct' }
     const list = gen(p, '2026-01-01', '2027-04-30')
     const d = datesOf(list, 'bir-eafs-itr-attachments-individual')
-    expect(d).toContain('2026-04-30')
-    expect(d).toContain('2027-04-30')
+    // TY2025: May 15, 2026 under RMC 30-2026 / RMC 39-2026; TY2026: Apr 30, 2027
+    expect(d).toEqual(['2026-05-15', '2027-04-30'])
   })
   it('employee under substituted filing sees no attachment deadline; a 1700 filer does', () => {
     const sub = { ...defaultProfile('employee'), name: 'E' }

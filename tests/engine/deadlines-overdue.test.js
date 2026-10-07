@@ -92,10 +92,11 @@ describe('M09 income-tax rail: tick only when marked filed', () => {
   }).filter(d => d.obligation.category === 'income')
 
   it('nothing marked: passed dates read "passed", not "filed"', () => {
+    // The TY2025 1701A and eAFS fall on May 15, 2026 (RMC 30-2026 extension, L07).
     expect(rail.map(d => [d.obligation.form, d.label, railStatus(p, d, today)])).toEqual([
+      ['1701Q', 'Q1', 'passed'],
       ['1701A', null, 'passed'],
       ['via eAFS', null, 'passed'],
-      ['1701Q', 'Q1', 'passed'],
       ['1701Q', 'Q2', 'passed'],
       ['2nd installment', null, 'due'],
       ['1701Q', 'Q3', 'due'],

@@ -202,6 +202,7 @@ export default function Dashboard() {
                           moved from {fmtDate(hero.rawDate)} ({hero.shiftReason})
                         </div>
                       )}
+                      <ExtendedNote d={hero} onDark />
                       <RollNote d={hero} onDark />
                     </div>
                   </div>
@@ -280,6 +281,7 @@ export default function Dashboard() {
                               <AgencyTag agency={d.obligation.agency} />
                               {d.shifted && <span style={{ fontSize: '11.5px', color: 'var(--dim)' }}>moved from {fmtDate(d.rawDate)}</span>}
                             </div>
+                            <ExtendedNote d={d} />
                             <RollNote d={d} />
                           </div>
                         </div>
@@ -300,7 +302,10 @@ export default function Dashboard() {
                     {deadlines.map(d => (
                       <tr key={d.id}>
                         <td className="mono" style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>{fmtDate(d.date)}</td>
-                        <td style={{ fontWeight: 600 }}>{d.obligation.title}</td>
+                        <td style={{ fontWeight: 600 }}>
+                          {d.obligation.title}
+                          {d.extended && <div style={{ fontSize: '12px', fontWeight: 400, color: 'var(--mut)' }}>Extended by {d.extended.basis}</div>}
+                        </td>
                         <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}>{d.obligation.form || '—'}</td>
                         <td><AgencyTag agency={d.obligation.agency} /></td>
                         <td style={{ color: 'var(--mut)' }}>{CATLABEL[d.obligation.category] || ''}</td>
@@ -441,7 +446,7 @@ function OverdueSection({ items, recent, profile, onMark, onMarkMany, undoRef })
               <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{itemName(d)}</div>
                 <div style={{ fontSize: '13px', color: 'var(--bad)', marginTop: '2px', fontWeight: 600 }}>
-                  {daysOverdueLabel(d.daysOverdue)} <span style={{ color: 'var(--mut)', fontWeight: 400 }}>· was due {fmtDay(d.date)}{d.obligation.form && d.obligation.form !== '—' ? ` · ${d.obligation.form}` : ''}</span>
+                  {daysOverdueLabel(d.daysOverdue)} <span style={{ color: 'var(--mut)', fontWeight: 400 }}>· was due {fmtDay(d.date)}{d.extended ? ` (extended by ${d.extended.basis})` : ''}{d.obligation.form && d.obligation.form !== '—' ? ` · ${d.obligation.form}` : ''}</span>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -530,7 +535,7 @@ function FilingRail({ items, profile, today, onMark }) {
             <li key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <RailIcon status={st} />
               <span id={textId} style={{ flex: 1, minWidth: 0, fontSize: '13px', color: st === 'due' ? 'var(--ink)' : 'var(--mut)', fontWeight: st === 'due' ? 600 : 400 }}>
-                {d.obligation.form} {d.label || ''} · {RAIL_TEXT[st]} {fmtDate(d.date)}
+                {d.obligation.form} {d.label || ''} · {RAIL_TEXT[st]} {fmtDate(d.date)}{d.extended ? ` (extended by ${d.extended.basis})` : ''}
               </span>
               <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--mut)', cursor: 'pointer', minHeight: '24px', flexShrink: 0 }}>
                 <input type="checkbox" checked={st === 'filed'} aria-describedby={textId}
@@ -546,6 +551,16 @@ function FilingRail({ items, profile, today, onMark }) {
         Tick “Filed” once a return is filed. A grey clock means the date has passed and the return is not marked as filed.
       </div>
     </>
+  )
+}
+
+// A deadline moved by a later issuance (L07, rulebook "overrides").
+function ExtendedNote({ d, onDark }) {
+  if (!d.extended) return null
+  return (
+    <div style={{ fontSize: '12px', lineHeight: 1.5, marginTop: '5px', color: onDark ? '#cdddea' : 'var(--accInk)' }}>
+      <b>Extended to {fmtDate(d.date)} by {d.extended.basis}</b> (was {fmtDate(d.extended.from)}).
+    </div>
   )
 }
 
@@ -585,6 +600,7 @@ function DeadlineRow({ d, showFreq }) {
           {d.obligation.desc}
           {d.shifted && <span style={{ color: 'var(--dim)' }}> · moved from {fmtDate(d.rawDate)}</span>}
         </div>
+        <ExtendedNote d={d} />
         <RollNote d={d} />
       </div>
       {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}

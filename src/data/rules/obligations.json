@@ -1,5 +1,5 @@
 {
-  "$comment": "Obligation rulebook. Pure data — the deadline engine (src/engine/deadlines.js) turns these into dated occurrences per profile. appliesTo predicates reference flags derived in src/engine/profile.js. Every entry cites its legal basis; 'confidence' is 'verified' only when checked against a primary source on the date in meta.json.",
+  "$comment": "Obligation rulebook. Pure data — the deadline engine (src/engine/deadlines.js) turns these into dated occurrences per profile. appliesTo predicates reference flags derived in src/engine/profile.js. Every entry cites its legal basis; 'confidence' is 'verified' only when checked against a primary source on the date in meta.json. 'overrides' records deadline extensions issued after the fact (e.g. a BIR RMC moving a filing season): {obligationId, rawDate (the date set by law) or period, newDate, basis}; the calendar shows the new date as 'Extended to <date> by <basis>'.",
   "obligations": [
     {
       "id": "bir-1701q",
@@ -1476,6 +1476,64 @@
       ],
       "confidence": "verified",
       "notes": "You fall out of substituted filing if you had two or more employers during the year, your withholding was short, or you have other income to report."
+    }
+  ],
+  "overrides": [
+    {
+      "obligationId": "bir-1701a-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-1701-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-1700-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-sawt-individual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-1702-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-sawt-corp-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-eafs-itr-attachments-individual",
+      "rawDate": "2026-04-30",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026 and RMC 39-2026",
+      "notes": "RMC 30-2026 moved the attachments to May 15, 2026 too, and RMC 39-2026 made May 15 the uniform eAFS deadline whatever the e-filing date (see attachments.json itrAttachmentDeadline)."
+    },
+    {
+      "obligationId": "bir-eafs-itr-attachments-corp",
+      "rawDate": "2026-04-30",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026 and RMC 39-2026",
+      "notes": "RMC 30-2026 moved the attachments to May 15, 2026 too, and RMC 39-2026 made May 15 the uniform eAFS deadline whatever the e-filing date (see attachments.json itrAttachmentDeadline)."
     }
   ]
 }
