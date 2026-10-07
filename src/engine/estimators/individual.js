@@ -31,6 +31,16 @@ export const RATES_NOTE = 'Earlier years used different rates (the 2018-2022 gra
 export const OVERPAYMENT_NOTE = 'On the return, choose one: refund, tax credit certificate, or carry over to next year.'
 export const VAT_ROW_NOTE = 'Not included in this estimate. VAT (12% of sales less creditable input VAT) is filed quarterly on Form 2550Q.'
 
+// L21: the annual income tax return an individual files, in one place (RMC
+// 17-2019): Form 1701A only for income purely from business or profession on
+// 8% or graduated rates with the OSD; Form 1701 for a mixed-income earner or
+// itemized deductions. regime: an option key ('8pct' | 'osd' | 'itemized') or
+// a profile regime ('8pct' | 'graduated_osd' | 'graduated_itemized').
+export function annualReturnForm({ mixed = false, regime }) {
+  if (mixed) return '1701'
+  return regime === 'itemized' || regime === 'graduated_itemized' ? '1701' : '1701A'
+}
+
 export function gradTax(taxable) {
   return bracketTax(BR, taxable)
 }
@@ -228,7 +238,6 @@ export function estimateIndividual(in_) {
   const businessForms = vatRegistered ? ' + 2550Q' : crossing ? ' + 2551Q + 2550Q' : ' + 2551Q'
   // VAT applies for all (registered) or part (crossing ₱3M) of the year.
   const vatNotIncluded = vatRegistered || crossing != null
-  const businessBasis = vatRegistered ? ['NIRC Sec 106/108'] : crossing ? ['NIRC Sec 116', 'NIRC Sec 106/108'] : ['NIRC Sec 116']
 
   const options = [
     {
@@ -240,10 +249,9 @@ export function estimateIndividual(in_) {
       businessTax: { kind: 'none', amount: 0 },
       vatNotIncluded: false,
       total: inc8,
-      forms: mixed ? '1701Q + 1701' : '1701Q + 1701A',
-      returnForm: mixed ? '1701' : '1701A',
+      forms: `1701Q + ${annualReturnForm({ mixed, regime: '8pct' })}`,
+      returnForm: annualReturnForm({ mixed, regime: '8pct' }),
       taxable: taxable8,
-      basis: ['NIRC Sec 24(A)(2)(b); RR 8-2018'],
     },
     {
       key: 'osd',
@@ -253,10 +261,9 @@ export function estimateIndividual(in_) {
       businessTax: gradBusinessTax,
       vatNotIncluded,
       total: P(incOsdC + pctC),
-      forms: (mixed ? '1701Q + 1701' : '1701Q + 1701A') + businessForms,
-      returnForm: mixed ? '1701' : '1701A',
+      forms: `1701Q + ${annualReturnForm({ mixed, regime: 'osd' })}` + businessForms,
+      returnForm: annualReturnForm({ mixed, regime: 'osd' }),
       taxable: taxableOsd,
-      basis: ['NIRC Sec 24(A)(2)(a); Sec 34(L)', ...businessBasis],
     },
     {
       key: 'itemized',
@@ -266,10 +273,9 @@ export function estimateIndividual(in_) {
       businessTax: gradBusinessTax,
       vatNotIncluded,
       total: P(incItemC + pctC),
-      forms: '1701Q + 1701' + businessForms,
-      returnForm: '1701',
+      forms: `1701Q + ${annualReturnForm({ mixed, regime: 'itemized' })}` + businessForms,
+      returnForm: annualReturnForm({ mixed, regime: 'itemized' }),
       taxable: taxableItem,
-      basis: ['NIRC Sec 24(A)(2)(a); Sec 34(A)', ...businessBasis],
     },
   ]
 

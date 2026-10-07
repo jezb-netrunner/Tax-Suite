@@ -154,7 +154,9 @@ describe('corporate 1702 lines are whole pesos', () => {
     expect(r.incomeTaxDue).toBe(20000)
     expect(r.pct).toBe(37037)           // 3% × 1,234,568 = 37,037.04
     expect(r.netPayable).toBe(20000 - 101)
-    expect(r.totalAnnualTax).toBe(57037)
+    // Income tax plus percentage tax for the year (the unused totalAnnualTax
+    // output was removed in L21; the sum is still checked here).
+    expect(r.incomeTaxDue + r.pct).toBe(57037)
   })
 })
 

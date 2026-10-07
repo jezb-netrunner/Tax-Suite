@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { PROFILE_TYPES, defaultProfile, changeProfileType, withWizardChanges } from '../engine/profile.js'
+import { PROFILE_TYPES, defaultProfile, changeProfileType, withWizardChanges, regimeLabel } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
 import { manilaToday } from '../engine/dates.js'
 import { registrationYearOptions, registrationYearChoice } from '../engine/estimators/corporation.js'
@@ -327,7 +327,7 @@ function WizardForm({ app, editing }) {
             <div style={{ marginTop: '18px', background: 'var(--accSoft)', borderRadius: '11px', padding: '14px 16px', fontSize: '13px', color: 'var(--accInk)', lineHeight: 1.6 }}>
               <b>{p.name || 'This profile'}</b>: {PROFILE_TYPES[p.type].name}
               {(isBiz || isCorp) && <> · {p.vatRegistered ? 'VAT' : 'Non-VAT'}</>}
-              {isBiz && !p.vatRegistered && <> · {p.regime === '8pct' ? '8% flat tax' : p.regime === 'graduated_osd' ? 'Graduated + OSD' : 'Graduated + itemized'}</>}
+              {isBiz && !p.vatRegistered && <> · {regimeLabel(p.regime)}</>}
               {p.hasEmployees && <> · employer</>}
               {p.withholdsEwt && <> · EWT agent</>}
               {p.receives2307 && <> · receives 2307s (SAWT)</>}

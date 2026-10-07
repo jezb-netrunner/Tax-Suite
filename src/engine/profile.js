@@ -20,6 +20,14 @@ export const PROFILE_TYPES = {
   corporation: { name: 'Corporation', desc: 'Domestic corporation or taxable partnership' },
 }
 
+// The income-tax regime in a few words (profile cards and summaries). L21:
+// one copy instead of one per page.
+export function regimeLabel(regime) {
+  if (regime === '8pct') return '8% flat tax'
+  if (regime === 'graduated_osd') return 'Graduated + OSD'
+  return 'Graduated + itemized'
+}
+
 export function defaultProfile(type = 'individual') {
   const base = {
     id: null,

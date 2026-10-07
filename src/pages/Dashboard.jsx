@@ -6,14 +6,13 @@ import {
   generateDeadlines, unproclaimedYears, holidayGapNote, overdueDeadlines, OVERDUE_DAYS,
   filedKey, filedStatus, withFiled, withFiledMany, railStatus, groupByMonth, isUnconfirmed,
 } from '../engine/deadlines.js'
-import { profileFlags } from '../engine/profile.js'
+import { profileFlags, PROFILE_TYPES, regimeLabel } from '../engine/profile.js'
 import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { useProfileMarks } from '../lib/useProfileMarks.js'
 import { AgencyTag } from '../components/ui.jsx'
 import { ItemBadge, DeadlineDetails } from '../components/Confidence.jsx'
 import { FormCode } from '../components/FormCode.jsx'
-import { PROFILE_TYPES } from '../engine/profile.js'
 import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
 import { deadlineCsv, deadlineCsvFileName, downloadText } from '../lib/exports.js'
 import { formGuideCode, formGuidePath } from '../lib/formGuide.js'
@@ -143,7 +142,7 @@ export default function Dashboard() {
             <span className="tag">{PROFILE_TYPES[p.type].name}</span>
             {p.type !== 'employee' && <span className="tag">{p.vatRegistered ? 'VAT' : 'Non-VAT'}</span>}
             {(p.type === 'individual' || p.type === 'mixed') && !p.vatRegistered && (
-              <span className="tag">{p.regime === '8pct' ? '8% flat tax' : p.regime === 'graduated_osd' ? 'Graduated + OSD' : 'Graduated + itemized'}</span>
+              <span className="tag">{regimeLabel(p.regime)}</span>
             )}
             {p.hasEmployees && <span className="tag">Employer</span>}
             {p.type === 'corporation' && p.fiscalYearEndMonth !== 12 && (

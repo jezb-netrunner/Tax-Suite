@@ -23,7 +23,7 @@
 //   ongoing            — no dates; surfaces on the compliance checklist
 //   info               — no dates; informational only
 
-import { iso, fromISO, mkDate, lastDayOfMonth, addDays, shiftToBusinessDay, taxableYearQuarters, isWeekend, previousBusinessDay, nonWorkingReason, manilaToday } from './dates.js'
+import { iso, fromISO, mkDate, lastDayOfMonth, addDays, daysBetween, shiftToBusinessDay, taxableYearQuarters, isWeekend, previousBusinessDay, nonWorkingReason, manilaToday } from './dates.js'
 import { profileFlags, obligationApplies } from './profile.js'
 import holidayRules from '../data/rules/holidays.json'
 import obligationRules from '../data/rules/obligations.json'
@@ -205,7 +205,7 @@ const SHIFT_LOOKBACK_DAYS = 21
 function lookbackDays(overrides) {
   let days = SHIFT_LOOKBACK_DAYS
   for (const o of overrides) {
-    const ext = o.rawDate ? Math.round((fromISO(o.newDate) - fromISO(o.rawDate)) / 86400000) : 120
+    const ext = o.rawDate ? daysBetween(fromISO(o.rawDate), fromISO(o.newDate)) : 120
     days = Math.max(days, ext + SHIFT_LOOKBACK_DAYS)
   }
   return days
@@ -256,7 +256,7 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
         shiftReason: shifted ? (isWeekend(occ.date) ? 'weekend' : 'holiday') : null,
         label: occ.label,
         period: occ.period,
-        daysAway: refDate ? Math.round((dueDate - refDate) / 86400000) : null,
+        daysAway: refDate ? daysBetween(refDate, dueDate) : null,
         rollOver: policy,
         nonWorkingDay,
         lastWorkingDayBefore: nonWorkingDay ? previousBusinessDay(dueDate, holidays) : null,

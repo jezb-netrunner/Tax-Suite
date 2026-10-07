@@ -9,8 +9,9 @@
 // withholding is the per-period amount × periods per month, rounded once.
 
 import wcomp from '../../data/rules/withholding-compensation.json'
-import { bracketTax, bracketTaxCentavos } from '../tax.js'
-import { employeeMandatoryDeductions, employerContributions } from './contributions.js'
+import contribRules from '../../data/rules/contributions.json'
+import { bracketTaxCentavos } from '../tax.js'
+import { employeeMandatoryDeductions, employerContributions, sssEmployee } from './contributions.js'
 import { toCentavos, fromCentavos, mulFrac, formatCentavos } from '../../lib/money.js'
 
 const TABLES = wcomp.tables.value
@@ -171,18 +172,17 @@ export function monthlyPay(in_) {
   }
 }
 
-// Shown under the SSS line on both tabs.
+// Shown under the SSS line on both tabs. L21: also says how much of the SSS
+// contributions on this credit goes to the Mandatory Provident Fund (the
+// part of the credit above the WISP threshold).
 export function sssBaseNote(msc) {
-  return `Monthly salary credit ${formatCentavos(toCentavos(msc)).replace(/\.00$/, '')}: basic pay plus regular allowances and commissions, up to ₱35,000 (RA 11199). One-time or liquidated items do not count.`
-}
-
-/**
- * Withholding on one pay period's TAXABLE compensation.
- */
-export function withholdingForPeriod(taxable, period = 'monthly') {
-  const table = TABLES[period]
-  if (!table) throw new Error(`Unknown pay period: ${period}`)
-  return bracketTax(table, taxable)
+  const peso = c => formatCentavos(c).replace(/\.00$/, '')
+  let note = `Monthly salary credit ${peso(toCentavos(msc))}: basic pay plus regular allowances and commissions, up to ₱35,000 (RA 11199). One-time or liquidated items do not count.`
+  const mpf = sssEmployee(msc).wispPortionOfTotal
+  if (mpf > 0) {
+    note += ` Of the SSS contributions on this credit, ${peso(toCentavos(mpf))} (on the part above ${peso(toCentavos(contribRules.sss.value.wispThreshold))}) goes to the Mandatory Provident Fund (MPF).`
+  }
+  return note
 }
 
 // L08: the per-payday lines shown when pay is not monthly.

@@ -30,7 +30,7 @@ import attachments from '../data/rules/attachments.json'
 import holidays from '../data/rules/holidays.json'
 import obligationRules from '../data/rules/obligations.json'
 import { toCentavos, formatPesos, formatCentavos, rate as exactRate } from '../lib/money.js'
-import { fromISO, fmtDate, addDays, mkDate, lastDayOfMonth } from './dates.js'
+import { fromISO, fmtDate, addDays, mkDate, lastDayOfMonth, makeHolidayCalendar } from './dates.js'
 
 export const RULE_FILES = [
   { file: 'income-tax.json', label: 'Individual income tax', data: incomeTax },
@@ -246,7 +246,8 @@ const POLICY_TEXT = {
 
 function holidayRegister() {
   const H = 'holidays.json'
-  const years = [...new Set(holidays.holidays.map(h => Number(h.date.slice(0, 4))))].sort()
+  // L21: the same 'proclaimed years' the deadline engine uses.
+  const years = makeHolidayCalendar(holidays.holidays).proclaimedYears
   const out = [{
     id: `${H}:shiftRule`, sources: [`${H}:shiftRule`], title: 'Deadlines on a weekend or holiday',
     value: { kind: 'text', text: holidays.shiftRule.value }, legalBasis: holidays.shiftRule.legalBasis,

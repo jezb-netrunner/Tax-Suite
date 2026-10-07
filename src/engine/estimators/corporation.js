@@ -345,7 +345,6 @@ export function estimateCorporation(in_) {
     vatNote: vat ? 'Income tax and percentage tax only; VAT not included.' : null,
     credits: P(creditsC),
     netPayable: P(incomeTaxDueC - creditsC),
-    totalAnnualTax: P(incomeTaxDueC + pctC),
     rows,
     references: [...corp.rcit.legalBasis, ...corp.mcit.legalBasis, ...(core.osd ? corp.osdCorporate.legalBasis : [])],
   }

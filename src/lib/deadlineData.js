@@ -11,6 +11,3 @@ export const OBLIGATIONS = obligationsData.obligations
 // Kept under its old name because the deadline engine and the penalty
 // calculator take it wherever a Set of ISO dates used to go.
 export const HOLIDAY_SET = makeHolidayCalendar(holidaysData.holidays, holidaysData.fixedByLaw.value)
-
-// The proclaimed rows exactly as listed in the rulebook (References page).
-export const HOLIDAYS = holidaysData.holidays
