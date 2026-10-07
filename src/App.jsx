@@ -27,56 +27,83 @@ function focusMainHeading() {
   return true
 }
 
+// L13: the profile switcher is a simple disclosure: the avatar button shows
+// or hides a list of buttons. It closes on a click outside, when focus leaves
+// it, and on Escape (focus goes back to the avatar).
 function ProfileMenu() {
   const app = useApp()
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const btnRef = useRef(null)
 
   useEffect(() => {
-    function onDoc(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
+    if (!open) return undefined
     // pointerdown covers mouse and touch; iOS Safari doesn't emit compatibility
     // mouse events for taps on plain background elements.
+    function onDoc(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('pointerdown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onDoc)
-      document.removeEventListener('keydown', onKey)
+    return () => document.removeEventListener('pointerdown', onDoc)
+  }, [open])
+
+  function onKeyDown(e) {
+    if (e.key === 'Escape' && open) {
+      setOpen(false)
+      if (btnRef.current) btnRef.current.focus()
     }
-  }, [])
+  }
+  function onBlur(e) {
+    if (open && ref.current && e.relatedTarget && !ref.current.contains(e.relatedTarget)) setOpen(false)
+  }
+  // Close, put focus back on the avatar, then act (a page change moves focus on).
+  function choose(action) {
+    setOpen(false)
+    if (btnRef.current) btnRef.current.focus()
+    action()
+  }
 
   const initial = app.active ? (app.active.name || '?').trim().charAt(0).toUpperCase() : '+'
 
   return (
-    <div className="menu-anchor" ref={ref}>
-      <button className="avatar" aria-haspopup="menu" aria-expanded={open}
+    <div className="menu-anchor" ref={ref} onKeyDown={onKeyDown} onBlur={onBlur}>
+      <button ref={btnRef} type="button" className="avatar" aria-expanded={open} aria-controls="profile-menu"
         title={app.active ? app.active.name : 'Profiles'}
         aria-label={app.active ? `Profiles (${app.active.name} selected)` : 'Profiles'}
         onClick={() => setOpen(o => !o)}><span aria-hidden="true">{initial}</span></button>
       {open && (
-        <div className="menu-pop" role="menu">
-          <div className="menu-head">Taxpayer profiles</div>
-          {app.profiles.map(p => (
-            <button key={p.id} role="menuitem"
-              className={'menu-item' + (app.active && app.active.id === p.id ? ' active' : '')}
-              onClick={() => { app.setActive(p.id); setOpen(false) }}>
-              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
-            </button>
-          ))}
+        <div className="menu-pop" id="profile-menu">
+          <div className="menu-head" id="profile-menu-h">Taxpayer profiles</div>
+          {app.profiles.length > 0 && (
+            <ul className="menu-list" aria-labelledby="profile-menu-h">
+              {app.profiles.map(p => {
+                const current = Boolean(app.active && app.active.id === p.id)
+                return (
+                  <li key={p.id}>
+                    <button type="button" aria-current={current ? 'true' : undefined}
+                      className={'menu-item' + (current ? ' active' : '')}
+                      onClick={() => choose(() => app.setActive(p.id))}>
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                      {current && <span aria-hidden="true">✓</span>}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
           {app.profiles.length === 0 && (
             <div style={{ padding: '10px 12px', fontSize: '13px', color: 'var(--mut)' }}>No profiles yet.</div>
           )}
           <div className="menu-sep" />
-          <button className="menu-item" role="menuitem" onClick={() => { setOpen(false); nav('/profiles/new') }}>+ New profile</button>
-          <button className="menu-item" role="menuitem" onClick={() => { setOpen(false); nav('/profiles') }}>Manage profiles</button>
-          {app.hasCloud && (
-            <>
-              <div className="menu-sep" />
-              <button className="menu-item" role="menuitem" onClick={() => { setOpen(false); nav('/account/password') }}>Change password</button>
-              <button className="menu-item" role="menuitem" onClick={async () => { setOpen(false); await app.signOut() }}>Sign out</button>
-            </>
-          )}
+          <ul className="menu-list" aria-label="Profile actions">
+            <li><button type="button" className="menu-item" onClick={() => choose(() => nav('/profiles/new'))}>+ New profile</button></li>
+            <li><button type="button" className="menu-item" onClick={() => choose(() => nav('/profiles'))}>Manage profiles</button></li>
+            {app.hasCloud && (
+              <>
+                <li><button type="button" className="menu-item" onClick={() => choose(() => nav('/account/password'))}>Change password</button></li>
+                <li><button type="button" className="menu-item" onClick={() => choose(() => app.signOut())}>Sign out</button></li>
+              </>
+            )}
+          </ul>
           {!app.hasCloud && (
             <div style={{ margin: '8px 4px 2px', padding: '8px 10px', fontSize: '12px', color: '#6b4a12', background: 'var(--warnSoft)', borderRadius: '8px', lineHeight: 1.5 }}>
               Saved in this browser only. {SHARED_COMPUTER_WARNING}
