@@ -14,38 +14,41 @@ describe('self-employed three-way comparison', () => {
   })
   it('graduated + OSD', () => {
     const o = r.options.find(o => o.key === 'osd')
-    expect(o.incomeTax).toBeCloseTo(5700)
-    expect(o.businessTax.amount).toBeCloseTo(14400)
-    expect(o.total).toBeCloseTo(20100)
+    expect(o.incomeTax).toBe(5700)
+    expect(o.businessTax.amount).toBe(14400)
+    expect(o.total).toBe(20100)
   })
   it('graduated + itemized', () => {
     const o = r.options.find(o => o.key === 'itemized')
-    expect(o.total).toBeCloseTo(21900)
+    expect(o.total).toBe(21900)
   })
   it('picks 8% as best, saving 1,700', () => {
     expect(r.best.key).toBe('8pct')
-    expect(r.savingsVsNext).toBeCloseTo(1700)
+    expect(r.savingsVsNext).toBe(1700)
   })
 })
 
 describe('CWT crediting and overpayment', () => {
   it('credits reduce net payable', () => {
     const r = estimateIndividual({ gross: 480000, expenses: 0, cwt: 10000 })
-    expect(r.netPayable).toBeCloseTo(8400)
+    expect(r.netPayable).toBe(8400)
   })
   it('overpayment goes negative', () => {
     const r = estimateIndividual({ gross: 480000, expenses: 0, cwt: 25000 })
-    expect(r.netPayable).toBeCloseTo(-6600)
+    expect(r.netPayable).toBe(-6600)
   })
 })
 
 describe('VAT threshold guard', () => {
-  it('8% unavailable above ₱3M gross', () => {
-    const r = estimateIndividual({ gross: 3500000, expenses: 1000000 })
-    expect(r.vat).toBe(true)
+  it('8% unavailable above ₱3M gross; percentage tax still due until VAT starts (H04)', () => {
+    // RR 8-2018 / owner decision 6: the 3% percentage tax applies to sales from
+    // January through the month the ₱3M was passed. Even sales of ₱3,500,000
+    // pass ₱3M in November: 3,500,000 × 11/12 = 3,208,333 -> 3% = ₱96,250.
+    // VAT applies from December (not computed).
+    const r = estimateIndividual({ gross: 3500000, expenses: 1000000, taxYear: 2026 })
+    expect(r.overThreshold).toBe(true)
     expect(r.options.find(o => o.key === '8pct').eligible).toBe(false)
-    // no percentage tax when VAT applies
-    expect(r.options.find(o => o.key === 'osd').businessTax.kind).toBe('vat')
+    expect(r.options.find(o => o.key === 'osd').businessTax).toEqual({ kind: 'pct', amount: 96250, vatFrom: 'December 2026' })
   })
   it('VAT-registered below threshold also loses 8% and PT', () => {
     const r = estimateIndividual({ gross: 1000000, vatRegistered: true })
@@ -66,15 +69,15 @@ describe('mixed-income earner', () => {
   })
   it('8% side has no 250k allowance and adds graduated comp tax', () => {
     const o = r.options.find(o => o.key === '8pct')
-    expect(o.total).toBeCloseTo(94500)
+    expect(o.total).toBe(94500)
   })
   it('graduated aggregates compensation and business net', () => {
     const o = r.options.find(o => o.key === 'osd')
-    expect(o.incomeTax).toBeCloseTo(112500)
-    expect(o.total).toBeCloseTo(124500)
+    expect(o.incomeTax).toBe(112500)
+    expect(o.total).toBe(124500)
   })
   it('employer withholding credits against the total', () => {
     expect(r.best.key).toBe('8pct')
-    expect(r.netPayable).toBeCloseTo(94500 - 62500)
+    expect(r.netPayable).toBe(94500 - 62500)
   })
 })

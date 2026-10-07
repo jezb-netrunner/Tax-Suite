@@ -13,11 +13,21 @@
 // hasEmployees / withholdsEwt facets of an individual, mixed, or corporate
 // profile, which switch on the full employer obligation set.
 
+import { RT } from './ruleText.js'
+
 export const PROFILE_TYPES = {
   employee: { name: 'Employee', desc: 'Pure compensation income from an employer' },
   individual: { name: 'Self-employed / Sole prop', desc: 'Freelancer, professional, or sole proprietorship' },
   mixed: { name: 'Mixed income', desc: 'Employed and running a business or practice on the side' },
   corporation: { name: 'Corporation', desc: 'Domestic corporation or taxable partnership' },
+}
+
+// The income-tax regime in a few words (profile cards and summaries). L21:
+// one copy instead of one per page.
+export function regimeLabel(regime) {
+  if (regime === '8pct') return `${RT.eightRate} flat tax`
+  if (regime === 'graduated_osd') return 'Graduated + OSD'
+  return 'Graduated + itemized'
 }
 
 export function defaultProfile(type = 'individual') {
@@ -58,6 +68,89 @@ export function defaultProfile(type = 'individual') {
     base.dtiRegistered = false
   }
   return base
+}
+
+// C08: the registration answers the profile wizard asks for each type.
+const BUSINESS_QUESTIONS = [
+  'vatRegistered', 'regime', 'receives2307', 'hasEmployees', 'withholdsEwt', 'withholdsFwt',
+  'booksType', 'hasBusinessEstablishment', 'dtiRegistered', 'licensedProfessional', 'usesCrmPos', 'sellsGoods',
+]
+export const TYPE_QUESTIONS = {
+  employee: ['multipleEmployers', 'licensedProfessional'],
+  individual: BUSINESS_QUESTIONS,
+  mixed: BUSINESS_QUESTIONS,
+  corporation: [
+    'vatRegistered', 'fiscalYearEndMonth', 'registrationYear', 'receives2307', 'hasEmployees', 'withholdsEwt',
+    'withholdsFwt', 'booksType', 'hasBusinessEstablishment', 'usesCrmPos', 'sellsGoods',
+  ],
+}
+
+// C08: the answers asked for both types, in the order the wizard asks them
+// for the new type.
+export function sharedAnswers(fromType, toType) {
+  const from = TYPE_QUESTIONS[fromType] || []
+  return (TYPE_QUESTIONS[toType] || []).filter(k => from.includes(k))
+}
+
+// C08: the profile after the user picks a taxpayer type in the wizard.
+// The type it already has: the same profile, unchanged (re-tapping the
+// selected card used to reset every answer). Another type: that type's
+// defaults, keeping the identity (id, name), the estimator figures, filed
+// marks, checklist ticks and anything else saved, and the answers both types
+// share. A VAT-registered individual cannot use the 8% option, so the regime
+// moves to graduated + OSD as the VAT switch does.
+export function changeProfileType(profile, type) {
+  if (!PROFILE_TYPES[type] || profile.type === type) return profile
+  const next = { ...profile }
+  for (const [k, v] of Object.entries(defaultProfile(type))) {
+    if (k !== 'id' && k !== 'name' && k !== 'inputs') next[k] = v
+  }
+  for (const k of sharedAnswers(profile.type, type)) {
+    if (k in profile) next[k] = profile[k]
+  }
+  next.type = type
+  next.inputs = profile.inputs || {}
+  if ((type === 'individual' || type === 'mixed') && next.vatRegistered && next.regime === '8pct') {
+    next.regime = 'graduated_osd'
+  }
+  return next
+}
+
+// M06: the profile wizard's edits applied to the newest stored profile.
+// `base` is the profile the form was opened with and `edited` the form now.
+// Only the answers the form changed are written; everything else comes from
+// `latest`, so figures (inputs), filed marks and checklist ticks saved after
+// the form opened, and answers changed in another window that the form did
+// not touch, are kept.
+const NOT_WIZARD_FIELDS = new Set(['id', 'inputs', 'filed', 'checklistDone'])
+
+function sameValue(a, b) {
+  return a === b || JSON.stringify(a) === JSON.stringify(b)
+}
+
+export function withWizardChanges(latest, base, edited) {
+  const next = { ...latest }
+  for (const k of Object.keys(edited)) {
+    if (NOT_WIZARD_FIELDS.has(k)) continue
+    if (!sameValue(edited[k], base[k])) next[k] = edited[k]
+  }
+  return next
+}
+
+// C07: a copy of the profile with the estimator figures of one tab (key:
+// 'individual', 'mixed', 'employee', 'corporation' or 'payroll') replaced and
+// every other part kept. Applied to the newest stored profile when saving, so
+// a tab never writes back its old copy of the rest of the profile.
+export function withInputs(profile, key, values) {
+  return { ...profile, inputs: { ...(profile.inputs || {}), [key]: values } }
+}
+
+// C07: a copy of the profile with only the given figures of one estimator
+// mode changed ({ field: value }; null clears a box), merged onto the figures
+// already stored for that mode. Two tabs on the same mode then keep each
+// other's figures.
+export function withChangedInputs(profile, key, changes) {
+  return withInputs(profile, key, { ...(profile.inputs?.[key] || {}), ...changes })
 }
 
 // Flags consumed by obligation `appliesTo` predicates.

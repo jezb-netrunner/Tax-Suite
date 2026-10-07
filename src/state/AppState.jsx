@@ -3,8 +3,13 @@
 // In cloud mode (Supabase configured) users sign in and their profiles sync.
 // In local mode there is no sign-in; profiles persist in this browser only.
 
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react'
-import { hasCloud, supabase, listProfiles, saveProfile, deleteProfile } from '../lib/backend.js'
+import { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import {
+  hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
+  localLeftovers, importLocalProfiles, eraseLocalLeftovers, openedFromRecoveryLink, emailLinkError,
+  updateProfile as updateStoredProfile, watchProfileChanges, stashFigures, clearStashedFigures, replayStashedFigures,
+} from '../lib/backend.js'
+import { figuresNotSaved } from '../lib/inputSaver.js'
 
 const Ctx = createContext(null)
 
@@ -20,6 +25,16 @@ export function AppStateProvider({ children }) {
   const [profiles, setProfiles] = useState([])
   const [profilesReady, setProfilesReady] = useState(false)
   const [loadError, setLoadError] = useState(null)
+  // A one-off message for the sign-in screen (e.g. after deleting the account).
+  const [notice, setNotice] = useState(null)
+  // C07: the last background save that failed (figures, filed marks), shown
+  // by <SaveNotice /> until dismissed. An Error; its message is shown.
+  const [saveProblem, setSaveProblem] = useState(null)
+  // M27: profiles this browser saved in local mode, found after signing in.
+  const [leftovers, setLeftovers] = useState([])
+  // M28: true while the user, back from a "reset your password" email link,
+  // still has to choose a new password.
+  const [recovery, setRecovery] = useState(openedFromRecoveryLink)
   const [activeId, setActiveId] = useState(() => {
     try { return localStorage.getItem(ACTIVE_KEY) || null } catch { return null }
   })
@@ -30,7 +45,11 @@ export function AppStateProvider({ children }) {
       setSession(data.session)
       setAuthReady(true)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s)
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
+      if (event === 'SIGNED_OUT') setRecovery(false)
+    })
     return () => sub.subscription.unsubscribe()
   }, [])
 
@@ -42,28 +61,61 @@ export function AppStateProvider({ children }) {
   // a slow response from a previous session could paint another account's
   // profiles over this one's.
   const reqToken = useRef(0)
+  // The user whose profile list is on screen (null in local mode; undefined
+  // before the first successful load).
+  const loadedFor = useRef(undefined)
 
-  const refreshProfiles = useCallback(async () => {
+  // { background: true }: a check for changes made elsewhere (C07). If it
+  // fails, the list already on screen for this user stays; nothing was lost.
+  const refreshProfiles = useCallback(async (opts) => {
+    const background = Boolean(opts && opts.background)
     const token = ++reqToken.current
     const forUser = userId
-    setLoadError(null)
+    if (!background) setLoadError(null)
     if (hasCloud && !forUser) { setProfiles([]); setProfilesReady(true); return }
     try {
       const list = await listProfiles(forUser)
       if (token !== reqToken.current) return
       setProfiles(list)
+      setLoadError(null)
+      loadedFor.current = forUser
     } catch (e) {
       if (token !== reqToken.current) return
       console.error('Failed to load profiles', e)
+      if (background && loadedFor.current === forUser) return
       // Don't render a failed fetch as "no profiles yet" — that reads as data
       // loss to someone who has clients saved.
       setLoadError(e)
       setProfiles([])
+      loadedFor.current = undefined
     }
     if (token === reqToken.current) setProfilesReady(true)
   }, [userId])
 
   useEffect(() => { if (authReady) refreshProfiles() }, [authReady, refreshProfiles])
+
+  // C07: profiles changed in another tab (or, in accounts mode, on another
+  // device) are reloaded, so this tab never keeps working on an old copy.
+  useEffect(() => {
+    if (!authReady) return undefined
+    return watchProfileChanges(() => { refreshProfiles({ background: true }) })
+  }, [authReady, refreshProfiles])
+
+  useEffect(() => { setLeftovers(hasCloud && userId ? localLeftovers() : []) }, [userId])
+
+  // M06 (accounts mode): estimator figures kept in this browser because the
+  // page was reloaded or closed before they reached the account are saved now,
+  // after sign-in; a failure shows "Couldn't save your figures." (SaveNotice).
+  useEffect(() => {
+    if (!hasCloud || !authReady || !userId) return undefined
+    let current = true
+    replayStashedFigures(userId).then(r => {
+      if (!current) return
+      if (r.saved) refreshProfiles({ background: true })
+      if (r.problems.length) setSaveProblem(figuresNotSaved(r.problems[0]))
+    })
+    return () => { current = false }
+  }, [authReady, userId, refreshProfiles])
 
   const active = useMemo(
     () => profiles.find(p => p.id === activeId) || profiles[0] || null,
@@ -78,7 +130,7 @@ export function AppStateProvider({ children }) {
     profiles,
     profilesReady,
     loadError,
-    retryLoad: refreshProfiles,
+    retryLoad: () => refreshProfiles(),
     active,
     setActive(id) {
       setActiveId(id)
@@ -93,6 +145,25 @@ export function AppStateProvider({ children }) {
       }
       return saved
     },
+    // C07: changes part of a saved profile. change(latest) gets the newest
+    // stored copy (not this tab's) and returns the new profile. A profile
+    // deleted in another window is never re-created: the promise rejects with
+    // "This profile was deleted in another window." The list is reloaded
+    // either way.
+    async updateProfile(id, change) {
+      try {
+        return await updateStoredProfile(userId, id, change)
+      } finally {
+        await refreshProfiles({ background: true })
+      }
+    },
+    // M06 (accounts mode): a browser copy of figures not yet saved, taken when
+    // the page is hidden or closed (see createInputSaver's stash).
+    stashFigures(profileId, key, values) { return stashFigures({ userId, profileId, key, values }) },
+    clearStashedFigures(profileId, key, stamp) { clearStashedFigures({ userId, profileId, key, stamp }) },
+    saveProblem,
+    reportSaveProblem(e) { setSaveProblem(e || null) },
+    clearSaveProblem() { setSaveProblem(null) },
     async remove(id) {
       await deleteProfile(userId, id)
       await refreshProfiles()
@@ -101,7 +172,43 @@ export function AppStateProvider({ children }) {
     async signOut() {
       if (hasCloud) await supabase.auth.signOut()
     },
-  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles])
+    userEmail: session?.user?.email || null,
+    recovery: recovery && Boolean(session),
+    endRecovery() { setRecovery(false) },
+    linkError: emailLinkError,
+    notice,
+    clearNotice() { setNotice(null) },
+    // M25 "Download my data": every profile and saved figure as one object.
+    exportData() {
+      return exportData({ userId, email: session?.user?.email || null })
+    },
+    // M25 "Erase all data on this device" (local mode).
+    async eraseAllData() {
+      eraseLocalData()
+      setActiveId(null)
+      await refreshProfiles()
+    },
+    // M27: leftover local-mode profiles, offered for import after sign-in.
+    leftovers,
+    async importLeftovers() {
+      const r = await importLocalProfiles(userId)
+      setLeftovers(localLeftovers())
+      await refreshProfiles()
+      return r
+    },
+    eraseLeftovers() {
+      eraseLocalLeftovers()
+      setLeftovers([])
+    },
+    // M25 "Delete my account" (accounts mode): the server deletes the login
+    // and its profiles; this device is signed out.
+    async deleteAccount() {
+      await deleteOwnAccount()
+      setActiveId(null)
+      setNotice('Your account and every profile saved in it were deleted.')
+      setSession(null)
+    },
+  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers, recovery, saveProblem])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

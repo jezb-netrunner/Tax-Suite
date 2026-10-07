@@ -11,7 +11,7 @@
     ],
     "legalBasis": ["NIRC Sec 24(A)(2)(a), as amended by RA 10963 (TRAIN); rates effective Jan 1, 2023 onward"],
     "confidence": "verified",
-    "notes": "Base is the tax on the bracket floor; rate applies to the excess over the floor. Watch: the post-SONA 2026 package would change this table from TY2027 if enacted: HB 10345 (₱350k zero bracket) cleared the House Ways & Means committee Aug 10, 2026; Senate counterparts SB 2338 (₱350k) and SB 1685 (₱500k) pending. Nothing enacted as of Aug 26, 2026; re-verify before the 2027 tax year."
+    "notes": "Base is the tax on the bracket floor; rate applies to the excess over the floor. Watch: the post-SONA 2026 package would change this table from TY2027 if enacted: HB 10345 (₱350k zero bracket) cleared the House Ways & Means committee Aug 10, 2026; Senate counterparts SB 2338 (₱350k) and SB 1685 (₱500k) pending. Not enacted as of the October 7, 2026 review (latest report Oct 1, 2026); re-verify before the 2027 tax year."
   },
   "eightPercent": {
     "value": {
@@ -30,11 +30,23 @@
     "confidence": "verified",
     "notes": "For individuals, OSD is 40% of gross sales/receipts (corporations compute it on gross income instead). Election is irrevocable for the taxable year."
   },
+  "netOperatingLossCarryOver": {
+    "value": { "carryOverYears": 3, "pandemicLossYears": [2020, 2021], "pandemicCarryOverYears": 5 },
+    "legalBasis": ["NIRC Sec 34(D)(3)", "RR 14-2001", "RR 16-2008 (not claimable while on OSD; the 3 years still run)", "RA 11494 (losses incurred in 2020 and 2021: 5 years)"],
+    "confidence": "needs_review",
+    "notes": "A net operating loss of the business (itemized deductions above gross income) is carried over as a deduction from business income for the next 3 years, only in years the taxpayer itemizes; it cannot be used while on the OSD or the 8% option, and those years still count toward the 3. The estimator applies prior-year NOLCO to the itemized option only and never against compensation income (owner decision 16; whether a mixed-income earner's business loss may reduce compensation was not confirmed from a primary source, REVIEW.md 4.2). The corporate estimator applies the same rule: itemized deductions only, against taxable income, never against the MCIT (which is on gross income). The 5-year period for 2020 and 2021 losses (RA 11494) is shown as 'check with your CPA'."
+  },
+  "returnLineRounding": {
+    "value": { "unit": "peso", "method": "49 centavos or less drop, 50 or more round up, per form line" },
+    "legalBasis": ["BIR Forms 1700, 1701, 1701A and 1701Q (January 2018): \"DO NOT enter Centavos; 49 Centavos or Less drop down; 50 or more round up\"", "BIR Form 1702-RT (January 2018), same instruction"],
+    "confidence": "verified",
+    "notes": "Every amount on an income tax return is a whole peso. The estimators round each line (gross, deduction, taxable income, tax due, percentage tax, credits) and add the rounded lines for totals, so the figures match what goes on the form (re-checked Oct 7, 2026; REVIEW.md rules table 2.1)."
+  },
   "thirteenthMonthExclusionCap": {
     "value": 90000,
     "legalBasis": ["NIRC Sec 32(B)(7)(e), as amended by RA 10963"],
     "confidence": "verified",
-    "notes": "13th month pay and other benefits excluded from gross income up to ₱90,000 per year, unchanged through 2026 (excess de minimis counts toward this cap). Watch: a House committee proposal would raise it to ₱120,000 alongside the TY2027 bracket package; committee stage only as of Aug 2026."
+    "notes": "13th month pay and other benefits excluded from gross income up to ₱90,000 per year, unchanged through 2026 (excess de minimis counts toward this cap). Watch: a House committee proposal would raise it to ₱120,000 alongside the TY2027 bracket package; not enacted as of the October 7, 2026 review."
   },
   "annualITRInstallment": {
     "value": { "secondInstallmentDue": "October 15" },

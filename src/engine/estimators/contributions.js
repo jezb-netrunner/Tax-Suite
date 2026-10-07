@@ -1,107 +1,168 @@
 // SSS / PhilHealth / Pag-IBIG monthly contribution math.
-// Parameters live in src/data/rules/contributions.json.
+// Parameters live in src/data/rules/contributions.json. Each agency has its
+// own contribution base (see employeeMandatoryDeductions below).
+//
+// Amounts are computed in whole centavos (src/lib/money.js) and each share is
+// rounded half-up to the centavo. PhilHealth: the employee share is half the
+// premium rounded half-up, and the employer pays the rest, so the two shares
+// always add up to the premium (owner default, flagged needs_review).
 
 import contrib from '../../data/rules/contributions.json'
+import { toCentavos, fromCentavos, mulRate, mulFrac, divRoundHalfUp } from '../../lib/money.js'
 
-function roundCentavo(n) { return Math.round(n * 100) / 100 }
+const P = fromCentavos
+const C = toCentavos
+
+function ecFor(mscC, ec) {
+  if (mscC <= 0) return 0 // L09: no pay, no SSS, no EC
+  const t = ec.find(x => x.mscBelow === null || mscC < C(x.mscBelow)) || ec[ec.length - 1]
+  return C(t.amount)
+}
+
+function sssMscC(salaryC) {
+  const { mscFloor, mscCeiling, mscStep } = contrib.sss.value
+  if (salaryC <= 0) return 0
+  const stepC = C(mscStep)
+  const stepped = divRoundHalfUp(salaryC, stepC) * stepC
+  return Math.min(C(mscCeiling), Math.max(C(mscFloor), stepped))
+}
 
 // SSS monthly salary credit: salary rounded to the nearest MSC step within floor/ceiling.
 export function sssMsc(monthlySalary) {
-  const { mscFloor, mscCeiling, mscStep } = contrib.sss.value
-  if (monthlySalary <= 0) return 0
-  const stepped = Math.round(monthlySalary / mscStep) * mscStep
-  return Math.min(mscCeiling, Math.max(mscFloor, stepped))
+  return P(sssMscC(C(monthlySalary)))
 }
 
 export function sssEmployee(monthlySalary) {
   const { employeeRate, employerRate, ec, wispThreshold } = contrib.sss.value
-  const msc = sssMsc(monthlySalary)
-  const employee = roundCentavo(msc * employeeRate)
-  const employer = roundCentavo(msc * employerRate)
-  const ecAmount = (ec.find(t => t.mscBelow === null || msc < t.mscBelow) || ec[ec.length - 1]).amount
-  const wispBase = Math.max(0, msc - wispThreshold)
+  const mscC = sssMscC(C(monthlySalary))
+  const employeeC = mulRate(mscC, employeeRate)
+  const employerC = mulRate(mscC, employerRate)
+  const ecC = ecFor(mscC, ec)
+  const wispBaseC = Math.max(0, mscC - C(wispThreshold))
   return {
-    msc,
-    employee,
-    employer: employer + ecAmount,
-    ec: ecAmount,
-    wispPortionOfTotal: roundCentavo(wispBase * (employeeRate + employerRate)),
-    total: roundCentavo(employee + employer + ecAmount),
+    msc: P(mscC),
+    employee: P(employeeC),
+    employer: P(employerC + ecC),
+    ec: P(ecC),
+    wispPortionOfTotal: P(mulRate(wispBaseC, employeeRate) + mulRate(wispBaseC, employerRate)),
+    total: P(employeeC + employerC + ecC),
   }
 }
 
 export function sssSelfEmployed(declaredMonthlyIncome) {
   const { selfEmployedRate, ec } = contrib.sss.value
-  const msc = sssMsc(declaredMonthlyIncome)
-  const amount = roundCentavo(msc * selfEmployedRate)
-  const ecAmount = (ec.find(t => t.mscBelow === null || msc < t.mscBelow) || ec[ec.length - 1]).amount
-  return { msc, amount: amount + ecAmount, ec: ecAmount }
+  const mscC = sssMscC(C(declaredMonthlyIncome))
+  const amountC = mulRate(mscC, selfEmployedRate)
+  const ecC = ecFor(mscC, ec)
+  return { msc: P(mscC), amount: P(amountC + ecC), ec: P(ecC) }
+}
+
+function philhealthC(monthlyBasic) {
+  const { rate, incomeFloor, incomeCeiling, employeeShare } = contrib.philhealth.value
+  // L09: the ₱10,000 floor applies to real pay only; no salary, no premium.
+  if (C(monthlyBasic || 0) <= 0) return { baseC: 0, premiumC: 0, employeeC: 0, employerC: 0 }
+  const baseC = Math.min(C(incomeCeiling), Math.max(C(incomeFloor), C(monthlyBasic)))
+  const premiumC = mulRate(baseC, rate)
+  const employeeC = mulRate(premiumC, employeeShare)
+  return { baseC, premiumC, employeeC, employerC: premiumC - employeeC }
 }
 
 export function philhealthMonthly(monthlyBasic) {
-  const { rate, incomeFloor, incomeCeiling, employerShare, employeeShare } = contrib.philhealth.value
-  const base = Math.min(incomeCeiling, Math.max(incomeFloor, monthlyBasic))
-  const premium = roundCentavo(base * rate)
+  const p = philhealthC(monthlyBasic)
   return {
-    base,
-    premium,
-    employee: roundCentavo(premium * employeeShare),
-    employer: roundCentavo(premium * employerShare),
+    base: P(p.baseC),
+    premium: P(p.premiumC),
+    employee: P(p.employeeC),
+    employer: P(p.employerC),
   }
 }
 
-export function pagibigMonthly(monthlyComp) {
+function pagibigC(monthlyComp) {
   const { employeeRateLow, employeeRateLowThreshold, employeeRate, employerRate, maxFundSalary } = contrib.pagibig.value
-  const base = Math.min(maxFundSalary, Math.max(0, monthlyComp))
-  const eeRate = monthlyComp <= employeeRateLowThreshold ? employeeRateLow : employeeRate
+  const compC = C(monthlyComp)
+  const baseC = Math.min(C(maxFundSalary), Math.max(0, compC))
+  const eeRate = compC <= C(employeeRateLowThreshold) ? employeeRateLow : employeeRate
+  return { baseC, employeeC: mulRate(baseC, eeRate), employerC: mulRate(baseC, employerRate) }
+}
+
+export function pagibigMonthly(monthlyComp) {
+  const p = pagibigC(monthlyComp)
+  return { base: P(p.baseC), employee: P(p.employeeC), employer: P(p.employerC) }
+}
+
+// C05: each agency has its own base (contributions.json):
+//   SSS         basic pay + regular allowances, commissions and other regular pay
+//               (RA 11199 Sec 8(f)); the MSC caps it at ₱35,000
+//   PhilHealth  basic salary (the first argument)
+//   Pag-IBIG    monthly compensation (basic + regular pay; needs_review), fund salary capped at ₱10,000
+// Without the second argument every agency uses the one figure (e.g. the
+// Tools calculator's "start from gross").
+function bases(monthlyBasic, { sssCompensation, pagibigCompensation } = {}) {
   return {
-    base,
-    employee: roundCentavo(base * eeRate),
-    employer: roundCentavo(base * employerRate),
+    sss: sssCompensation ?? monthlyBasic,
+    philhealth: monthlyBasic,
+    pagibig: pagibigCompensation ?? monthlyBasic,
   }
 }
 
 // Mandatory employee-share deductions for withholding-tax purposes.
-export function employeeMandatoryDeductions(monthlySalary) {
-  const sss = sssEmployee(monthlySalary)
-  const ph = philhealthMonthly(monthlySalary)
-  const pi = pagibigMonthly(monthlySalary)
+export function employeeMandatoryDeductions(monthlyBasic, other = {}) {
+  const b = bases(monthlyBasic, other)
+  const s = sssEmployee(b.sss)
+  const sss = C(s.employee)
+  const ph = philhealthC(b.philhealth).employeeC
+  const pi = pagibigC(b.pagibig).employeeC
   return {
-    sss: sss.employee,
-    philhealth: ph.employee,
-    pagibig: pi.employee,
-    total: roundCentavo(sss.employee + ph.employee + pi.employee),
+    sss: P(sss),
+    sssMsc: s.msc,
+    philhealth: P(ph),
+    pagibig: P(pi),
+    total: P(sss + ph + pi),
   }
 }
 
 // Full employer-side cost for one employee.
-export function employerContributions(monthlySalary) {
-  const sss = sssEmployee(monthlySalary)
-  const ph = philhealthMonthly(monthlySalary)
-  const pi = pagibigMonthly(monthlySalary)
+export function employerContributions(monthlyBasic, other = {}) {
+  const b = bases(monthlyBasic, other)
+  const sss = C(sssEmployee(b.sss).employer) // includes EC
+  const ph = philhealthC(b.philhealth).employerC
+  const pi = pagibigC(b.pagibig).employerC
   return {
-    sss: sss.employer, // includes EC
-    philhealth: ph.employer,
-    pagibig: pi.employer,
-    total: roundCentavo(sss.employer + ph.employer + pi.employer),
+    sss: P(sss),
+    philhealth: P(ph),
+    pagibig: P(pi),
+    total: P(sss + ph + pi),
   }
+}
+
+// M13 (owner default): the base for a self-employed member's contributions is
+// the net monthly earnings, (gross − expenses) ÷ 12 rounded half-up to the
+// centavo, unless the member enters the monthly earnings declared to SSS and
+// PhilHealth. basis: 'declared' | 'net' | 'none' (no net earnings).
+export function selfEmployedMonthlyEarnings({ grossAnnual = 0, expensesAnnual = 0, declaredMonthly = null } = {}) {
+  const declaredC = C(declaredMonthly || 0)
+  if (declaredC > 0) return { monthly: P(declaredC), basis: 'declared' }
+  const netC = C(grossAnnual || 0) - C(expensesAnnual || 0)
+  if (netC <= 0) return { monthly: 0, basis: 'none' }
+  return { monthly: P(mulFrac(netC, 1, 12)), basis: 'net' }
 }
 
 export function selfEmployedMonthlyContributions(declaredMonthlyIncome) {
-  const sss = sssSelfEmployed(declaredMonthlyIncome)
-  const ph = philhealthMonthly(declaredMonthlyIncome)
-  const pi = pagibigMonthly(declaredMonthlyIncome)
-  const phFull = ph.premium // direct contributors shoulder the full premium
-  const piFull = pagibigSelfTotal(pi)
+  // No earnings, no contributions (not the floor amounts).
+  if (C(declaredMonthlyIncome || 0) <= 0) return { sss: 0, philhealth: 0, pagibig: 0, total: 0 }
+  const sss = C(sssSelfEmployed(declaredMonthlyIncome).amount)
+  const ph = philhealthC(declaredMonthlyIncome).premiumC // direct contributors shoulder the full premium
+  const pi = pagibigSelfTotalC(declaredMonthlyIncome)
   return {
-    sss: sss.amount,
-    philhealth: phFull,
-    pagibig: piFull,
-    total: roundCentavo(sss.amount + phFull + piFull),
+    sss: P(sss),
+    philhealth: P(ph),
+    pagibig: P(pi),
+    total: P(sss + ph + pi),
   }
 }
 
-function pagibigSelfTotal(pi) {
+function pagibigSelfTotalC(declaredMonthlyIncome) {
   // Self-employed members shoulder both shares on the same schedule.
-  return roundCentavo(pi.employee + pi.employer)
+  const p = pagibigC(declaredMonthlyIncome)
+  return p.employeeC + p.employerC
 }

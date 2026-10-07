@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(wrangler deploy*)",
+      "Bash(npx wrangler deploy*)",
+      "Bash(npm run deploy*)",
+      "Bash(supabase db push*)",
+      "Bash(npx supabase db push*)",
+      "Bash(gh pr merge*)"
+    ],
+    "ask": ["Bash(git push*)"]
+  }
+}

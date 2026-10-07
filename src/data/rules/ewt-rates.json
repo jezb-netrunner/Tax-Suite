@@ -18,6 +18,12 @@
     "confidence": "verified",
     "notes": "The full ATC schedule is longer; these are the rates MSMEs meet most. Top Withholding Agents: designated by published BIR list, with criteria per RR 31-2020 (gross sales/receipts or purchases ≥ ₱12M for Groups A/B, ≥ ₱5M for C/D/E); obligation starts the month after list publication, and TWA status is independent of the EOPT micro/small/medium/large classification. Individual 5% professional-fee rate requires the payee's sworn declaration (gross ≤ ₱3M, non-VAT); without it, withhold 10%. Lone-payor payees with annual income ≤ ₱250,000 may be exempted by sworn declaration. Platforms' alphalist duties per RMC 55-2026."
   },
+  "professionalFeesIndividual": {
+    "value": { "lowerRate": 0.05, "standardRate": 0.10, "lowerRateGrossCeiling": 3000000 },
+    "legalBasis": ["RR 2-98 Sec 2.57.2, as amended by RR 11-2018"],
+    "confidence": "verified",
+    "notes": "The first row of the rates table above as numbers: 5% when the individual payee's annual gross is ₱3M or less and a sworn declaration was given; 10% otherwise. The blog quotes these rates."
+  },
   "sec34kRepealed": {
     "value": "For taxable years from 2024, an expense is deductible even if the related withholding tax was not withheld or remitted, because EOPT repealed NIRC Sec 34(K). The withholding agent remains liable for the unremitted tax, surcharge, and interest.",
     "legalBasis": ["RA 11976 (EOPT), repealing NIRC Sec 34(K)", "NIRC Sec 251 (withholding agent liability)"],

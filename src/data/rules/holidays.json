@@ -1,17 +1,48 @@
 {
-  "$comment": "Philippine non-working days used for deadline shifting. 2026: per Proclamation No. 1006 (verified Aug 4, 2026, incl. the separately proclaimed Eid dates). 2027: statutory/computable holidays only; the 2027 proclamation is normally issued late 2026, and movable and special dates get added when it issues. Special WORKING days (e.g. EDSA anniversary) are excluded; offices are open. Eid'l Fitr / Eid'l Adha 2027 are omitted until proclaimed.",
+  "$comment": "Philippine non-working days used for deadline shifting. 2026: per Proclamation No. 1006 s.2025 (verified Aug 4, 2026, incl. the separately proclaimed Eid dates, Proc 1189 and 1264 s.2026). 2027: per Proclamation No. 1427 s.2026 (signed Sept 8, 2026, as reported by the PCO, GMA News and Philstar): the dates fixed by law plus four special non-working days (Feb 6, Mar 27, Nov 2, Dec 24). Eid'l Fitr / Eid'l Adha 2027 are proclaimed separately and are added when proclaimed. Special WORKING days (e.g. EDSA anniversary, Feb 25) are excluded; offices are open.",
   "shiftRule": {
     "value": "A filing/payment deadline falling on a Saturday, Sunday, or non-working holiday moves to the next working day",
-    "legalBasis": ["The rule printed in the BIR's annual Tax Calendar and form instructions ('If the due date falls on a Saturday, Sunday or holiday, the deadline shall be moved to the next working day')", "RR 26-2002 (same treatment in the eFPS staggered-filing framework)"],
+    "legalBasis": ["RMC 65-2016 (a deadline on a Saturday, Sunday or holiday moves to the next working day)", "The rule printed in the BIR's annual Tax Calendar and form instructions ('If the due date falls on a Saturday, Sunday or holiday, the deadline shall be moved to the next working day')", "RR 26-2002 (same treatment in the eFPS staggered-filing framework)"],
     "confidence": "verified",
-    "notes": "Applied to BIR deadlines and, as the safe default, to SSS/PhilHealth/Pag-IBIG/LGU/SEC dates. Deadlines only ever move later, never earlier; weekday special non-working days (Dec 8, Dec 24, Dec 31) shift deadlines just like regular holidays; purely LOCAL holidays do not move national e-filing deadlines. The 13th-month-pay deadline is an exception — it must be met on or before Dec 24."
+    "notes": "Applied per agency (rollOverByAgency below): BIR, SSS, PhilHealth and Pag-IBIG dates move to the next working day; LGU, SEC and DOLE dates stay on the date set by law, with a note to act on the last working day before. Moved deadlines only ever move later, never earlier; weekday special non-working days (Dec 8, Dec 24, Dec 31) move deadlines just like regular holidays; purely LOCAL holidays do not move national e-filing deadlines. The 13th-month-pay deadline never moves: it must be met on or before Dec 24."
   },
+  "rollOverByAgency": {
+    "BIR": { "policy": "next_working_day", "legalBasis": ["RMC 65-2016"], "confidence": "verified", "notes": "Applies to eFPS, eBIRForms and manual filers alike." },
+    "SSS": { "policy": "next_working_day", "legalBasis": ["SSS payment-deadline rule (sss.gov.ph): a deadline on a Saturday, Sunday or holiday may be paid on the next working day"], "confidence": "verified" },
+    "PhilHealth": { "policy": "next_working_day", "legalBasis": ["PhilHealth Circular No. 0001, s. 2014"], "confidence": "verified" },
+    "Pag-IBIG": { "policy": "next_working_day", "legalBasis": ["Secondary sources only (payroll guides); no Pag-IBIG circular found"], "confidence": "needs_review" },
+    "LGU": { "policy": "statutory_date", "legalBasis": ["Local Government Code (RA 7160) Secs 139, 161 and 167 set fixed last days; no weekend roll-over rule found"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." },
+    "SEC": { "policy": "statutory_date", "legalBasis": ["SEC MC 9-2026 treats a weekend or holiday e-filing as filed on the next working day; it does not extend the deadline"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." },
+    "DOLE": { "policy": "statutory_date", "legalBasis": ["PD 851 IRR and the annual DOLE labor advisories set fixed dates; no roll-over rule found"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." }
+  },
+  "noShiftNote": "This date never moves later: if it falls on a weekend or holiday, do it on the last working day before.",
   "confidence": "needs_review",
   "confidenceByYear": {
     "2026": "verified",
-    "2027": "needs_review"
+    "2027": "verified"
   },
-  "confidenceNote": "2026 dates are verified against Proclamation No. 1006. The 2027 rows are the statutory/computable holidays only — the 2027 proclamation had not issued as of the verification date, and the movable Eid dates are omitted entirely, so deadlines shifting across a 2027 holiday need confirming.",
+  "confidenceNote": "2026 dates are verified against Proclamation No. 1006 s.2025 and the Eid proclamations. 2027 dates are verified against Proclamation No. 1427 s.2026 as reported by the PCO, GMA News and Philstar (the Official Gazette text could not be opened here). The 2027 Eid'l Fitr and Eid'l Adha dates are not yet proclaimed and are not in the list, so a deadline next to them may still move one more day.",
+  "fixedByLaw": {
+    "value": [
+      { "rule": "date", "month": 1, "day": 1, "name": "New Year's Day", "type": "regular" },
+      { "rule": "easter", "offsetDays": -3, "name": "Maundy Thursday", "type": "regular" },
+      { "rule": "easter", "offsetDays": -2, "name": "Good Friday", "type": "regular" },
+      { "rule": "date", "month": 4, "day": 9, "name": "Araw ng Kagitingan", "type": "regular" },
+      { "rule": "date", "month": 5, "day": 1, "name": "Labor Day", "type": "regular" },
+      { "rule": "date", "month": 6, "day": 12, "name": "Independence Day", "type": "regular" },
+      { "rule": "lastWeekday", "month": 8, "weekday": 1, "name": "National Heroes Day", "type": "regular" },
+      { "rule": "date", "month": 11, "day": 30, "name": "Bonifacio Day", "type": "regular" },
+      { "rule": "date", "month": 12, "day": 25, "name": "Christmas Day", "type": "regular" },
+      { "rule": "date", "month": 12, "day": 30, "name": "Rizal Day", "type": "regular" },
+      { "rule": "date", "month": 8, "day": 21, "name": "Ninoy Aquino Day", "type": "special_non_working" },
+      { "rule": "date", "month": 11, "day": 1, "name": "All Saints' Day", "type": "special_non_working" },
+      { "rule": "date", "month": 12, "day": 8, "name": "Feast of the Immaculate Conception", "type": "special_non_working" },
+      { "rule": "date", "month": 12, "day": 31, "name": "Last Day of the Year", "type": "special_non_working" }
+    ],
+    "legalBasis": ["EO 292 (Administrative Code of 1987) Book I Sec 26, as amended by RA 9492", "RA 9256 (Ninoy Aquino Day, Aug 21)", "RA 10966 (Feast of the Immaculate Conception, Dec 8)"],
+    "confidence": "needs_review",
+    "notes": "The holidays fixed by law, computed for any year that has no proclaimed list below (a proclaimed list replaces them for its year). Maundy Thursday and Good Friday are the Thursday and Friday before Easter Sunday; National Heroes Day is the last Monday of August. Not included because a proclamation sets them: Eid'l Fitr and Eid'l Adha, Chinese New Year, Black Saturday, Nov 2, Dec 24, election days and other special days. A proclamation may also move a holiday under RA 9492, so until a year's list is proclaimed a deadline may move one or more days later than shown."
+  },
   "holidays": [
     { "date": "2026-01-01", "name": "New Year's Day", "type": "regular" },
     { "date": "2026-02-17", "name": "Chinese New Year", "type": "special_non_working" },
@@ -34,22 +65,26 @@
     { "date": "2026-12-30", "name": "Rizal Day", "type": "regular" },
     { "date": "2026-12-31", "name": "Last Day of the Year", "type": "special_non_working" },
     { "date": "2027-01-01", "name": "New Year's Day", "type": "regular" },
-    { "date": "2027-03-25", "name": "Maundy Thursday (statutory movable; Easter 2027 is Mar 28)", "type": "regular" },
-    { "date": "2027-03-26", "name": "Good Friday (statutory movable)", "type": "regular" },
+    { "date": "2027-02-06", "name": "Chinese New Year", "type": "special_non_working" },
+    { "date": "2027-03-25", "name": "Maundy Thursday", "type": "regular" },
+    { "date": "2027-03-26", "name": "Good Friday", "type": "regular" },
+    { "date": "2027-03-27", "name": "Black Saturday", "type": "special_non_working" },
     { "date": "2027-04-09", "name": "Araw ng Kagitingan", "type": "regular" },
     { "date": "2027-05-01", "name": "Labor Day", "type": "regular" },
     { "date": "2027-06-12", "name": "Independence Day", "type": "regular" },
-    { "date": "2027-08-21", "name": "Ninoy Aquino Day (statutory, RA 9256)", "type": "special_non_working" },
-    { "date": "2027-08-30", "name": "National Heroes Day (last Monday of August)", "type": "regular" },
-    { "date": "2027-11-01", "name": "All Saints' Day (statutory, RA 9492)", "type": "special_non_working" },
+    { "date": "2027-08-21", "name": "Ninoy Aquino Day", "type": "special_non_working" },
+    { "date": "2027-08-30", "name": "National Heroes Day", "type": "regular" },
+    { "date": "2027-11-01", "name": "All Saints' Day", "type": "special_non_working" },
+    { "date": "2027-11-02", "name": "All Souls' Day", "type": "special_non_working" },
     { "date": "2027-11-30", "name": "Bonifacio Day", "type": "regular" },
-    { "date": "2027-12-08", "name": "Feast of the Immaculate Conception (statutory, RA 10966)", "type": "special_non_working" },
+    { "date": "2027-12-08", "name": "Feast of the Immaculate Conception", "type": "special_non_working" },
+    { "date": "2027-12-24", "name": "Christmas Eve", "type": "special_non_working" },
     { "date": "2027-12-25", "name": "Christmas Day", "type": "regular" },
     { "date": "2027-12-30", "name": "Rizal Day", "type": "regular" },
-    { "date": "2027-12-31", "name": "Last Day of the Year (statutory, EO 292 as amended by RA 9492)", "type": "special_non_working" }
+    { "date": "2027-12-31", "name": "Last Day of the Year", "type": "special_non_working" }
   ],
   "notes2027": {
     "confidence": "needs_review",
-    "notes": "The 2027 rows are the statutory holidays (fixed and computable) — no proclamation needed for these. Still pending the 2027 proclamation (expected Sept–Oct 2026, based on recent years) and to be added when proclaimed: the 2027 Eid dates (astronomical estimates: Eid'l Fitr ~Mar 9, Eid'l Adha ~May 16), Chinese New Year (Feb 6 — a Saturday), Black Saturday (Mar 27 — a Saturday), and the customary discretionary days Nov 2 and Dec 24 (Dec 24, 2027 is a FRIDAY — watch it). Nov 2, 2026 is also barangay/SK election day under RA 12232 — already non-working as All Souls' Day."
+    "notes": "Proclamation No. 1427 s.2026 (Sept 8, 2026) set the 2027 holidays: the regular holidays and special days fixed by law, plus special non-working days on Feb 6 (Chinese New Year, a Saturday), Mar 27 (Black Saturday), Nov 2 (All Souls' Day, a Tuesday) and Dec 24 (Christmas Eve, a Friday). Feb 25 (EDSA anniversary) stays a special WORKING day. Still pending: Eid'l Fitr and Eid'l Adha 2027 (astronomical estimates: Eid'l Fitr about Mar 9, Eid'l Adha about May 16), proclaimed separately closer to the dates; add them here when proclaimed. Nov 2, 2027 moves the Q3 2027 1601-EQ, 1601-FQ and QAP and the September 2027 SSS and PhilHealth payments from Tue Nov 2 to Wed Nov 3."
   }
 }

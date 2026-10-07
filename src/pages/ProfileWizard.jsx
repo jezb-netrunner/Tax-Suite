@@ -1,10 +1,33 @@
-import React, { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { PROFILE_TYPES, defaultProfile } from '../engine/profile.js'
+import { PROFILE_TYPES, defaultProfile, changeProfileType, withWizardChanges, regimeLabel } from '../engine/profile.js'
 import { Switch, SelectField } from '../components/ui.jsx'
+import { manilaToday } from '../engine/dates.js'
+import { registrationYearOptions, registrationYearChoice } from '../engine/estimators/corporation.js'
+import { regimeCardText, booksCardText } from '../engine/wizardText.js'
+import { OBLIGATIONS } from '../lib/deadlineData.js'
+import { RT, dueDayText, daysAfterEnd } from '../engine/ruleText.js'
+
+// C08: asked before the type of a saved profile changes.
+export const TYPE_CHANGE_CONFIRM =
+  'Changing the taxpayer type resets the registration answers. Answers both types share, saved figures and filed marks are kept. Continue?'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+// M24: Cancel goes back inside the app, or to the profile list when the
+// wizard was the first page opened (bookmark, new tab, shared link), where
+// going back would leave the app.
+export function cancelWizard(nav, location) {
+  if (!location || location.key === 'default') nav('/profiles')
+  else nav(-1)
+}
+
+// M24: after saving, the wizard's history entry is replaced, so Back does not
+// reopen an empty wizard (and invite a duplicate profile).
+export function leaveAfterSave(nav) {
+  nav('/', { replace: true })
+}
 
 export default function ProfileWizard() {
   const app = useApp()
@@ -13,18 +36,52 @@ export default function ProfileWizard() {
     () => (profileId ? app.profiles.find(p => p.id === profileId) : null),
     [profileId, app.profiles]
   )
+  // M24: remember that this profile was open, to tell "deleted in another
+  // window" apart from a link to a profile that never existed here.
+  const opened = useRef(null)
+  if (editing) opened.current = profileId
 
   // Profiles load asynchronously. Mounting the editor before they arrive seeded
   // a blank form and saved it as a NEW profile instead of editing the intended
   // one, so wait, then remount cleanly against the resolved profile.
   if (profileId && !app.profilesReady) return null
+  // M24: an unknown id never falls back to a blank "new profile" form.
+  if (profileId && !editing) {
+    return <ProfileMissing deleted={opened.current === profileId} loadError={app.loadError} onRetry={() => app.retryLoad()} />
+  }
   return <WizardForm key={profileId || 'new'} app={app} editing={editing} />
+}
+
+function ProfileMissing({ deleted, loadError, onRetry }) {
+  return (
+    <div className="page wrap" style={{ paddingTop: '30px', paddingBottom: '64px', maxWidth: '760px' }}>
+      <h1 className="pg-h1">{loadError ? 'Profiles not loaded' : 'Profile not found'}</h1>
+      <div className="card pad" style={{ marginTop: '18px', fontSize: '14px', lineHeight: 1.6 }}>
+        {loadError ? (
+          <p>
+            Couldn’t load your saved profiles, so this one can’t be opened. This is a loading problem, not lost data.{' '}
+            <button className="linkbtn" type="button" style={{ fontSize: '14px', textDecoration: 'underline' }} onClick={onRetry}>Try again</button>
+          </p>
+        ) : (
+          <p>{deleted
+            ? 'This profile was deleted in another window, so there is nothing to edit.'
+            : 'There is no profile at this link. It may have been deleted, or the link is incomplete.'}</p>
+        )}
+        <div style={{ marginTop: '14px' }}>
+          <Link className="btn" to="/profiles" style={{ display: 'inline-block', textDecoration: 'none' }}>Go to your profiles</Link>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function WizardForm({ app, editing }) {
   const nav = useNavigate()
+  const location = useLocation()
   const [step, setStep] = useState(0)
   const [p, setP] = useState(() => (editing ? { ...editing } : defaultProfile()))
+  // M06: the profile as the form opened it, to save only what the form changed.
+  const [base] = useState(() => (editing ? { ...editing } : null))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
 
@@ -41,26 +98,49 @@ function WizardForm({ app, editing }) {
     }))
   }
 
-  // Switching type resets the type-specific facets (an employee has no VAT
-  // registration), but must carry the identity across — dropping the id would
-  // save a duplicate instead of updating the profile being edited.
+  // C08: tapping the selected type changes nothing. Another type resets the
+  // answers that do not apply to it (an employee has no VAT registration) but
+  // keeps the identity (dropping the id would save a duplicate), the answers
+  // both types share, the figures and the filed marks. On a saved profile the
+  // user confirms first.
   function pickType(type) {
-    const fresh = defaultProfile(type)
-    fresh.id = p.id
-    fresh.name = p.name
-    fresh.inputs = p.inputs || {}
-    setP(fresh)
+    if (type === p.type) return
+    if (editing && !window.confirm(TYPE_CHANGE_CONFIRM)) return
+    setP(prev => changeProfileType(prev, type))
   }
 
   const isBiz = p.type === 'individual' || p.type === 'mixed'
   const isCorp = p.type === 'corporation'
   const steps = p.type === 'employee' ? 3 : 4
+  // H08: card text depends on the profile type (mixed income files 1701).
+  const regimeText = regimeCardText({ type: p.type, vatRegistered: p.vatRegistered })
+  // H11: books deadlines come from the obligation rules (fiscal-year aware).
+  const booksText = booksCardText(OBLIGATIONS, isCorp ? (p.fiscalYearEndMonth || 12) : 12)
+
+  // M20: each step's heading says "Step X of Y" and takes the focus when
+  // Continue or Back changes the step, so screen-reader users hear the new
+  // question. (Not on the first render: the page heading gets focus then.)
+  const headRef = useRef(null)
+  const shownStep = useRef(step)
+  useEffect(() => {
+    if (shownStep.current === step) return
+    shownStep.current = step
+    if (headRef.current) headRef.current.focus()
+  }, [step])
+  const stepHead = title => (
+    <h2 className="sec-h wiz-head" ref={headRef} tabIndex={-1}>
+      <span className="wiz-count">Step {step + 1} of {steps}</span>{' '}{title}
+    </h2>
+  )
 
   async function finish() {
     setBusy(true); setErr(null)
     try {
-      await app.save(p)
-      nav('/')
+      // M06: an edit is written onto the newest stored profile, changing only
+      // what this form changed, so figures typed meanwhile are never wiped.
+      if (base) await app.updateProfile(base.id, latest => withWizardChanges(latest, base, p))
+      else await app.save(p)
+      leaveAfterSave(nav)
     } catch (ex) {
       setErr(ex.message || 'Could not save the profile.')
       setBusy(false)
@@ -79,29 +159,36 @@ function WizardForm({ app, editing }) {
       <div className="card pad">
         {step === 0 && (
           <div>
-            <h2 className="sec-h">Who is this profile for?</h2>
+            {stepHead('Who is this profile for?')}
             <div className="field" style={{ marginTop: '14px' }}>
               <label className="lbl" htmlFor="pf-name">Profile name</label>
-              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} onChange={e => set('name', e.target.value)} />
+              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} onChange={e => set('name', e.target.value)} aria-required="true" aria-describedby="pf-name-req pf-name-privacy" />
+              <p id="pf-name-req" className="field-note">Required. Type a name for this profile to continue.</p>
+              <p id="pf-name-privacy" style={{ fontSize: '12.5px', color: 'var(--ink)', marginTop: '6px', lineHeight: 1.5 }}>
+                {app.hasCloud ? 'Saved to your account.' : 'Saved in this browser only.'} See the <Link to="/privacy" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Privacy Notice</Link> for what is kept and how to erase it.
+              </p>
             </div>
-            <div className="opt-grid">
-              {Object.entries(PROFILE_TYPES).map(([k, t]) => (
-                <button key={k} type="button" className={'opt-card' + (p.type === k ? ' on' : '')} aria-pressed={p.type === k} onClick={() => pickType(k)}>
-                  <div className="t">{t.name}</div>
-                  <div className="d">{t.desc}</div>
-                </button>
-              ))}
-            </div>
+            <fieldset className="opt-fieldset" style={{ marginTop: '16px' }}>
+              <legend className="lbl">Taxpayer type</legend>
+              <div className="opt-grid">
+                {Object.entries(PROFILE_TYPES).map(([k, t]) => (
+                  <button key={k} type="button" className={'opt-card' + (p.type === k ? ' on' : '')} aria-pressed={p.type === k} onClick={() => pickType(k)}>
+                    <div className="t">{t.name}</div>
+                    <div className="d">{t.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           </div>
         )}
 
         {step === 1 && p.type === 'employee' && (
           <div>
-            <h2 className="sec-h">Employment situation</h2>
+            {stepHead('Employment situation')}
             <div style={{ marginTop: '10px' }}>
               <Switch on={p.multipleEmployers} onChange={v => set('multipleEmployers', v)}
                 title="More than one employer this year (or switched jobs mid-year)"
-                desc="Two or more employers usually means substituted filing no longer applies, so you file BIR Form 1700 yourself by April 15." />
+                desc={`Two or more employers usually means substituted filing no longer applies, so you file BIR Form 1700 yourself by ${dueDayText('bir-1700-annual')}.`} />
               <Switch on={p.licensedProfessional} onChange={v => set('licensedProfessional', v)}
                 title="PRC-licensed professional"
                 desc="Licensed professionals renew a Professional Tax Receipt (PTR) with the LGU every January, even when purely employed." />
@@ -111,47 +198,47 @@ function WizardForm({ app, editing }) {
 
         {step === 1 && (isBiz || isCorp) && (
           <div>
-            <h2 className="sec-h">Tax registration</h2>
+            {stepHead('Tax registration')}
             {isBiz && (
               <>
                 <div style={{ marginTop: '14px' }}>
                   <Switch on={p.vatRegistered} onChange={v => setVatRegistered(v)}
                     title="VAT-registered"
-                    desc="Required once gross sales pass the ₱3,000,000 threshold; optional below it. VAT registration removes the 8% option and the percentage tax." />
+                    desc={`Required once gross sales pass the ${RT.vatThreshold} threshold; optional below it. VAT registration removes the ${RT.eightRate} option and the percentage tax.`} />
                 </div>
                 {!p.vatRegistered && (
-                  <div style={{ marginTop: '16px' }}>
-                    <label className="lbl">Income tax regime</label>
+                  <fieldset className="opt-fieldset" style={{ marginTop: '16px' }}>
+                    <legend className="lbl">Income tax regime</legend>
                     <div className="opt-grid" style={{ marginTop: '10px' }}>
                       <button type="button" className={'opt-card' + (p.regime === '8pct' ? ' on' : '')} aria-pressed={p.regime === '8pct'} onClick={() => set('regime', '8pct')}>
-                        <div className="t">8% flat tax</div>
-                        <div className="d">8% on gross{p.type === 'individual' ? ' above ₱250,000' : ''}, in lieu of graduated rates and percentage tax. Elected each year on the Q1 return.</div>
+                        <div className="t">{regimeLabel('8pct')}</div>
+                        <div className="d">{regimeText['8pct']}</div>
                       </button>
                       <button type="button" className={'opt-card' + (p.regime === 'graduated_osd' ? ' on' : '')} aria-pressed={p.regime === 'graduated_osd'} onClick={() => set('regime', 'graduated_osd')}>
                         <div className="t">Graduated + OSD</div>
-                        <div className="d">Graduated rates on income after the 40% Optional Standard Deduction, plus 3% percentage tax.</div>
+                        <div className="d">{regimeText.graduated_osd}</div>
                       </button>
                       <button type="button" className={'opt-card' + (p.regime === 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime === 'graduated_itemized'} onClick={() => set('regime', 'graduated_itemized')}>
                         <div className="t">Graduated + itemized</div>
-                        <div className="d">Graduated rates on income after actual documented expenses, plus 3% percentage tax.</div>
+                        <div className="d">{regimeText.graduated_itemized}</div>
                       </button>
                     </div>
-                  </div>
+                  </fieldset>
                 )}
                 {p.vatRegistered && (
-                  <div style={{ marginTop: '16px' }}>
-                    <label className="lbl">Deduction method</label>
+                  <fieldset className="opt-fieldset" style={{ marginTop: '16px' }}>
+                    <legend className="lbl">Deduction method</legend>
                     <div className="opt-grid" style={{ marginTop: '10px' }}>
                       <button type="button" className={'opt-card' + (p.regime !== 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime !== 'graduated_itemized'} onClick={() => set('regime', 'graduated_osd')}>
                         <div className="t">Graduated + OSD</div>
-                        <div className="d">40% Optional Standard Deduction: simpler books, files 1701A.</div>
+                        <div className="d">{regimeText.graduated_osd}</div>
                       </button>
                       <button type="button" className={'opt-card' + (p.regime === 'graduated_itemized' ? ' on' : '')} aria-pressed={p.regime === 'graduated_itemized'} onClick={() => set('regime', 'graduated_itemized')}>
                         <div className="t">Graduated + itemized</div>
-                        <div className="d">Actual documented expenses: files the full 1701.</div>
+                        <div className="d">{regimeText.graduated_itemized}</div>
                       </button>
                     </div>
-                  </div>
+                  </fieldset>
                 )}
               </>
             )}
@@ -160,20 +247,19 @@ function WizardForm({ app, editing }) {
                 <div style={{ marginTop: '14px' }}>
                   <Switch on={p.vatRegistered} onChange={v => set('vatRegistered', v)}
                     title="VAT-registered"
-                    desc="Required once gross sales pass ₱3,000,000; non-VAT corporations file the 3% quarterly percentage tax instead." />
+                    desc={`Required once gross sales pass ${RT.vatThreshold}; non-VAT corporations file the ${RT.percentageTaxRate} quarterly percentage tax instead.`} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px', marginTop: '18px' }}>
                   <SelectField label="Taxable year ends in" value={String(p.fiscalYearEndMonth)}
                     onChange={v => set('fiscalYearEndMonth', Number(v))}
                     options={MONTHS.map((m, i) => [String(i + 1), i + 1 === 12 ? 'December (calendar year)' : m])} />
-                  <SelectField label="Year operations began" value={String(p.registrationYear || '')}
+                  {/* H13: same profile field (registrationYear); a saved year before 1998 shows as "1997 or earlier". */}
+                  <SelectField label="Year registered with the BIR (for MCIT)" value={registrationYearChoice(p.registrationYear)}
                     onChange={v => set('registrationYear', v ? Number(v) : null)}
-                    options={[['', 'Not sure'], ...Array.from({ length: 30 }, (_, i) => {
-                      const y = new Date().getFullYear() - i
-                      return [String(y), String(y)]
-                    })]} />
+                    options={registrationYearOptions(manilaToday().getFullYear())}
+                    hint="The year on your BIR Certificate of Registration (Form 2303), even if your first sale came later." />
                 </div>
-                <p className="cite" style={{ marginTop: '10px' }}>The start year drives the 2% minimum corporate income tax (MCIT), which begins in the fourth taxable year after operations commence.</p>
+                <p className="cite" style={{ marginTop: '10px' }}>The {RT.mcitRate} minimum corporate income tax (MCIT) starts in the {RT.mcitStartYear} taxable year after the year the corporation registered with the BIR (RR 9-98). If you are not sure, the estimator shows both the regular tax and the MCIT.</p>
               </>
             )}
           </div>
@@ -181,7 +267,7 @@ function WizardForm({ app, editing }) {
 
         {step === 2 && (isBiz || isCorp) && (
           <div>
-            <h2 className="sec-h">Withholding &amp; payroll</h2>
+            {stepHead('Withholding & payroll')}
             <div style={{ marginTop: '10px' }}>
               <Switch on={p.receives2307} onChange={v => set('receives2307', v)}
                 title="Clients withhold tax from your payments (you receive Form 2307)"
@@ -201,22 +287,23 @@ function WizardForm({ app, editing }) {
 
         {((step === 2 && p.type === 'employee') || (step === 3 && (isBiz || isCorp))) && (
           <div>
-            <h2 className="sec-h">{p.type === 'employee' ? 'Review' : 'Registrations & records'}</h2>
+            {stepHead(p.type === 'employee' ? 'Review' : 'Registrations & records')}
             {(isBiz || isCorp) && (
               <div style={{ marginTop: '10px' }}>
-                <div style={{ margin: '6px 0 12px' }}>
-                  <label className="lbl">Books of accounts</label>
+                <fieldset className="opt-fieldset" style={{ margin: '6px 0 12px' }}>
+                  <legend className="lbl">Books of accounts</legend>
                   <div className="opt-grid" style={{ marginTop: '10px' }}>
                     {[['manual', 'Manual books', 'Handwritten ledgers registered with the BIR. No annual re-registration; new books only when full.'],
-                      ['looseleaf', 'Loose-leaf', 'Printed/bound records under a BIR permit; bound copies submitted every January 15.'],
-                      ['cas', 'Computerized (CAS)', 'BIR-registered accounting system; annual back-up/registration by January 30.']].map(([k, t, d]) => (
+                      ['looseleaf', 'Loose-leaf', booksText.looseleaf],
+                      ['cas', 'Computerized (CAS)', booksText.cas]].map(([k, t, d]) => (
                       <button key={k} type="button" className={'opt-card' + (p.booksType === k ? ' on' : '')} aria-pressed={p.booksType === k} onClick={() => set('booksType', k)}>
                         <div className="t">{t}</div>
                         <div className="d">{d}</div>
                       </button>
                     ))}
                   </div>
-                </div>
+                  <p style={{ fontSize: '12.5px', color: '#4a5a6a', marginTop: '10px', lineHeight: 1.5 }}>{booksText.summary}</p>
+                </fieldset>
                 <Switch on={p.hasBusinessEstablishment} onChange={v => set('hasBusinessEstablishment', v)}
                   title="Registered place of business (LGU permit holder)"
                   desc="Switches on mayor's/business-permit renewal and local business tax every January, plus barangay clearance." />
@@ -235,13 +322,13 @@ function WizardForm({ app, editing }) {
                   desc="BIR-registered CRM/POS units carry their own reporting duties." />
                 <Switch on={p.sellsGoods} onChange={v => set('sellsGoods', v)}
                   title="Sells goods / maintains inventory"
-                  desc="Inventory-holding businesses submit an annual inventory list to the BIR within 30 days of year-end." />
+                  desc={`Inventory-holding businesses submit an annual inventory list to the BIR within ${daysAfterEnd('bir-inventory-list')} days of year-end.`} />
               </div>
             )}
             <div style={{ marginTop: '18px', background: 'var(--accSoft)', borderRadius: '11px', padding: '14px 16px', fontSize: '13px', color: 'var(--accInk)', lineHeight: 1.6 }}>
               <b>{p.name || 'This profile'}</b>: {PROFILE_TYPES[p.type].name}
               {(isBiz || isCorp) && <> · {p.vatRegistered ? 'VAT' : 'Non-VAT'}</>}
-              {isBiz && !p.vatRegistered && <> · {p.regime === '8pct' ? '8% flat tax' : p.regime === 'graduated_osd' ? 'Graduated + OSD' : 'Graduated + itemized'}</>}
+              {isBiz && !p.vatRegistered && <> · {regimeLabel(p.regime)}</>}
               {p.hasEmployees && <> · employer</>}
               {p.withholdsEwt && <> · EWT agent</>}
               {p.receives2307 && <> · receives 2307s (SAWT)</>}
@@ -252,8 +339,12 @@ function WizardForm({ app, editing }) {
 
         {err && <div className="form-err" role="alert">{err}</div>}
 
+        {step === 0 && !p.name.trim() && (
+          <p className="field-note" style={{ marginTop: '20px' }}>Type a profile name above to continue.</p>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '24px' }}>
-          <button className="btn ghost" type="button" onClick={() => (step === 0 ? nav(-1) : setStep(s => s - 1))}>
+          <button className="btn ghost" type="button" onClick={() => (step === 0 ? cancelWizard(nav, location) : setStep(s => s - 1))}>
             {step === 0 ? 'Cancel' : 'Back'}
           </button>
           {step < steps - 1 ? (

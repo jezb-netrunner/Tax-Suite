@@ -14,12 +14,13 @@
   "mcit": {
     "value": {
       "rate": 0.02,
-      "startsInTaxableYear": "4th taxable year immediately following the year operations began",
+      "currentRatesFrom": "2023-07-01",
+      "startsInTaxableYear": 4,
       "excessCarryForwardYears": 3
     },
-    "legalBasis": ["NIRC Sec 27(E), as amended", "RA 11534 (CREATE); 1% Jul 1 2020–Jun 30 2023, 2% thereafter"],
+    "legalBasis": ["NIRC Sec 27(E), as amended", "RR 9-98 (the year operations commence is the year of registration with the BIR)", "RR 12-2007 (quarterly MCIT on cumulative gross income)", "RA 11534 (CREATE); 1% Jul 1 2020–Jun 30 2023, 2% thereafter", "RMC 69-2023 (MCIT back to 2% from Jul 1, 2023)", "RMC 36-2024 (computation for taxable years straddling Jul 1, 2023)"],
     "confidence": "verified",
-    "notes": "Pay the higher of RCIT and MCIT (2% of gross income) from the fourth taxable year after the registration year. Excess MCIT over RCIT credits against RCIT for the next three years."
+    "notes": "startsInTaxableYear 4 means MCIT applies from the 4th taxable year immediately following the year of registration with the BIR (a corporation registered in 2020 first pays MCIT for 2024). Pay the higher of RCIT and MCIT (2% of gross income) from the fourth taxable year after the year the corporation registered with the BIR (RR 9-98), not the year of its first sale. When the profile has no registration year, the estimator shows both RCIT and MCIT with a warning. Excess MCIT over RCIT credits against RCIT for the next three years. The corporate estimator covers the current and the previous taxable year only (the default is the year whose annual return is due next, by the Manila date and the fiscal year); periods that start before Jul 1, 2023 are not supported, because MCIT and percentage tax were 1% from Jul 2020 to Jun 2023."
   },
   "fiscalYear": {
     "value": "Corporations may adopt a fiscal year; individuals must use the calendar year",
@@ -31,7 +32,13 @@
     "value": { "rate": 0.40, "basis": "gross income" },
     "legalBasis": ["NIRC Sec 34(L), as amended by RA 9504", "RR 16-2008"],
     "confidence": "verified",
-    "notes": "Corporations compute OSD on gross income (after cost of sales), unlike individuals who use gross sales/receipts. The election is signified on the first-quarter return and is irrevocable for the year, and unlike individuals, a corporation on OSD still submits financial statements with the annual return."
+    "notes": "Corporations compute OSD on gross income (after cost of sales), unlike individuals who use gross sales/receipts. The election is signified on the first-quarter return and is irrevocable for the year, and unlike individuals, a corporation on OSD still submits financial statements with the annual return. The corporate estimator offers it as the 'Deductions' choice (OSD line rounded to whole pesos)."
+  },
+  "excessMcitCredit": {
+    "value": { "creditedAgainst": "regular corporate income tax only, in a year when the regular tax is the tax due", "order": "oldest first", "cap": "the regular tax" },
+    "legalBasis": ["NIRC Sec 27(E)(2)", "RR 9-98", "RR 12-2007 (quarterly returns)"],
+    "confidence": "needs_review",
+    "notes": "Excess of MCIT over the regular tax is carried forward and credited against the regular tax of the next 3 taxable years (the number of years is mcit.excessCarryForwardYears), never against the MCIT. The estimator credits unexpired amounts oldest first, only when the regular tax is the tax due, up to the full regular tax, on the annual and the quarterly view. Whether the credit may bring the amount payable below that year's MCIT is not confirmed; check with a CPA."
   },
   "improperlyAccumulatedEarningsTax": {
     "value": "Repealed",

@@ -24,7 +24,7 @@ describe('graduated income tax table', () => {
     expect(gradTax(3000000)).toBe(702500)
   })
   it('35% band: 10,000,000 → 2,902,500', () => {
-    expect(gradTax(10000000)).toBe(2202500 + 2000000 * 0.35)
+    expect(gradTax(10000000)).toBe(2902500)
   })
 })
 
@@ -36,8 +36,8 @@ describe('bracketTax primitive', () => {
   ]
   it('picks the right bracket at boundaries', () => {
     expect(bracketTax(t, 100)).toBe(0)
-    expect(bracketTax(t, 101)).toBeCloseTo(0.1)
-    expect(bracketTax(t, 200)).toBeCloseTo(10)
-    expect(bracketTax(t, 250)).toBeCloseTo(20)
+    expect(bracketTax(t, 101)).toBe(0.1)
+    expect(bracketTax(t, 200)).toBe(10)
+    expect(bracketTax(t, 250)).toBe(20)
   })
 })

@@ -1,5 +1,4 @@
-import React from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { POSTS } from '../data/posts.js'
 
 // Ported from v1; navigation moved from component state to routes.
@@ -13,29 +12,35 @@ export default function BlogPage() {
     return (
       <div className="page wrap" style={{ paddingTop: '34px', paddingBottom: '64px' }}>
         <div style={{ marginBottom: '26px' }}>
-          <div className="mono" style={{ fontSize: '11.5px', fontWeight: 500, letterSpacing: '.13em', textTransform: 'uppercase', color: 'var(--acc)' }}>The Present Value Journal</div>
+          <div className="mono" style={{ fontSize: '11.5px', fontWeight: 500, letterSpacing: '.13em', textTransform: 'uppercase', color: 'var(--accInk)' }}>The JEZ Tax Suite Journal</div>
           <h1 style={{ fontSize: '30px', fontWeight: 800, letterSpacing: '-.025em', marginTop: '10px' }}>Plain-language tax, for people who'd rather be working</h1>
         </div>
-        <div className="card click" onClick={() => nav(`/blog/${featured.id}`)} style={{ borderRadius: '16px', overflow: 'hidden', display: 'flex', flexWrap: 'wrap' }}>
+        {/* M18: each card is a real link. The title is the link; its ::after
+            covers the card, so a click anywhere on the card opens the article. */}
+        <article className="card click blog-card" style={{ borderRadius: '16px', overflow: 'hidden', display: 'flex', flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 200px', background: 'linear-gradient(150deg,var(--brand),var(--brand2))', padding: '28px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '22px' }}>
             <span style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#a9cde6' }}>{featured.cat}</span>
             <span className="mono" style={{ fontSize: '12px', color: '#cdddea' }}>{featured.read} · {featured.date}</span>
           </div>
           <div style={{ flex: '2.4 1 300px', padding: '28px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--acc)' }}>Featured</div>
-            <h2 style={{ fontSize: '23px', fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.2, marginTop: '10px' }}>{featured.title}</h2>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--accInk)' }}>Featured</div>
+            <h2 style={{ fontSize: '23px', fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.2, marginTop: '10px' }}>
+              <Link to={`/blog/${featured.id}`} className="card-link">{featured.title}</Link>
+            </h2>
             <p style={{ fontSize: '14.5px', color: 'var(--mut)', lineHeight: 1.6, marginTop: '11px' }}>{featured.excerpt}</p>
-            <div style={{ marginTop: '16px', fontSize: '13.5px', fontWeight: 600, color: 'var(--accInk)' }}>Read article →</div>
+            <div aria-hidden="true" style={{ marginTop: '16px', fontSize: '13.5px', fontWeight: 600, color: 'var(--accInk)' }}>Read article →</div>
           </div>
-        </div>
+        </article>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '16px', marginTop: '18px' }}>
           {rest.map(p => (
-            <div key={p.id} className="card click" onClick={() => nav(`/blog/${p.id}`)} style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--acc)' }}>{p.cat}</span>
-              <h3 style={{ fontSize: '16.5px', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.25, marginTop: '10px' }}>{p.title}</h3>
+            <article key={p.id} className="card click blog-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--accInk)' }}>{p.cat}</span>
+              <h2 style={{ fontSize: '16.5px', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.25, marginTop: '10px' }}>
+                <Link to={`/blog/${p.id}`} className="card-link">{p.title}</Link>
+              </h2>
               <p style={{ fontSize: '13.5px', color: 'var(--mut)', lineHeight: 1.55, marginTop: '9px', flex: 1 }}>{p.excerpt}</p>
               <div className="mono" style={{ fontSize: '11.5px', color: 'var(--dim)', marginTop: '14px' }}>{p.read} · {p.date}</div>
-            </div>
+            </article>
           ))}
         </div>
       </div>
@@ -58,10 +63,13 @@ export default function BlogPage() {
   }
   return (
     <div className="page" style={{ maxWidth: '680px', margin: '0 auto', padding: '30px 28px 72px' }}>
-      <button className="linkbtn" style={{ fontSize: '13.5px', color: 'var(--mut)', marginBottom: '24px' }} onClick={() => nav('/blog')}>← All articles</button>
-      <div style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--acc)' }}>{p.cat}</div>
+      <Link to="/blog" className="linkbtn" style={{ fontSize: '13.5px', color: 'var(--mut)', marginBottom: '24px', display: 'inline-block', textDecoration: 'none' }}>← All articles</Link>
+      <div style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--accInk)' }}>{p.cat}</div>
       <h1 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.1, marginTop: '12px' }}>{p.title}</h1>
-      <div className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '14px', paddingBottom: '24px', borderBottom: '1px solid var(--line)' }}>{p.read} · {p.date}</div>
+      <div className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '14px', paddingBottom: '24px', borderBottom: '1px solid var(--line)' }}>
+        {p.read} · {p.date}
+        {p.reviewed && <div style={{ marginTop: '6px', color: '#4a5a6a' }}>{`Last reviewed: ${p.reviewed}`}</div>}
+      </div>
       <div style={{ marginTop: '8px' }}>
         {(p.body || []).map((b, i) => (
           <div key={i}>

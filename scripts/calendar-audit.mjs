@@ -3,13 +3,13 @@
 // checklist set — the review artifact for a CPA checking the rulebook.
 // Run: npm run audit:calendar
 import obligationsData from '../src/data/rules/obligations.json'
-import holidaysData from '../src/data/rules/holidays.json'
 import { generateDeadlines, generateChecklist } from '../src/engine/deadlines.js'
 import { defaultProfile } from '../src/engine/profile.js'
 import { fromISO, iso } from '../src/engine/dates.js'
+// The app's own holiday calendar: proclaimed lists, else holidays fixed by law.
+import { HOLIDAY_SET as HOLIDAYS } from '../src/lib/deadlineData.js'
 
 const OB = obligationsData.obligations
-const HOLIDAYS = new Set(holidaysData.holidays.map(h => h.date))
 
 const profiles = [
   ['EMPLOYEE (single employer)', { ...defaultProfile('employee'), name: 'E' }],

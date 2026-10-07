@@ -1,5 +1,5 @@
 {
-  "$comment": "Obligation rulebook. Pure data — the deadline engine (src/engine/deadlines.js) turns these into dated occurrences per profile. appliesTo predicates reference flags derived in src/engine/profile.js. Every entry cites its legal basis; 'confidence' is 'verified' only when checked against a primary source on the date in meta.json.",
+  "$comment": "Obligation rulebook. Pure data — the deadline engine (src/engine/deadlines.js) turns these into dated occurrences per profile. appliesTo predicates reference flags derived in src/engine/profile.js. Every entry cites its legal basis; 'confidence' is 'verified' only when checked against a primary source on the date in meta.json. 'overrides' records deadline extensions issued after the fact (e.g. a BIR RMC moving a filing season): {obligationId, rawDate (the date set by law) or period, newDate, basis}; the calendar shows the new date as 'Extended to <date> by <basis>'.",
   "obligations": [
     {
       "id": "bir-1701q",
@@ -317,6 +317,32 @@
       "notes": "April 30 is the date for returns filed by April 15; file the return late and the 15-day window runs from the actual e-filing date instead. Only 'if applicable': nothing to upload means nothing due. Skipping it costs ₱1,000 per document (₱500 for micro/small taxpayers) and puts claimed 2307 credits at risk; season RMCs occasionally move the date (May 15, 2026 for CY2025 per RMC 30-2026/39-2026)."
     },
     {
+      "id": "bir-annual-itr-2nd-installment",
+      "title": "Pay the 2nd installment of annual income tax (only if you paid half with your return)",
+      "desc": "If the income tax due on your annual return (1700, 1701 or 1701A) was over ₱2,000, you may pay half when you file and the other half by October 15. Skip this if you paid the full amount with your return.",
+      "form": "2nd installment",
+      "agency": "BIR",
+      "category": "income",
+      "appliesTo": {
+        "anyOf": [
+          "individual-business",
+          "files-1700"
+        ]
+      },
+      "schedule": {
+        "kind": "annual_fixed",
+        "month": 10,
+        "day": 15
+      },
+      "conditional": true,
+      "ruleRef": "income-tax.annualITRInstallment",
+      "legalBasis": [
+        "NIRC Sec 56(A)(2), as amended by RA 10963 (TRAIN)"
+      ],
+      "confidence": "verified",
+      "notes": "Individuals only (corporations pay in full). The choice is made on the annual return by entering the amount deferred to the second installment; the balance is due on or before October 15 of the year the return is filed. Paying it late brings the surcharge and interest on the unpaid half."
+    },
+    {
       "id": "bir-eafs-itr-attachments-corp",
       "title": "Submit annual ITR attachments via eAFS",
       "desc": "Corporate annual-return attachments: the FS with SMR (audited with auditor's report when gross sales exceed ₱3M), SAWT confirmation with 2307s and 2304s, Form 1709, CETI, tax debit memos and credit proofs where applicable, uploaded to eAFS in the prescribed PDF file groups.",
@@ -453,10 +479,12 @@
       },
       "legalBasis": [
         "NIRC Sec 237-A, as amended by CREATE MORE (RA 12066)",
-        "RR 11-2025"
+        "RR 11-2025",
+        "RR 26-2025 (amends RR 11-2025; keeps the Dec 31, 2026 deadline)",
+        "RMC 98-2026 (Sept 22, 2026: coverage and operating rules)"
       ],
       "confidence": "needs_review",
-      "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). The Dec 31, 2026 date for the first covered group was reconfirmed Aug 2026, but confirm whether this taxpayer is covered; until then SLSP/eSubmission duties continue unchanged."
+      "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). The Dec 31, 2026 date for the first covered group was reconfirmed in October 2026 (RR 26-2025 keeps it), but confirm whether this taxpayer is covered; until then SLSP/eSubmission duties continue unchanged."
     },
     {
       "id": "bir-1601c",
@@ -943,9 +971,9 @@
     },
     {
       "id": "pagibig-self",
-      "title": "Pay Pag-IBIG savings (self-employed)",
-      "desc": "Self-employed members remit their own monthly Pag-IBIG savings.",
-      "form": "Pag-IBIG MP2/RTPO",
+      "title": "Pay Pag-IBIG regular savings (self-employed)",
+      "desc": "Self-employed members remit their own regular monthly Pag-IBIG savings.",
+      "form": "Pag-IBIG savings",
       "agency": "Pag-IBIG",
       "category": "payroll",
       "appliesTo": {
@@ -963,7 +991,7 @@
         "RA 9679"
       ],
       "confidence": "needs_review",
-      "notes": ""
+      "notes": "This is the regular monthly Pag-IBIG savings, not MP2 (Pag-IBIG's separate voluntary savings program). The name of the payment channel is not yet confirmed: check with Pag-IBIG."
     },
     {
       "id": "dole-13th-month",
@@ -1044,13 +1072,14 @@
     {
       "id": "lgu-cedula",
       "title": "Pay community tax (cedula)",
-      "desc": "Annual community tax for individuals in business and corporations.",
+      "desc": "Yearly community tax for individuals who work for an employer, run a business or practice a profession, and for corporations.",
       "form": "CTC",
       "agency": "LGU",
       "category": "registration",
       "appliesTo": {
-        "allOf": [
-          "business"
+        "anyOf": [
+          "business",
+          "type:employee"
         ]
       },
       "schedule": {
@@ -1060,10 +1089,11 @@
         "periodBasis": "current_year"
       },
       "legalBasis": [
-        "Local Government Code (RA 7160) Secs 156-164"
+        "Local Government Code (RA 7160) Secs 156-164",
+        "Local Government Code (RA 7160) Sec 157 (individuals regularly employed on a wage or salary)"
       ],
-      "confidence": "verified",
-      "notes": "Accrues January 1; payable without interest until the last day of February."
+      "confidence": "needs_review",
+      "notes": "Accrues January 1; payable without interest until the last day of February. Employees are included because LGC Sec 157 covers individuals regularly employed on a wage or salary for at least 30 consecutive working days in the year (the Code text was not re-checked for this release, so this is flagged for review)."
     },
     {
       "id": "lgu-ptr",
@@ -1314,7 +1344,7 @@
       },
       "legalBasis": [
         "RA 11976 (EOPT), repealing NIRC Sec 236(B)",
-        "RMC 15-2024"
+        "RMC 14-2024"
       ],
       "confidence": "verified",
       "notes": "Effective January 22, 2024."
@@ -1322,7 +1352,7 @@
     {
       "id": "bir-micro-abatement-2026",
       "title": "One-time penalty abatement for micro taxpayers: avail by Dec 31, 2026",
-      "desc": "Micro taxpayers (gross sales ≤ ₱3M) can wipe out delinquencies, assessments, and open stop-filer cases as of Dec 31, 2025 (where basic tax and/or penalties are ≤ ₱80,000 per taxable year) for a one-time ₱5,000 abatement fee.",
+      "desc": "Micro taxpayers (gross sales below ₱3M) can wipe out delinquencies, assessments, and open stop-filer cases as of Dec 31, 2025 (where the basic tax and/or penalties are ₱80,000 or less per taxable year) for a one-time ₱5,000 abatement fee.",
       "form": "per RR 4-2026",
       "agency": "BIR",
       "category": "admin",
@@ -1334,11 +1364,12 @@
       "schedule": {
         "kind": "info"
       },
+      "showUntil": "2026-12-31",
       "legalBasis": [
-        "RR 4-2026 (published July 22, 2026)"
+        "RR 4-2026 (issued June 18, 2026; effective July 7, 2026, per firm alerts)"
       ],
-      "confidence": "verified",
-      "notes": "Time-boxed: availment runs until December 31, 2026 (extendable by the DOF Secretary). If you have old open 2550Q/2551Q cases or small assessments, ask your CPA whether this clears them before the window closes."
+      "confidence": "needs_review",
+      "notes": "Time-boxed: availment runs until December 31, 2026 (extendable by the DOF Secretary); this item is hidden from January 1, 2027. If you have old open 2550Q/2551Q cases or small assessments, ask your CPA whether this clears them before the window closes. The issuance and effectivity dates come from firm alerts (Grant Thornton, KPMG), not from the BIR text itself, and whether the ₱5,000 fee is per taxable year is reported inconsistently."
     },
     {
       "id": "dti-bn-renewal",
@@ -1401,10 +1432,11 @@
         "kind": "ongoing"
       },
       "legalBasis": [
-        "NIRC Sec 236, as amended by RA 11976 (EOPT)"
+        "NIRC Sec 236, as amended by RA 11976 (EOPT)",
+        "RMC 91-2024"
       ],
       "confidence": "verified",
-      "notes": "Under EOPT, transfers and updates can be filed at any RDO; no more transfer-first requirement."
+      "notes": "Under EOPT, transfers and updates can be filed at any RDO, with no transfer-first requirement (RA 11976; RMC 91-2024)."
     },
     {
       "id": "bir-fbt-note",
@@ -1449,6 +1481,64 @@
       ],
       "confidence": "verified",
       "notes": "You fall out of substituted filing if you had two or more employers during the year, your withholding was short, or you have other income to report."
+    }
+  ],
+  "overrides": [
+    {
+      "obligationId": "bir-1701a-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-1701-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-1700-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-sawt-individual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-1702-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-sawt-corp-annual",
+      "rawDate": "2026-04-15",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026",
+      "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "bir-eafs-itr-attachments-individual",
+      "rawDate": "2026-04-30",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026 and RMC 39-2026",
+      "notes": "RMC 30-2026 moved the attachments to May 15, 2026 too, and RMC 39-2026 made May 15 the uniform eAFS deadline whatever the e-filing date (see attachments.json itrAttachmentDeadline)."
+    },
+    {
+      "obligationId": "bir-eafs-itr-attachments-corp",
+      "rawDate": "2026-04-30",
+      "newDate": "2026-05-15",
+      "basis": "RMC 30-2026 and RMC 39-2026",
+      "notes": "RMC 30-2026 moved the attachments to May 15, 2026 too, and RMC 39-2026 made May 15 the uniform eAFS deadline whatever the e-filing date (see attachments.json itrAttachmentDeadline)."
     }
   ]
 }

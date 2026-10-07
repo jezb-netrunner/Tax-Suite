@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FORMS_DATA, FORM_CATS } from '../data/forms.js'
 import attachments from '../data/rules/attachments.json'
 import { Seg } from '../components/ui.jsx'
+import { GLOSSARY } from '../data/glossary.js'
 
 const ATTACH_BY_FORM = Object.fromEntries(attachments.perReturn.value.map(r => [r.form, r.items]))
 
@@ -9,9 +11,24 @@ const ATTACH_BY_FORM = Object.fromEntries(attachments.perReturn.value.map(r => [
 // employer / withholding-agent / corporate forms. Per-form attachment
 // requirements come from src/data/rules/attachments.json.
 export default function FormsPage() {
+  // L10: #/forms?open=1601-C opens that form (from the calendar's "Read the
+  // form guide"), scrolled into view and focused; otherwise 1701Q is open.
+  const [params] = useSearchParams()
+  const requested = FORMS_DATA.some(f => f.code === params.get('open')) ? params.get('open') : null
   const [formQuery, setFormQuery] = useState('')
   const [formCat, setFormCat] = useState('all')
-  const [openForm, setOpenForm] = useState('1701Q')
+  const [openForm, setOpenForm] = useState(requested || '1701Q')
+  const rowRefs = useRef({})
+  useEffect(() => {
+    if (!requested) return undefined
+    setOpenForm(requested); setFormCat('all'); setFormQuery('')
+    // After the page heading takes focus on arrival (App), move to the form.
+    const id = requestAnimationFrame(() => {
+      const el = rowRefs.current[requested]
+      if (el) { el.scrollIntoView({ block: 'start' }); el.focus({ preventScroll: true }) }
+    })
+    return () => cancelAnimationFrame(id)
+  }, [requested])
   const [showEafs, setShowEafs] = useState(false)
   const q = formQuery.toLowerCase()
 
@@ -79,17 +96,18 @@ export default function FormsPage() {
           const isOpen = openForm === f.code
           return (
             <div key={f.code} className={isOpen ? undefined : 'click'} style={{ border: `1.5px solid ${isOpen ? 'var(--acc)' : 'var(--line)'}`, borderRadius: '13px', background: 'var(--sf)', overflow: 'hidden', transition: 'border-color .15s, box-shadow .2s' }}>
-              <div role="button" tabIndex={0} aria-expanded={isOpen}
+              {/* H15: below 720 px the code and the +/– sit on top, then the
+                  name and who files it, then the due-date text (it wraps). */}
+              <div role="button" tabIndex={0} aria-expanded={isOpen} className="form-row-head" ref={el => { rowRefs.current[f.code] = el }}
                 onClick={() => setOpenForm(isOpen ? null : f.code)}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenForm(isOpen ? null : f.code) } }}
-                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 18px', cursor: 'pointer' }}>
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenForm(isOpen ? null : f.code) } }}>
                 <span className="formcode">{f.code}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="form-row-body">
                   <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{f.name}</div>
                   <div style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '2px' }}>{f.who}</div>
                 </div>
-                <span className="mono" style={{ fontSize: '12px', color: 'var(--mut)', whiteSpace: 'nowrap', flexShrink: 0 }}>{f.when}</span>
-                <span className="mono" style={{ fontSize: '18px', color: 'var(--dim)', width: '16px', textAlign: 'center', flexShrink: 0 }} aria-hidden="true">{isOpen ? '–' : '+'}</span>
+                <span className="mono form-when">{f.when}</span>
+                <span className="mono form-toggle" aria-hidden="true">{isOpen ? '–' : '+'}</span>
               </div>
               {isOpen && (
                 <div className="acc-body" style={{ padding: '0 18px 18px', borderTop: '1px solid var(--line2)' }}>
@@ -127,6 +145,21 @@ export default function FormsPage() {
           )
         })}
       </div>
+      {/* L15: the codes shown on calendar chips, in plain language. */}
+      <section className="card pad" style={{ marginTop: '22px' }} aria-labelledby="codes-h">
+        <h2 id="codes-h" className="sec-h">What the codes mean</h2>
+        <p style={{ fontSize: '13px', color: '#4a5a6a', marginTop: '6px', lineHeight: 1.55 }}>
+          Short names you will see on your calendar and on BIR, SSS, PhilHealth, Pag-IBIG and SEC pages.
+        </p>
+        <dl className="ref-fields" style={{ fontSize: '13px' }}>
+          {GLOSSARY.map(g => (
+            <React.Fragment key={g.code}>
+              <dt className="mono">{g.code}</dt>
+              <dd><b>{g.name}</b>{`: ${g.meaning}`}</dd>
+            </React.Fragment>
+          ))}
+        </dl>
+      </section>
     </div>
   )
 }
