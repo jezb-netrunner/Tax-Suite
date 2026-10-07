@@ -238,7 +238,10 @@ changes, update `PRIVACY_NOTICE_UPDATED` there and `PRIVACY_NOTICE_VERSION` in
 - `tests/engine/`: hand-worked examples with known-correct answers
 - The previous single-file app (`legacy/index.html`) and the original design
   bundle (`project/`) were removed from the branch. They are archived under the
-  git tag `archive/pre-review-2026-10` (`git show archive/pre-review-2026-10:legacy/index.html`).
+  git tag `archive/pre-review-2026-10`, which points at commit `ed29f5a` (the last
+  `main` commit before the review): `git show ed29f5a:legacy/index.html`. If the tag
+  is not on GitHub yet, create it with
+  `git tag -a archive/pre-review-2026-10 ed29f5a -m "Archive before review" && git push origin archive/pre-review-2026-10`.
   Their tax rules are out of date; do not publish them.
 
 > **Disclaimer:** JEZ Tax Suite provides estimates and reminders, not tax or legal advice,
