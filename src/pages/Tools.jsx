@@ -52,7 +52,7 @@ export default function ToolsPage() {
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '16px', marginTop: '18px', alignItems: 'end' }}>
           <NumField label="Basic tax due" value={penDue} onChange={setPenDue} prefix="₱" />
-          <NumField label="Days late" value={penDays} onChange={setPenDays} />
+          <NumField label="Days late" value={penDays} onChange={setPenDays} kind="integer" min={0} max={3650} />
           <div>
             <label className="lbl" style={{ marginBottom: '8px' }}>Taxpayer size</label>
             <Seg options={[['eopt', 'Micro / Small'], ['reg', 'Medium / Large']]} value={penEopt ? 'eopt' : 'reg'} onChange={k => setPenEopt(k === 'eopt')} ariaLabel="Taxpayer size" />
@@ -106,7 +106,7 @@ export default function ToolsPage() {
           <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '3px' }}>Where your annual income and 8% tax are heading.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '12px', marginTop: '18px' }}>
             <NumField label="Gross so far" value={ytdGross} onChange={setYtdGross} prefix="₱" />
-            <NumField label="Months in" value={ytdMonths} onChange={setYtdMonths} />
+            <NumField label="Months in" value={ytdMonths} onChange={setYtdMonths} kind="integer" />
           </div>
           <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
