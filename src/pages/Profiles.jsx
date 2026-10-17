@@ -163,7 +163,7 @@ function YourData({ app }) {
     <section className="card pad" aria-labelledby="your-data-h" style={{ marginTop: '26px' }}>
       <h2 id="your-data-h" className="sec-h">Your data</h2>
       <p style={{ ...TEXT, marginTop: '6px' }}>
-        Download a copy of every profile with the figures and checklist ticks saved in it,
+        Download a copy of every profile with the figures saved in it,
         or remove it all. The <Link to="/privacy" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Privacy Notice</Link> explains what is kept.
       </p>
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>

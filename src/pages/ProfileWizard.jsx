@@ -11,7 +11,7 @@ import { RT, dueDayText, daysAfterEnd } from '../engine/ruleText.js'
 
 // C08: asked before the type of a saved profile changes.
 export const TYPE_CHANGE_CONFIRM =
-  'Changing the taxpayer type resets the registration answers. Answers both types share, saved figures and checklist ticks are kept. Continue?'
+  'Changing the taxpayer type resets the registration answers. Answers both types share and saved figures are kept. Continue?'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -101,8 +101,8 @@ function WizardForm({ app, editing }) {
   // C08: tapping the selected type changes nothing. Another type resets the
   // answers that do not apply to it (an employee has no VAT registration) but
   // keeps the identity (dropping the id would save a duplicate), the answers
-  // both types share, the figures and the checklist ticks. On a saved profile the
-  // user confirms first.
+  // both types share and the figures. On a saved profile the user confirms
+  // first.
   function pickType(type) {
     if (type === p.type) return
     if (editing && !window.confirm(TYPE_CHANGE_CONFIRM)) return

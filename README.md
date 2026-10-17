@@ -7,12 +7,15 @@ serve them) three integrated tools:
 1. **Deadline calendar**: a personalized compliance calendar of every BIR filing/payment
    date (plus LGU, SSS, PhilHealth, Pag-IBIG, SEC, DTI, DOLE obligations) that applies to a
    specific taxpayer profile, weekend/holiday-shifted by rule, with a filter by agency and
-   by type. It is a reference, not a tracker: it does not record what was filed.
+   by type.
 2. **Tax estimator**: regime-aware liability estimates with the full math shown line by
    line: 8% vs graduated (OSD/itemized) for individuals, mixed-income aggregation,
    employee annualization and take-home, corporate RCIT vs MCIT, payroll withholding.
 3. **Compliance checklist**: the recurring, no-fixed-date obligations (invoicing, books,
    registration upkeep, GIS timing) tied to that profile.
+
+The calendar and the checklist are references, not trackers: the app does not record
+what was filed or done.
 
 Accounts hold **multiple taxpayer profiles**, so a bookkeeper can manage every client from
 one login. Without a configured backend the app runs in local mode (profiles stored

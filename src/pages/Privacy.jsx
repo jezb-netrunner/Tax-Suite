@@ -79,7 +79,7 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local' }) {
           <li><b>Profile names</b> you choose, which are often a person's or a business's name.</li>
           <li><b>Taxpayer type</b> (employee, self-employed, mixed income or corporation) and your registration answers: VAT registration, tax regime, employees, books of accounts, fiscal year, business permit and similar facts.</li>
           <li><b>The figures you type into the Estimator</b>: income, expenses, tax withheld, salaries, bonuses, and corporate sales, costs and assets. They are saved to the selected profile as you type.</li>
-          <li><b>Checklist items you tick</b> and which profile you last used. (Deadlines marked as filed in an earlier version of the app stay saved in the profile, unused, until you delete it.)</li>
+          <li><b>Which profile you last used.</b> (Deadlines marked as filed and checklist items ticked in an earlier version of the app stay saved in the profile, unused, until you delete it.)</li>
           <li><b>Email address and password (accounts only).</b> The password is stored by Supabase in scrambled (hashed) form; we never see it. We also keep the date you agreed to this notice.</li>
         </ul>
         <p style={{ marginTop: '10px' }}>

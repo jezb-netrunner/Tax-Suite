@@ -1,12 +1,12 @@
-// The calendar is a reference, not a tracker (owner, Oct 17, 2026): "Mark as
-// filed" is gone. Due dates of the last 60 days are listed as "Recently
-// passed" (was the M09 Overdue list), whatever the profile holds; checklist
-// items can still be ticked (M09).
+// The calendar and the checklist are references, not trackers (owner, Oct
+// 17, 2026): "Mark as filed" and the checklist tick boxes are gone. Due dates
+// of the last 60 days are listed as "Recently passed" (was the M09 Overdue
+// list), whatever the profile holds.
 import { describe, it, expect } from 'vitest'
 import obligationsData from '../../src/data/rules/obligations.json'
 import { HOLIDAY_SET } from '../../src/lib/deadlineData.js'
 import * as deadlines from '../../src/engine/deadlines.js'
-import { recentDeadlines, RECENT_DAYS, isChecked, withChecked } from '../../src/engine/deadlines.js'
+import { recentDeadlines, RECENT_DAYS } from '../../src/engine/deadlines.js'
 import { defaultProfile } from '../../src/engine/profile.js'
 import { fromISO, iso } from '../../src/engine/dates.js'
 
@@ -47,21 +47,12 @@ describe('Recently passed: the due dates of the last 60 days', () => {
     expect(view(recent(old, '2026-10-27'))).toEqual(OCT_27)
   })
 
-  it('there is no way left to mark a deadline filed', () => {
-    for (const name of ['filedKey', 'isFiled', 'filedStatus', 'withFiled', 'withFiledMany', 'overdueDeadlines', 'OVERDUE_DAYS', 'railStatus']) {
+  it('there is no way left to mark a deadline filed or tick a checklist item', () => {
+    for (const name of [
+      'filedKey', 'isFiled', 'filedStatus', 'withFiled', 'withFiledMany', 'overdueDeadlines', 'OVERDUE_DAYS', 'railStatus',
+      'isChecked', 'withChecked',
+    ]) {
       expect(deadlines[name], name).toBeUndefined()
     }
-  })
-})
-
-describe('M09 checklist ticks', () => {
-  it('ticking and unticking a checklist item is saved on the profile', () => {
-    const p = { ...defaultProfile('individual'), id: 'f1', name: 'Paolo' }
-    const ob = OB.find(o => o.id === 'bir-books-current')
-    expect(isChecked(p, ob)).toBe(false)
-    const p2 = withChecked(p, ob.id, true, fromISO('2026-10-07'))
-    expect(p2.checklistDone).toEqual({ 'bir-books-current': '2026-10-07' })
-    expect(isChecked(p2, ob)).toBe(true)
-    expect(isChecked(withChecked(p2, ob.id, false), ob)).toBe(false)
   })
 })

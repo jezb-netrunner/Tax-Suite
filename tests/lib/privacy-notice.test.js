@@ -51,8 +51,10 @@ describe('H14 Privacy Notice page', () => {
     expect(local).toContain('Taxpayer type')
     expect(local).toContain('registration answers')
     expect(local).toContain('figures you type into the Estimator')
-    expect(local).toContain('Checklist items you tick')
-    expect(local).not.toContain('Deadlines you mark as filed') // the calendar no longer tracks filing
+    expect(local).toContain('Which profile you last used')
+    // The calendar and the checklist no longer track what was filed or done.
+    expect(local).not.toContain('Deadlines you mark as filed')
+    expect(local).not.toContain('Checklist items you tick')
     expect(local).toContain('Email address and password (accounts only)')
     expect(local).toContain('We do not ask for your TIN')
   })

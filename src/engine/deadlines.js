@@ -288,12 +288,11 @@ export function groupByMonth(list) {
 }
 
 // ---------------------------------------------------------------------------
-// The calendar is a reference, not a tracker: it does not record whether a
-// return was filed, so a passed due date is "recently passed", never
-// "overdue". (Profiles saved while the app had "Mark as filed" may still carry
-// profile.filed; nothing reads it, and it is left as stored.) Checklist ticks
-// (M09) are saved on the profile:
-//   profile.checklistDone  { [obligation id]: 'YYYY-MM-DD' }
+// The calendar and the checklist are references, not trackers: they do not
+// record what was filed or done, so a passed due date is "recently passed",
+// never "overdue". (Profiles saved while the app had "Mark as filed" and
+// checklist tick boxes may still carry profile.filed and
+// profile.checklistDone; nothing reads them, and they are left as stored.)
 
 export const RECENT_DAYS = 60
 
@@ -358,17 +357,6 @@ export function trimPick(pick, options) {
 export function filterText(pick) {
   return [pick.agency.join(', '), pick.category.map(c => CATEGORY_LABEL[c] || c).join(', ')]
     .filter(Boolean).join('; ')
-}
-
-export function isChecked(profile, ob) {
-  return Boolean(profile && profile.checklistDone && profile.checklistDone[ob.id])
-}
-
-export function withChecked(profile, obligationId, on, today) {
-  const done = { ...(profile.checklistDone || {}) }
-  if (on) done[obligationId] = iso(today)
-  else delete done[obligationId]
-  return { ...profile, checklistDone: done }
 }
 
 // Years in [from, to] whose holidays are not yet proclaimed in the rulebook
