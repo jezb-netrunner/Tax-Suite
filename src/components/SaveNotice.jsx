@@ -1,7 +1,7 @@
-// A small notice for a background save that failed (estimator figures, filed
-// marks), e.g. "This profile was deleted in another window." Shown on every
-// page until dismissed, because the save may fail after the user has left the
-// page where the figures were typed.
+// A small notice for a background save that failed (estimator figures), e.g.
+// "This profile was deleted in another window." Shown on every page until
+// dismissed, because the save may fail after the user has left the page
+// where the figures were typed.
 import { useApp } from '../state/AppState.jsx'
 
 // The text shown for a failed save: its message, then its cause's message.

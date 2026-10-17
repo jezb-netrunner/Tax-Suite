@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest'
 import { csvCell, toCsv } from '../../src/lib/csv.js'
 import { deadlineStatus, deadlineCsv, deadlineCsvFileName, printHeaderText } from '../../src/lib/exports.js'
 import { OBLIGATIONS, HOLIDAY_SET } from '../../src/lib/deadlineData.js'
-import { generateDeadlines, overdueDeadlines, filedStatus, OVERDUE_DAYS } from '../../src/engine/deadlines.js'
+import { generateDeadlines, recentDeadlines, filterDeadlines } from '../../src/engine/deadlines.js'
 import { defaultProfile } from '../../src/engine/profile.js'
 import { fromISO, addDays } from '../../src/engine/dates.js'
 
@@ -54,50 +54,44 @@ describe('toCsv', () => {
 const TODAY = fromISO('2026-10-07')
 const maria = {
   ...defaultProfile('individual'), id: 'p-maria', name: 'Maria Santos', hasEmployees: true, receives2307: true,
-  // Aug 2026 compensation withholding (1601-C due Sep 10, 2026) marked filed on Sep 9.
+  // A mark saved while the app had "Mark as filed" (Aug 2026 1601-C, due Sep
+  // 10, 2026): it is ignored now.
   filed: { 'bir-1601c:2026-09-10': '2026-09-09' },
 }
 const upcoming = generateDeadlines(OBLIGATIONS, maria, { from: TODAY, to: addDays(TODAY, 400), holidays: HOLIDAY_SET, refDate: TODAY })
-const overdue = overdueDeadlines(OBLIGATIONS, maria, { today: TODAY, holidays: HOLIDAY_SET })
-const recent = generateDeadlines(OBLIGATIONS, maria, {
-  from: addDays(TODAY, -OVERDUE_DAYS), to: addDays(TODAY, -1), holidays: HOLIDAY_SET, refDate: TODAY,
-}).filter(d => filedStatus(maria, d))
+const recent = recentDeadlines(OBLIGATIONS, maria, { today: TODAY, holidays: HOLIDAY_SET })
 
 describe('deadlineStatus', () => {
   const find = (list, id) => list.find(d => d.id === id)
   it('DL:WS-05: 1601-C for September 2026, due Mon Oct 12, 2026 (5 days away) is "Due soon"', () => {
     const d = find(upcoming, 'bir-1601c:2026-10-10')
     expect(d.date).toEqual(fromISO('2026-10-12'))
-    expect(deadlineStatus(d, maria, TODAY)).toBe('Due soon')
+    expect(deadlineStatus(d, TODAY)).toBe('Due soon')
   })
   it('DL:WS-01: 1701Q Q3 2026, due Mon Nov 16, 2026 (40 days away) is "Upcoming"', () => {
     const d = upcoming.find(x => x.obligation.form === '1701Q' && x.period === 'Q3 2026')
     expect(d.date).toEqual(fromISO('2026-11-16'))
-    expect(deadlineStatus(d, maria, TODAY)).toBe('Upcoming')
+    expect(deadlineStatus(d, TODAY)).toBe('Upcoming')
   })
-  it('a passed date not marked filed is "Overdue"; one marked filed is "Filed"', () => {
-    const jul = find(overdue, 'bir-1601c:2026-08-10')
-    expect(deadlineStatus(jul, maria, TODAY)).toBe('Overdue')
-    const aug = find(recent, 'bir-1601c:2026-09-10')
-    expect(deadlineStatus(aug, maria, TODAY)).toBe('Filed')
+  it('a passed date is "Date passed", never "Overdue" or "Filed": the app does not track filing', () => {
+    expect(deadlineStatus(find(recent, 'bir-1601c:2026-08-10'), TODAY)).toBe('Date passed')
+    expect(deadlineStatus(find(recent, 'bir-1601c:2026-09-10'), TODAY)).toBe('Date passed') // the old mark is ignored
   })
-  it('a date marked "does not apply" says so, and a date due today is "Due today"', () => {
-    const d = find(upcoming, 'bir-1601c:2026-10-10')
-    expect(deadlineStatus(d, { ...maria, filed: { [d.id]: 'n/a' } }, TODAY)).toBe('Does not apply')
-    expect(deadlineStatus(d, maria, fromISO('2026-10-12'))).toBe('Due today')
+  it('a date due today is "Due today"', () => {
+    expect(deadlineStatus(find(upcoming, 'bir-1601c:2026-10-10'), fromISO('2026-10-12'))).toBe('Due today')
   })
 })
 
 describe('deadlineCsv', () => {
-  const csv = deadlineCsv({ overdue, recent, upcoming, profile: maria, today: TODAY })
+  const csv = deadlineCsv({ recent, upcoming, today: TODAY })
   const lines = csv.split('\r\n')
 
   it('has the header Date, Form, Title, Agency, Period, Status', () => {
     expect(lines[0]).toBe('Date,Form,Title,Agency,Period,Status')
   })
 
-  it('has one row per deadline (overdue, marked in the last 60 days, and the next 13 months), in date order', () => {
-    expect(lines.length).toBe(1 + overdue.length + recent.length + upcoming.length + 1) // trailing CRLF
+  it('has one row per deadline (the last 60 days and the next 13 months), in date order', () => {
+    expect(lines.length).toBe(1 + recent.length + upcoming.length + 1) // trailing CRLF
     expect(lines[lines.length - 1]).toBe('')
     const dates = lines.slice(1, -1).map(l => l.slice(0, 10))
     expect([...dates].sort()).toEqual(dates)
@@ -106,21 +100,29 @@ describe('deadlineCsv', () => {
   it('writes the worksheet rows exactly', () => {
     expect(lines).toContain('2026-10-12,1601-C,Remit withholding tax on compensation,BIR,Sep 2026,Due soon')
     expect(lines).toContain('2026-11-16,1701Q,File & pay quarterly income tax,BIR,Q3 2026,Upcoming')
-    expect(lines).toContain('2026-09-10,1601-C,Remit withholding tax on compensation,BIR,Aug 2026,Filed')
-    expect(lines).toContain('2026-08-10,1601-C,Remit withholding tax on compensation,BIR,Jul 2026,Overdue')
+    expect(lines).toContain('2026-09-10,1601-C,Remit withholding tax on compensation,BIR,Aug 2026,Date passed')
+    expect(lines).toContain('2026-08-10,1601-C,Remit withholding tax on compensation,BIR,Jul 2026,Date passed')
+  })
+
+  it('a filtered calendar (BIR only) writes only the rows it shows', () => {
+    const bir = { agency: ['BIR'], category: [] }
+    const rows = deadlineCsv({ recent: filterDeadlines(recent, bir), upcoming: filterDeadlines(upcoming, bir), today: TODAY })
+      .split('\r\n').slice(1, -1)
+    expect(rows.length).toBe([...recent, ...upcoming].filter(d => d.obligation.agency === 'BIR').length)
+    expect(rows.every(r => r.split(',')[3] === 'BIR')).toBe(true)
   })
 
   it('a deadline without a form ("—") leaves the Form cell empty', () => {
     const d = upcoming.find(x => x.id === 'bir-1601c:2026-10-10')
     const noForm = { ...d, obligation: { ...d.obligation, form: '—' } }
-    expect(deadlineCsv({ upcoming: [noForm], profile: maria, today: TODAY }))
+    expect(deadlineCsv({ upcoming: [noForm], today: TODAY }))
       .toBe('Date,Form,Title,Agency,Period,Status\r\n2026-10-12,,Remit withholding tax on compensation,BIR,Sep 2026,Due soon\r\n')
   })
 
   it('a title that starts like a formula is protected in the file', () => {
     const d = upcoming.find(x => x.id === 'bir-1601c:2026-10-10')
     const evil = { ...d, obligation: { ...d.obligation, title: '=HYPERLINK("http://x","click")' } }
-    expect(deadlineCsv({ upcoming: [evil], profile: maria, today: TODAY }).split('\r\n')[1])
+    expect(deadlineCsv({ upcoming: [evil], today: TODAY }).split('\r\n')[1])
       .toBe('2026-10-12,1601-C,"\'=HYPERLINK(""http://x"",""click"")",BIR,Sep 2026,Due soon')
   })
 })
@@ -133,6 +135,9 @@ describe('deadlineCsvFileName', () => {
     ['', 'jez-tax-suite-deadlines-2026-10-07.csv'],
   ])('%j', (name, file) => {
     expect(deadlineCsvFileName(name, TODAY)).toBe(file)
+  })
+  it('a filtered calendar says so in the file name', () => {
+    expect(deadlineCsvFileName('Maria Santos', TODAY, { filtered: true })).toBe('jez-tax-suite-deadlines-maria-santos-filtered-2026-10-07.csv')
   })
 })
 

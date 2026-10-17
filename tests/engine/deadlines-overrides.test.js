@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest'
 import obligationsData from '../../src/data/rules/obligations.json'
 import attachments from '../../src/data/rules/attachments.json'
 import { HOLIDAY_SET } from '../../src/lib/deadlineData.js'
-import { generateDeadlines, overdueDeadlines, filedKey } from '../../src/engine/deadlines.js'
+import { generateDeadlines, recentDeadlines } from '../../src/engine/deadlines.js'
 import { defaultProfile } from '../../src/engine/profile.js'
 import { fromISO, iso } from '../../src/engine/dates.js'
 
@@ -56,7 +56,7 @@ describe('L07 the calendar applies the extensions', () => {
     ])
     const d = list.find(x => x.obligation.id === 'bir-1701a-annual')
     expect(d.shifted).toBe(false)
-    expect(filedKey(d)).toBe('bir-1701a-annual:2026-04-15') // marks keep the statutory date
+    expect(d.id).toBe('bir-1701a-annual:2026-04-15') // the id keeps the statutory date
   })
 
   it('1701 (itemized) and 1700 (two employers) filers', () => {
@@ -83,10 +83,10 @@ describe('L07 the calendar applies the extensions', () => {
     expect(list.find(d => d.obligation.id === 'bir-1701a-annual').daysAway).toBe(5)
   })
 
-  it('overdue counts from the extended date: on May 16, 2026 the unfiled 1701A is 1 day overdue', () => {
+  it('recently passed counts from the extended date: on May 16, 2026 the 1701A was due 1 day ago', () => {
     const p = { ...defaultProfile('individual'), name: 'T', regime: '8pct' }
-    const od = overdueDeadlines(OB, p, { today: fromISO('2026-05-16'), holidays: HOLIDAY_SET })
-    expect(od.filter(d => d.obligation.id === 'bir-1701a-annual').map(d => [iso(d.date), d.daysOverdue])).toEqual([['2026-05-15', 1]])
+    const rd = recentDeadlines(OB, p, { today: fromISO('2026-05-16'), holidays: HOLIDAY_SET })
+    expect(rd.filter(d => d.obligation.id === 'bir-1701a-annual').map(d => [iso(d.date), d.daysAgo])).toEqual([['2026-05-15', 1]])
   })
 
   it('an override can also name the period instead of the statutory date', () => {

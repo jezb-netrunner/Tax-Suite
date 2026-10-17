@@ -95,10 +95,10 @@ export function sharedAnswers(fromType, toType) {
 // C08: the profile after the user picks a taxpayer type in the wizard.
 // The type it already has: the same profile, unchanged (re-tapping the
 // selected card used to reset every answer). Another type: that type's
-// defaults, keeping the identity (id, name), the estimator figures, filed
-// marks, checklist ticks and anything else saved, and the answers both types
-// share. A VAT-registered individual cannot use the 8% option, so the regime
-// moves to graduated + OSD as the VAT switch does.
+// defaults, keeping the identity (id, name), the estimator figures and
+// anything else saved, and the answers both types share. A VAT-registered
+// individual cannot use the 8% option, so the regime moves to graduated + OSD
+// as the VAT switch does.
 export function changeProfileType(profile, type) {
   if (!PROFILE_TYPES[type] || profile.type === type) return profile
   const next = { ...profile }
@@ -119,9 +119,11 @@ export function changeProfileType(profile, type) {
 // M06: the profile wizard's edits applied to the newest stored profile.
 // `base` is the profile the form was opened with and `edited` the form now.
 // Only the answers the form changed are written; everything else comes from
-// `latest`, so figures (inputs), filed marks and checklist ticks saved after
-// the form opened, and answers changed in another window that the form did
-// not touch, are kept.
+// `latest`, so figures (inputs) saved after the form opened, and answers
+// changed in another window that the form did not touch, are kept. `filed`
+// and `checklistDone` (marks saved before "Mark as filed" and the checklist
+// tick boxes were removed) are never written by the form either, so old
+// marks stay as stored.
 const NOT_WIZARD_FIELDS = new Set(['id', 'inputs', 'filed', 'checklistDone'])
 
 function sameValue(a, b) {

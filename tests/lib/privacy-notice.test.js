@@ -24,8 +24,8 @@ describe('H14 Privacy Notice page', () => {
 
   it('names the law and is dated', () => {
     expect(local).toContain('Data Privacy Act of 2012 (Republic Act 10173)')
-    expect(PRIVACY_NOTICE_UPDATED).toBe('October 7, 2026')
-    expect(local).toContain('Last updated October 7, 2026')
+    expect(PRIVACY_NOTICE_UPDATED).toBe('October 17, 2026')
+    expect(local).toContain('Last updated October 17, 2026')
   })
 
   it('shows the owner placeholders, clearly marked, for contact, DPO and server region', () => {
@@ -51,6 +51,10 @@ describe('H14 Privacy Notice page', () => {
     expect(local).toContain('Taxpayer type')
     expect(local).toContain('registration answers')
     expect(local).toContain('figures you type into the Estimator')
+    expect(local).toContain('Which profile you last used')
+    // The calendar and the checklist no longer track what was filed or done.
+    expect(local).not.toContain('Deadlines you mark as filed')
+    expect(local).not.toContain('Checklist items you tick')
     expect(local).toContain('Email address and password (accounts only)')
     expect(local).toContain('We do not ask for your TIN')
   })
