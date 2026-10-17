@@ -288,62 +288,76 @@ export function groupByMonth(list) {
 }
 
 // ---------------------------------------------------------------------------
-// Filed / overdue state (M09). Marks are saved on the profile:
-//   profile.filed          { [filedKey]: 'YYYY-MM-DD' marked }  dated deadlines
-//   profile.checklistDone  { [obligation id]: 'YYYY-MM-DD' }     checklist items
-// The key of a dated deadline is its id: obligation id + the date set by law
-// (before any weekend move or extension), so it never changes for a period.
+// The calendar is a reference, not a tracker: it does not record whether a
+// return was filed, so a passed due date is "recently passed", never
+// "overdue". (Profiles saved while the app had "Mark as filed" may still carry
+// profile.filed; nothing reads it, and it is left as stored.) Checklist ticks
+// (M09) are saved on the profile:
+//   profile.checklistDone  { [obligation id]: 'YYYY-MM-DD' }
 
-export const OVERDUE_DAYS = 60
-
-export function filedKey(d) {
-  return d.id
-}
-
-export function isFiled(profile, d) {
-  return Boolean(profile && profile.filed && profile.filed[filedKey(d)])
-}
-
-// 'filed' | 'n/a' (an optional item the taxpayer says does not apply) | null
-export function filedStatus(profile, d) {
-  const v = profile && profile.filed && profile.filed[filedKey(d)]
-  if (!v) return null
-  return v === 'n/a' ? 'n/a' : 'filed'
-}
-
-// A copy of the profile with the mark set (on) or removed (off). The mark is
-// the Manila date it was set, or 'n/a' when status is 'n/a'.
-export function withFiled(profile, key, on, today, status = 'filed') {
-  const filed = { ...(profile.filed || {}) }
-  if (on) filed[key] = status === 'n/a' ? 'n/a' : iso(today)
-  else delete filed[key]
-  return { ...profile, filed }
-}
-
-// The same for several keys at once ("Mark all as filed" and its Undo).
-export function withFiledMany(profile, keys, on, today) {
-  return keys.reduce((p, key) => withFiled(p, key, on, today), profile)
-}
+export const RECENT_DAYS = 60
 
 /**
- * Deadlines whose (moved) due date has passed in the last `days` days and that
- * are not marked filed, oldest first, each with daysOverdue (1 = due yesterday).
+ * Deadlines whose (moved) due date passed in the last `days` days, oldest
+ * first, each with daysAgo (1 = due yesterday).
  */
-export function overdueDeadlines(obligations, profile, { today, holidays, rollOver, days = OVERDUE_DAYS }) {
-  const list = generateDeadlines(obligations, profile, {
+export function recentDeadlines(obligations, profile, { today, holidays, rollOver, days = RECENT_DAYS }) {
+  return generateDeadlines(obligations, profile, {
     from: addDays(today, -days), to: addDays(today, -1), holidays, refDate: today, rollOver,
-  })
-  return list
-    .filter(d => !isFiled(profile, d))
-    .map(d => ({ ...d, daysOverdue: -d.daysAway }))
+  }).map(d => ({ ...d, daysAgo: -d.daysAway }))
 }
 
-// Income-tax rail: 'filed' (or 'n/a') only when the user marked it; otherwise
-// 'passed' once the due date has gone by, else 'due'.
-export function railStatus(profile, d, today) {
-  const marked = filedStatus(profile, d)
-  if (marked) return marked
-  return d.date < today ? 'passed' : 'due'
+// ---------------------------------------------------------------------------
+// Calendar filter. A pick { agency: [...], category: [...] } names the
+// agencies and the types (rulebook categories) to show; an empty list shows
+// them all. A deadline is shown when it matches both lists.
+
+export const CATEGORY_LABEL = {
+  income: 'Income tax', business: 'Business tax', withholding: 'Withholding',
+  payroll: 'Payroll & contributions', admin: 'Admin', registration: 'Registration',
+}
+const AGENCY_ORDER = ['BIR', 'SSS', 'PhilHealth', 'Pag-IBIG', 'LGU', 'SEC', 'DOLE', 'DTI']
+const CATEGORY_ORDER = Object.keys(CATEGORY_LABEL)
+
+export const NO_FILTER = { agency: [], category: [] }
+
+export function isFiltered(pick) {
+  return pick.agency.length > 0 || pick.category.length > 0
+}
+
+export function filterDeadlines(list, pick) {
+  if (!isFiltered(pick)) return list
+  return list.filter(d =>
+    (!pick.agency.length || pick.agency.includes(d.obligation.agency)) &&
+    (!pick.category.length || pick.category.includes(d.obligation.category))
+  )
+}
+
+// The agencies and types found in `list`, in a fixed order (BIR first), for
+// the filter's buttons.
+export function filterOptions(list) {
+  const rank = (order, v) => (order.includes(v) ? order.indexOf(v) : order.length)
+  const sorted = (order, values) => [...new Set(values)]
+    .sort((a, b) => rank(order, a) - rank(order, b) || a.localeCompare(b))
+  return {
+    agency: sorted(AGENCY_ORDER, list.map(d => d.obligation.agency)),
+    category: sorted(CATEGORY_ORDER, list.map(d => d.obligation.category)),
+  }
+}
+
+// The pick limited to what the filter can show buttons for: values found on
+// this calendar, in a list with at least two of them. So a value picked for
+// another profile (an employer's SSS, then a profile without employees) never
+// hides everything behind a button that is not there.
+export function trimPick(pick, options) {
+  const keep = key => (options[key].length > 1 ? pick[key].filter(v => options[key].includes(v)) : [])
+  return { agency: keep('agency'), category: keep('category') }
+}
+
+// "BIR, SSS; Withholding": the pick in words, for the calendar's summary line.
+export function filterText(pick) {
+  return [pick.agency.join(', '), pick.category.map(c => CATEGORY_LABEL[c] || c).join(', ')]
+    .filter(Boolean).join('; ')
 }
 
 export function isChecked(profile, ob) {

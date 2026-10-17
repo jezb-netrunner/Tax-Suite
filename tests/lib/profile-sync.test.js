@@ -10,7 +10,7 @@ import {
   createBackend, watchProfileChanges, LS_KEY, ACTIVE_KEY, PROFILE_GONE_MESSAGE, PROFILE_CONFLICT_MESSAGE,
 } from '../../src/lib/backend.js'
 import { withInputs } from '../../src/engine/profile.js'
-import { withFiled, withChecked } from '../../src/engine/deadlines.js'
+import { withChecked } from '../../src/engine/deadlines.js'
 import { memoryStorage, mockClient } from './backend-fakes.js'
 
 const USER = 'aaaaaaaa-0000-0000-0000-000000000001'
@@ -53,15 +53,14 @@ describe('C07 local mode: figures are saved onto the latest stored profile', () 
     expect(ben.inputs).toEqual({ payroll: { basic: 25000 } }) // not mutated
   })
 
-  it('a deadline marked filed in tab A and figures typed in tab B are both kept', async () => {
+  it('a checklist item ticked in tab A and figures typed in tab B are both kept', async () => {
     const { storage, A, B } = twoTabs()
     const today = new Date(2026, 9, 7)
-    await A.updateProfile(null, 'ben', p => withFiled(p, '1701Q-2026-Q3', true, today))
-    await B.updateProfile(null, 'ben', p => withInputs(p, 'individual', { gross: 900000 }))
     await A.updateProfile(null, 'ben', p => withChecked(p, 'bir-books', true, today))
+    await B.updateProfile(null, 'ben', p => withInputs(p, 'individual', { gross: 900000 }))
+    await A.updateProfile(null, 'ben', p => withChecked(p, 'bir-invoices', true, today))
     const after = stored(storage).find(p => p.id === 'ben')
-    expect(after.filed).toEqual({ '1701Q-2026-Q3': '2026-10-07' })
-    expect(after.checklistDone).toEqual({ 'bir-books': '2026-10-07' })
+    expect(after.checklistDone).toEqual({ 'bir-books': '2026-10-07', 'bir-invoices': '2026-10-07' })
     expect(after.inputs).toEqual({ payroll: { basic: 25000 }, individual: { gross: 900000 } })
   })
 })

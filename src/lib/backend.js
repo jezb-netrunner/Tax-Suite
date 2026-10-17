@@ -188,7 +188,7 @@ export function createBackend({ client = null, storage } = {}) {
 
   // C07: changes one saved profile without writing back an old copy of it.
   // change(latest) receives the newest stored version and returns the new
-  // one, so figures, filed marks and registration answers saved from other
+  // one, so figures, checklist ticks and registration answers saved from other
   // windows are kept. Refuses (PROFILE_GONE_MESSAGE) if the profile was
   // deleted elsewhere: it is never re-created. In accounts mode the write is
   // made only if the row's updated_at is still the one read (optimistic
@@ -309,8 +309,9 @@ export function createBackend({ client = null, storage } = {}) {
     if (error) throw error
   }
 
-  // M25 "Download my data": every profile with its saved figures, filed
-  // marks and checklist ticks, as one JSON object.
+  // M25 "Download my data": every profile as stored (saved figures, checklist
+  // ticks, and any filed marks from before "Mark as filed" was removed), as
+  // one JSON object.
   async function exportData({ userId = null, email = null, now = new Date() } = {}) {
     const head = { ...EXPORT_HEADER, exportedAt: now.toISOString() }
     if (!cloud) {

@@ -1,8 +1,8 @@
-// Small per-profile marks (deadlines marked filed, ticked checklist items),
-// saved through the app's normal profile save.
+// Small per-profile marks (ticked checklist items), saved through the app's
+// normal profile save.
 //
 //   const { profile, update, error } = useProfileMarks(app)
-//   update(p => withFiled(p, key, true, today))
+//   update(p => withChecked(p, obligationId, true, today))
 //
 // `profile` is the active profile with any not-yet-saved marks applied, so a
 // click shows at once. Saves run one after another, each built on the newest

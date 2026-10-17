@@ -106,7 +106,7 @@ describe('C08 changing the type keeps the answers both types share', () => {
 describe('C08 a saved profile asks before its type changes', () => {
   it('the question', () => {
     expect(TYPE_CHANGE_CONFIRM).toBe(
-      'Changing the taxpayer type resets the registration answers. Answers both types share, saved figures and filed marks are kept. Continue?',
+      'Changing the taxpayer type resets the registration answers. Answers both types share, saved figures and checklist ticks are kept. Continue?',
     )
   })
 })

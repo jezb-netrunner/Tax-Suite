@@ -27,7 +27,7 @@ export function AppStateProvider({ children }) {
   const [loadError, setLoadError] = useState(null)
   // A one-off message for the sign-in screen (e.g. after deleting the account).
   const [notice, setNotice] = useState(null)
-  // C07: the last background save that failed (figures, filed marks), shown
+  // C07: the last background save that failed (figures, checklist ticks), shown
   // by <SaveNotice /> until dismissed. An Error; its message is shown.
   const [saveProblem, setSaveProblem] = useState(null)
   // M27: profiles this browser saved in local mode, found after signing in.

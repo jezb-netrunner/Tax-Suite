@@ -4,9 +4,10 @@
 (MSME owners, freelancers/professionals, employers, corporations, and the bookkeepers who
 serve them) three integrated tools:
 
-1. **Deadline tracker**: a personalized compliance calendar of every BIR filing/payment
+1. **Deadline calendar**: a personalized compliance calendar of every BIR filing/payment
    date (plus LGU, SSS, PhilHealth, Pag-IBIG, SEC, DTI, DOLE obligations) that applies to a
-   specific taxpayer profile, weekend/holiday-shifted by rule.
+   specific taxpayer profile, weekend/holiday-shifted by rule, with a filter by agency and
+   by type. It is a reference, not a tracker: it does not record what was filed.
 2. **Tax estimator**: regime-aware liability estimates with the full math shown line by
    line: 8% vs graduated (OSD/itemized) for individuals, mixed-income aggregation,
    employee annualization and take-home, corporate RCIT vs MCIT, payroll withholding.

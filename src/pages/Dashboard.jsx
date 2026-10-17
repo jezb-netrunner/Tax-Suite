@@ -3,22 +3,19 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS, HOLIDAY_SET } from '../lib/deadlineData.js'
 import {
-  generateDeadlines, unproclaimedYears, holidayGapNote, overdueDeadlines, OVERDUE_DAYS,
-  filedKey, filedStatus, withFiled, withFiledMany, railStatus, groupByMonth, isUnconfirmed,
+  generateDeadlines, unproclaimedYears, holidayGapNote, recentDeadlines, RECENT_DAYS, groupByMonth, isUnconfirmed,
+  CATEGORY_LABEL, NO_FILTER, isFiltered, filterDeadlines, filterOptions, trimPick, filterText,
 } from '../engine/deadlines.js'
 import { profileFlags, PROFILE_TYPES, regimeLabel } from '../engine/profile.js'
 import { dueDayText, fixedHolidayExamples } from '../engine/ruleText.js'
 import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
-import { useProfileMarks } from '../lib/useProfileMarks.js'
 import { AgencyTag } from '../components/ui.jsx'
 import { ItemBadge, DeadlineDetails } from '../components/Confidence.jsx'
 import { FormCode } from '../components/FormCode.jsx'
 import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
 import { deadlineCsv, deadlineCsvFileName, downloadText } from '../lib/exports.js'
 import { formGuideCode, formGuidePath } from '../lib/formGuide.js'
-
-const CATLABEL = { income: 'Income tax', business: 'Business tax', withholding: 'Withholding', payroll: 'Payroll & contributions', admin: 'Admin', registration: 'Registration' }
 
 function NoProfile() {
   const nav = useNavigate()
@@ -44,6 +41,8 @@ export default function Dashboard() {
   const app = useApp()
   const nav = useNavigate()
   const [view, setView] = useState('feed')
+  // Calendar filter: the agencies and types picked (none picked = everything).
+  const [pick, setPick] = useState(NO_FILTER)
   const p = app.active
 
   // Today in Manila; refreshes at Manila midnight and when the tab comes back.
@@ -59,31 +58,25 @@ export default function Dashboard() {
   const gapYears = unproclaimedYears(HOLIDAY_SET, t, windowEnd)
   const gapNote = holidayGapNote(gapYears)
 
-  // Filed marks (M09): `pv` is the profile with any not-yet-saved marks.
-  const { profile: pv, update: updateMarks, error: markError } = useProfileMarks(app)
-  const [lastMark, setLastMark] = useState(null) // { d, on, status } for the status line + Undo
-  const undoRef = useRef(null)
-  const overdue = useMemo(
-    () => (pv ? overdueDeadlines(OBLIGATIONS, pv, { today: t, holidays: HOLIDAY_SET }) : []),
-    [pv, t]
+  // Due dates of the last 60 days. The calendar is a reference, not a
+  // tracker: it does not know what was filed, so these are "recently passed".
+  const recent = useMemo(
+    () => (p ? recentDeadlines(OBLIGATIONS, p, { today: t, holidays: HOLIDAY_SET }) : []),
+    [p, t]
   )
-  const recentlyMarked = useMemo(() => {
-    if (!pv) return []
-    return generateDeadlines(OBLIGATIONS, pv, {
-      from: addDays(t, -OVERDUE_DAYS), to: addDays(t, -1), holidays: HOLIDAY_SET, refDate: t,
-    }).filter(d => filedStatus(pv, d))
-  }, [pv, t])
-  function mark(d, on, status = 'filed') {
-    updateMarks(prof => withFiled(prof, filedKey(d), on, t, status))
-    setLastMark({ d, on, status })
+  const options = useMemo(() => filterOptions([...recent, ...deadlines]), [recent, deadlines])
+  const active = trimPick(pick, options)
+  const filtered = isFiltered(active)
+  const shown = filterDeadlines(deadlines, active)
+  const recentShown = filterDeadlines(recent, active)
+  function togglePick(key, value) {
+    const cur = active[key]
+    setPick({ ...active, [key]: cur.includes(value) ? cur.filter(v => v !== value) : [...cur, value] })
   }
-  function markMany(list, on) {
-    updateMarks(prof => withFiledMany(prof, list.map(filedKey), on, t))
-    setLastMark({ many: list, on })
-  }
-  // M22: every deadline on the calendar (overdue, recently marked, next 13 months) as a spreadsheet file.
+  // M22: every deadline on the calendar (the last 60 days and the next 13
+  // months, as filtered) as a spreadsheet file.
   function downloadCsv() {
-    downloadText(deadlineCsvFileName(p.name, t), deadlineCsv({ overdue, recent: recentlyMarked, upcoming: deadlines, profile: pv, today: t }))
+    downloadText(deadlineCsvFileName(p.name, t, { filtered }), deadlineCsv({ recent: recentShown, upcoming: shown, today: t }))
   }
 
   if (!app.profilesReady) return null
@@ -106,9 +99,9 @@ export default function Dashboard() {
   // Hero: next filing-money deadline (income/business/withholding), else next of any kind.
   // Items that apply only by the taxpayer's own choice (the Oct 15 second
   // installment) stay in the lists but never take the hero spot.
-  const heroPool = deadlines.filter(d => ['income', 'business', 'withholding'].includes(d.obligation.category) && !d.obligation.conditional)
-  const hero = heroPool[0] || deadlines[0] || null
-  const rest = deadlines.filter(d => d !== hero)
+  const heroPool = shown.filter(d => ['income', 'business', 'withholding'].includes(d.obligation.category) && !d.obligation.conditional)
+  const hero = heroPool[0] || shown[0] || null
+  const rest = shown.filter(d => d !== hero)
   const monthItems = rest.filter(d => d.date <= eom)
   // Beyond this month, show each obligation once — its NEXT occurrence — so
   // monthly remittances don't flood the feed. Full expansion lives in the
@@ -123,15 +116,18 @@ export default function Dashboard() {
   }
 
   const isEmployee = p.type === 'employee'
+  // The summary is printed, so a filtered printout says what it leaves out.
+  const only = filtered ? ` (only ${filterText(active)})` : ''
   const summary = isEmployee
-    ? `Showing what applies to ${p.name} as an employee on compensation income.`
-    : `Showing ${deadlines.length} dated obligations over the next 13 months for ${p.name}.`
+    ? `Showing what applies to ${p.name} as an employee on compensation income${only}.`
+    : `Showing ${filtered ? `${shown.length} of ${deadlines.length}` : deadlines.length} dated obligations over the next 13 months for ${p.name}${only}.`
+  const noMatch = filtered && !shown.length
 
-  // Filing progress rail: this year's already-generated income tax filings.
+  // Income-tax rail: this year's income tax due dates, for reference.
   const yearStart = new Date(t.getFullYear(), 0, 1)
-  const fullYear = generateDeadlines(OBLIGATIONS, p, {
+  const fullYear = filterDeadlines(generateDeadlines(OBLIGATIONS, p, {
     from: yearStart, to: new Date(t.getFullYear(), 11, 31), holidays: HOLIDAY_SET, refDate: t,
-  }).filter(d => d.obligation.category === 'income')
+  }).filter(d => d.obligation.category === 'income'), active)
 
   return (
     <div className="page">
@@ -178,13 +174,22 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {markError && <div className="form-err" role="alert" style={{ marginBottom: '16px' }}>{markError}</div>}
-        <MarkStatus lastMark={lastMark} onMark={mark} onMarkMany={markMany} undoRef={undoRef} />
-        <OverdueSection items={overdue} recent={recentlyMarked} profile={pv} onMark={mark} onMarkMany={markMany} undoRef={undoRef} />
+        <CalendarFilter options={options} pick={active} count={shown.length} total={deadlines.length}
+          onToggle={togglePick} onClear={() => setPick(NO_FILTER)} />
+        <RecentSection items={recentShown} />
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 440px', minWidth: 0 }}>
-            {view === 'feed' && (
+            {noMatch && (
+              <div className="card pad empty-note">
+                No deadlines in the next 13 months match this filter.
+                <div style={{ marginTop: '14px' }}>
+                  <button type="button" className="btn sm ghost" onClick={() => setPick(NO_FILTER)}>Show everything</button>
+                </div>
+              </div>
+            )}
+
+            {!noMatch && view === 'feed' && (
               <div>
                 {hero ? (
                   <div className="hero">
@@ -272,13 +277,13 @@ export default function Dashboard() {
               </div>
             )}
 
-            {view === 'timeline' && (
+            {!noMatch && view === 'timeline' && (
               <div style={{ position: 'relative', paddingLeft: '8px' }}>
                 <p style={{ fontSize: '13px', color: 'var(--mut)', margin: '0 0 6px' }}>
-                  All {deadlines.length} deadlines in the next 13 months, by month.
+                  {filtered ? `Deadlines in the next 13 months that match the filter (${shown.length})` : `All ${shown.length} deadlines in the next 13 months`}, by month.
                 </p>
                 <div style={{ position: 'absolute', left: '14px', top: '34px', bottom: '8px', width: '2px', background: 'var(--line)' }}></div>
-                {groupByMonth(deadlines).map(g => (
+                {groupByMonth(shown).map(g => (
                   <section key={g.key} aria-labelledby={`tl-${g.key}`}>
                     <h2 id={`tl-${g.key}`} style={{ fontSize: '14.5px', fontWeight: 700, margin: '16px 0 10px 30px', position: 'relative' }}>
                       {g.label} <span style={{ fontWeight: 500, color: 'var(--mut)', fontSize: '13px' }}>({g.items.length})</span>
@@ -315,7 +320,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {view === 'table' && <DeadlineTable deadlines={deadlines} />}
+            {!noMatch && view === 'table' && <DeadlineTable deadlines={shown} filtered={filtered} />}
           </div>
 
           {/* right rail */}
@@ -323,7 +328,7 @@ export default function Dashboard() {
             {!isEmployee && fullYear.length > 0 && (
               <div className="card tight">
                 <h2 id="rail-h" style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '-.01em' }}>{t.getFullYear()} income-tax filings</h2>
-                <FilingRail items={fullYear} profile={pv} today={t} onMark={mark} />
+                <FilingRail items={fullYear} today={t} />
               </div>
             )}
 
@@ -366,149 +371,90 @@ export default function Dashboard() {
 
 const fmtDay = d => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 const itemName = d => `${d.obligation.title}${d.label ? ` · ${d.label}` : ''}`
-const daysOverdueLabel = n => (n === 1 ? '1 day overdue' : `${n} days overdue`)
+const daysAgoLabel = n => (n === 1 ? '1 day ago' : `${n} days ago`)
 
-// Status line after marking or unmarking, with Undo. Always rendered (empty
-// until the first mark) so screen readers announce each change.
-function MarkStatus({ lastMark, onMark, onMarkMany, undoRef }) {
-  const many = lastMark && lastMark.many
+// Calendar filter: pick one or more agencies or types to show only those;
+// nothing picked shows everything. A row appears only when the calendar has
+// two or more agencies (or types). The count is announced to screen readers
+// after each click. Not printed: the summary line says when a printout is
+// filtered.
+const FILTER_ROWS = [['agency', 'Agency', v => v], ['category', 'Type', v => CATEGORY_LABEL[v] || v]]
+
+function CalendarFilter({ options, pick, count, total, onToggle, onClear }) {
+  const rows = FILTER_ROWS.filter(([key]) => options[key].length > 1)
+  if (!rows.length) return null
   return (
-    <div aria-live="polite" style={lastMark ? { fontSize: '13px', marginBottom: '12px', padding: '9px 13px', borderRadius: '9px', background: 'var(--accSoft)', color: 'var(--accInk)' } : undefined}>
-      {lastMark && (
-        <>
-          {many
-            ? (lastMark.on ? <>Marked {many.length} items as filed. </> : <>{many.length} items are no longer marked. </>)
-            : lastMark.on
-              ? <>Marked “{itemName(lastMark.d)}” as {lastMark.status === 'n/a' ? 'not applicable' : 'filed'}. </>
-              : <>“{itemName(lastMark.d)}” is no longer marked. </>}
-          <button ref={undoRef} className="linkbtn" style={{ fontSize: '13px', minHeight: '24px' }}
-            onClick={() => (many ? onMarkMany(many, !lastMark.on) : onMark(lastMark.d, !lastMark.on, lastMark.status))}>
-            Undo
-          </button>
-        </>
-      )}
+    <div className="cal-filter no-print" role="group" aria-labelledby="filter-h">
+      <div id="filter-h" className="cal-filter-h">Show only</div>
+      {rows.map(([key, label, name]) => (
+        <div key={key} className="cal-filter-row" role="group" aria-labelledby={`filter-${key}`}>
+          <span id={`filter-${key}`} className="cal-filter-label">{label}</span>
+          {options[key].map(v => {
+            const on = pick[key].includes(v)
+            return (
+              <button key={v} type="button" className="fchip" aria-pressed={on} onClick={() => onToggle(key, v)}>
+                {on && <span aria-hidden="true">✓ </span>}{name(v)}
+              </button>
+            )
+          })}
+        </div>
+      ))}
+      <p className="cal-filter-note">
+        <span aria-live="polite">
+          {isFiltered(pick)
+            ? `Showing ${count} of ${total} deadlines in the next 13 months.`
+            : 'Pick one or more to show only those. Nothing picked shows everything.'}
+        </span>
+        {isFiltered(pick) && <> <button type="button" className="linkbtn" onClick={onClear}>Show everything</button></>}
+      </p>
     </div>
   )
 }
 
-// Overdue (M09): passed due dates of the last 60 days that are not marked
-// filed. Each can be marked filed (an optional item can be marked "doesn't
-// apply"); recently marked items can be unmarked. After a click, focus moves
-// to the next item (or to Undo) so keyboard users keep their place.
-const OVERDUE_SHOWN = 5
-
-function OverdueSection({ items, recent, profile, onMark, onMarkMany, undoRef }) {
-  const btnRefs = useRef({})
-  const [focusTo, setFocusTo] = useState(null)
-  const [showAll, setShowAll] = useState(false)
-
-  useEffect(() => {
-    if (!focusTo) return
-    const el = focusTo === 'undo' ? undoRef.current : btnRefs.current[focusTo]
-    if (el) el.focus()
-    setFocusTo(null)
-  }, [focusTo, items, undoRef])
-
-  if (!items.length && !recent.length) return null
-
-  // M22: the rows after the first OVERDUE_SHOWN stay in the page with the
-  // class print-extra (hidden on screen until "Show all", shown in print), so
-  // a printout or PDF lists every overdue item.
-  const extra = i => !showAll && i >= OVERDUE_SHOWN
-
-  function markAll() {
-    onMarkMany(items, true)
-    setFocusTo('undo')
-  }
-
-  function markItem(d, status) {
-    const i = items.findIndex(x => x.id === d.id)
-    const next = items[i + 1] || items[i - 1]
-    onMark(d, true, status)
-    setFocusTo(next ? next.id : 'undo')
-  }
-
+// Recently passed (M09, was "Overdue"): the due dates of the last 60 days, for
+// reference. The app does not track filing, so the list is closed until
+// "Show dates" and never says a return is late. It is always printed (M22).
+function RecentSection({ items }) {
+  const [open, setOpen] = useState(false)
+  if (!items.length) return null
   return (
-    <section aria-labelledby="overdue-h" className="card" style={{ marginBottom: '22px', padding: '16px 18px', borderLeft: items.length ? '3px solid var(--bad)' : undefined }}>
-      <h2 id="overdue-h" style={{ fontSize: '15px', fontWeight: 700, color: items.length ? 'var(--bad)' : 'var(--ink)' }}>
-        {items.length ? `Overdue (${items.length})` : 'Nothing overdue'}
-      </h2>
+    <section aria-labelledby="recent-h" className="card" style={{ marginBottom: '22px', padding: '14px 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+        <h2 id="recent-h" style={{ fontSize: '15px', fontWeight: 700 }}>Recently passed ({items.length})</h2>
+        <button type="button" className="btn sm ghost" aria-expanded={open} aria-controls="recent-list" onClick={() => setOpen(v => !v)}>
+          {open ? 'Hide dates' : 'Show dates'}
+        </button>
+      </div>
       <p style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '4px', lineHeight: 1.55 }}>
-        {items.length
-          ? <>Due dates from the last {OVERDUE_DAYS} days that are not marked as filed. Already filed? Mark it as filed. If not, file and pay as soon as you can: the surcharge and interest grow every day. <Link to="/tools" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Estimate the penalty</Link></>
-          : <>Every due date of the last {OVERDUE_DAYS} days is marked as filed.</>}
+        Due dates from the last {RECENT_DAYS} days. If one of these is not filed yet, file and pay as soon as you can: the surcharge and interest grow every day. <Link to="/tools" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Estimate the penalty</Link>
       </p>
-      {items.length > 0 && (
-        <ul id="overdue-list" className="list-card" style={{ listStyle: 'none', margin: '12px 0 0', padding: 0 }}>
-          {items.map((d, i) => (
-            <li key={d.id} className={extra(i) ? 'frow print-extra' : 'frow'} style={{ flexWrap: 'wrap', rowGap: '10px' }}>
-              <div style={{ textAlign: 'center', flexShrink: 0, width: '44px' }}>
-                <div className="mono" style={{ fontSize: '17px', fontWeight: 600 }}>{d.date.getDate()}</div>
-                <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--mut)' }}>{fmtMonthShort(d.date)}</div>
+      <ul id="recent-list" className={open ? 'list-card' : 'list-card print-only'} style={{ listStyle: 'none', margin: '12px 0 0', padding: 0 }}>
+        {items.map(d => (
+          <li key={d.id} className="frow" style={{ flexWrap: 'wrap', rowGap: '10px' }}>
+            <div style={{ textAlign: 'center', flexShrink: 0, width: '44px' }}>
+              <div className="mono" style={{ fontSize: '17px', fontWeight: 600 }}>{d.date.getDate()}</div>
+              <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--mut)' }}>{fmtMonthShort(d.date)}</div>
+            </div>
+            <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{itemName(d)}</div>
+              {isUnconfirmed(d) && <div style={{ marginTop: '5px' }}><ItemBadge item={d} /></div>}
+              <div style={{ fontSize: '13px', color: 'var(--mut)', marginTop: '2px' }}>
+                Was due {fmtDay(d.date)} ({daysAgoLabel(d.daysAgo)}){d.extended ? `, extended by ${d.extended.basis}` : ''}{d.obligation.form && d.obligation.form !== '—' ? ` · ${d.obligation.form}` : ''}
               </div>
-              <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{itemName(d)}</div>
-                {isUnconfirmed(d) && <div style={{ marginTop: '5px' }}><ItemBadge item={d} /></div>}
-                <div style={{ fontSize: '13px', color: 'var(--bad)', marginTop: '2px', fontWeight: 600 }}>
-                  {daysOverdueLabel(d.daysOverdue)} <span style={{ color: 'var(--mut)', fontWeight: 400 }}>· was due {fmtDay(d.date)}{d.extended ? ` (extended by ${d.extended.basis})` : ''}{d.obligation.form && d.obligation.form !== '—' ? ` · ${d.obligation.form}` : ''}</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button ref={el => { btnRefs.current[d.id] = el }} className="btn sm"
-                  aria-label={`Mark as filed: ${itemName(d)}`} onClick={() => markItem(d, 'filed')}>
-                  Mark as filed
-                </button>
-                {d.obligation.conditional && (
-                  <button className="btn sm ghost" aria-label={`Does not apply to me: ${itemName(d)}`} onClick={() => markItem(d, 'n/a')}>
-                    Doesn’t apply to me
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      {items.length > 1 && (
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
-          {items.length > OVERDUE_SHOWN && (
-            <button className="btn sm ghost" aria-expanded={showAll} aria-controls="overdue-list" onClick={() => setShowAll(v => !v)}>
-              {showAll ? `Show the first ${OVERDUE_SHOWN} only` : `Show all ${items.length} overdue`}
-            </button>
-          )}
-          <button className="btn sm ghost" onClick={markAll}>Mark all {items.length} as filed</button>
-        </div>
-      )}
-      {recent.length > 0 && (
-        <details style={{ marginTop: '12px' }}>
-          <summary style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accInk)', cursor: 'pointer', minHeight: '24px' }}>
-            Marked in the last {OVERDUE_DAYS} days ({recent.length})
-          </summary>
-          <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {recent.map(d => (
-              <li key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', fontSize: '13px' }}>
-                <span style={{ flex: '1 1 200px', minWidth: 0 }}>
-                  {itemName(d)} · due {fmtDate(d.date)} · <b>{filedStatus(profile, d) === 'n/a' ? 'doesn’t apply' : 'filed'}</b>
-                </span>
-                <button className="linkbtn" style={{ fontSize: '13px', minHeight: '24px' }}
-                  aria-label={`Unmark: ${itemName(d)}`} onClick={() => onMark(d, false)}>
-                  Unmark
-                </button>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+            </div>
+            <AgencyTag agency={d.obligation.agency} />
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }
 
-// Income-tax rail (M09): a tick only for items marked filed; a neutral clock
-// for dates that passed without a mark; an empty ring for dates to come.
-function RailIcon({ status }) {
+// Income-tax rail: this year's income tax due dates, for reference. A grey
+// clock marks a date that has passed, an empty ring one still to come.
+function RailIcon({ passed }) {
   const base = { width: 18, height: 18, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }
-  if (status === 'filed') return <span aria-hidden="true" style={{ ...base, background: 'var(--acc)', color: '#fff' }}>✓</span>
-  if (status === 'n/a') return <span aria-hidden="true" style={{ ...base, background: 'var(--line)', color: 'var(--ink)' }}>–</span>
-  if (status === 'passed') {
+  if (passed) {
     return (
       <span aria-hidden="true" style={{ ...base, background: 'var(--line)' }}>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#4a5a6a" strokeWidth="1.5" strokeLinecap="round">
@@ -520,41 +466,21 @@ function RailIcon({ status }) {
   return <span aria-hidden="true" style={{ ...base, border: '2px solid var(--line)' }} />
 }
 
-const RAIL_TEXT = { filed: 'filed · due', 'n/a': 'doesn’t apply · due', passed: 'date passed', due: 'due' }
-
-function FilingRail({ items, profile, today, onMark }) {
-  const statuses = items.map(d => railStatus(profile, d, today))
-  const done = statuses.filter(st => st === 'filed' || st === 'n/a').length
+function FilingRail({ items, today }) {
   return (
-    <>
-      <div aria-hidden="true" style={{ height: '6px', borderRadius: '3px', background: 'var(--line)', margin: '14px 0 6px', overflow: 'hidden' }}>
-        <div style={{ width: `${Math.round(done / items.length * 100)}%`, height: '100%', background: 'var(--acc)', borderRadius: '3px' }}></div>
-      </div>
-      <div style={{ fontSize: '12px', color: 'var(--mut)', marginBottom: '12px' }}>{done} of {items.length} marked filed</div>
-      <ul aria-labelledby="rail-h" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {items.map((d, i) => {
-          const st = statuses[i]
-          const textId = `rail-${d.id}`
-          return (
-            <li key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <RailIcon status={st} />
-              <span id={textId} style={{ flex: 1, minWidth: 0, fontSize: '13px', color: st === 'due' ? 'var(--ink)' : 'var(--mut)', fontWeight: st === 'due' ? 600 : 400 }}>
-                {d.obligation.form} {d.label || ''} · {RAIL_TEXT[st]} {fmtDate(d.date)}{d.extended ? ` (extended by ${d.extended.basis})` : ''}
-              </span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--mut)', cursor: 'pointer', minHeight: '24px', flexShrink: 0 }}>
-                <input type="checkbox" checked={st === 'filed'} aria-describedby={textId}
-                  onChange={e => onMark(d, e.target.checked)}
-                  style={{ width: '16px', height: '16px', margin: 0, accentColor: 'var(--acc)' }} />
-                Filed
-              </label>
-            </li>
-          )
-        })}
-      </ul>
-      <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--mut)', lineHeight: 1.5 }}>
-        Tick “Filed” once a return is filed. A grey clock means the date has passed and the return is not marked as filed.
-      </div>
-    </>
+    <ul aria-labelledby="rail-h" style={{ listStyle: 'none', margin: '14px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {items.map(d => {
+        const passed = d.date < today
+        return (
+          <li key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <RailIcon passed={passed} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: passed ? 'var(--mut)' : 'var(--ink)', fontWeight: passed ? 400 : 600 }}>
+              {d.obligation.form} {d.label || ''} · {passed ? 'was due' : 'due'} {fmtDate(d.date)}{d.extended ? ` (extended by ${d.extended.basis})` : ''}
+            </span>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -589,7 +515,7 @@ function RollNote({ d, onDark }) {
 // L14: the Table view scrolls sideways inside its box on narrow screens. The
 // box is a focusable, labelled region (so it can be scrolled with the
 // keyboard), and a visible note says when there are more columns to the right.
-function DeadlineTable({ deadlines }) {
+function DeadlineTable({ deadlines, filtered }) {
   const ref = useRef(null)
   const [overflows, setOverflows] = useState(false)
   useEffect(() => {
@@ -612,7 +538,7 @@ function DeadlineTable({ deadlines }) {
       <div ref={ref} className="list-card tbl-scroll" role="region" aria-label="Deadline table" tabIndex={0}
         aria-describedby={overflows ? 'tbl-cue' : undefined}>
         <table className="tbl">
-          <caption className="sr-only">All {deadlines.length} deadlines in the next 13 months</caption>
+          <caption className="sr-only">{filtered ? `Deadlines in the next 13 months that match the filter (${deadlines.length})` : `All ${deadlines.length} deadlines in the next 13 months`}</caption>
           <thead>
             <tr><th scope="col">Date</th><th scope="col">Obligation</th><th scope="col">Form</th><th scope="col">Agency</th><th scope="col">Type</th><th scope="col">Period</th></tr>
           </thead>
@@ -627,7 +553,7 @@ function DeadlineTable({ deadlines }) {
                 </td>
                 <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}><FormCode form={d.obligation.form || '—'} className={null} /></td>
                 <td><AgencyTag agency={d.obligation.agency} /></td>
-                <td style={{ color: 'var(--mut)' }}>{CATLABEL[d.obligation.category] || ''}</td>
+                <td style={{ color: 'var(--mut)' }}>{CATEGORY_LABEL[d.obligation.category] || ''}</td>
                 <td className="mono" style={{ fontSize: '12px', color: 'var(--dim)', whiteSpace: 'nowrap' }}>{d.label || '—'}</td>
               </tr>
             ))}
