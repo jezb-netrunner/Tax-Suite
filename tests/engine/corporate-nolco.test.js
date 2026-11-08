@@ -65,7 +65,7 @@ describe('corporate NOLCO from prior years (itemized only, against taxable incom
     expect(r.nolco.applied).toBe(300000)
     expect(r.nolco.left).toBe(100000)
     expect(r.taxableIncome).toBe(0)
-    expect(row(r.rows, /^Less: NOLCO from prior years/).sub).toBe('₱100,000 of NOLCO is left for later years, within its 3-year limit.')
+    expect(row(r.rows, /^Less: NOLCO from prior years/).sub).toBe('₱100,000 of NOLCO is left. Each year\'s loss can be deducted only in the 3 years after the year it was incurred, so part of it may expire this year: check the year of each loss.')
   })
   it('OSD year: not used (taxable income 360,000, RCIT ₱72,000), with a note', () => {
     const r = estimateCorporation({ ...figures, deduction: 'osd', nolcoPrior: 250000 })

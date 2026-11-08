@@ -24,13 +24,16 @@ describe('TB:W16 (corporate) non-VAT corporation at ₱3,200,000 sales', () => {
     expect(r.pct).toBe(96000)
     expect(r.incomeTaxDue).toBe(240000)
   })
-  it('crossed in October: 3,200,000 × 10/12 = ₱2,666,667, so percentage tax ₱80,000; VAT from November 2026', () => {
+  it('crossed in October, sales not entered: 3,200,000 × 10/12 = ₱2,666,667 is not over ₱3M, so the ₱3,000,000 floor is used: percentage tax ₱90,000; VAT from November 2026', () => {
     const r = estimateCorporation({ ...W16, crossedMonth: 10 })
     expect(r.crossing.assumedEvenSales).toBe(false)
     expect(r.crossing.span).toBe('January to October')
-    expect(r.crossing.ptBase).toBe(2666667)
-    expect(r.pct).toBe(80000)
+    expect(r.crossing.ptBase).toBe(3000000)
+    expect(r.crossing.ptBaseFloored).toBe(true)
+    expect(r.crossing.ptBaseProrated).toBe(false)
+    expect(r.pct).toBe(90000)
     expect(r.crossing.vatFrom).toBe('November 2026')
+    expect(r.crossing.warnings).toEqual(['Spread evenly by month, the year\'s sales would put only ₱2,666,667 in January to October, but the threshold was passed in October, so sales to the end of October were more than ₱3,000,000. The estimate uses ₱3,000,000, the least they can be: enter the actual sales from January to October for an exact figure.'])
   })
   it('crossed in October with ₱3,050,000 of sales January to October entered: ₱91,500', () => {
     const r = estimateCorporation({ ...W16, crossedMonth: 10, salesThroughCrossMonth: 3050000 })
@@ -42,15 +45,15 @@ describe('TB:W16 (corporate) non-VAT corporation at ₱3,200,000 sales', () => {
     const r = estimateCorporation({ ...W16, crossedMonth: 10 })
     const pt = row(r.rows, /^Percentage tax/)
     expect(pt.label).toBe('Percentage tax (3% of sales January to October)')
-    expect(pt.value).toBe(80000)
-    expect(pt.sub).toBe('NIRC Sec 116. Paid quarterly on Form 2551Q, not with the annual return. Sales from January to October: ₱2,666,667 (the year\'s sales spread evenly by month).')
+    expect(pt.value).toBe(90000)
+    expect(pt.sub).toBe('NIRC Sec 116. Paid quarterly on Form 2551Q, not with the annual return. Sales from January to October: ₱3,000,000 at least (the threshold was passed in October; enter the actual sales for an exact figure).')
     expect(row(r.rows, /^Value-added tax/).sub).toBe('VAT applies from November 2026: not included in this estimate.')
   })
   it('banner text names the percentage tax and the VAT start (no "percentage tax" claim with ₱0)', () => {
     expect(estimateCorporation(W16).businessTaxNote)
       .toBe('Plus ₱96,000 percentage tax on sales from January to December (Form 2551Q). VAT applies from January 2027: not included in this estimate.')
     expect(estimateCorporation({ ...W16, crossedMonth: 10 }).businessTaxNote)
-      .toBe('Plus ₱80,000 percentage tax on sales from January to October (Form 2551Q). VAT applies from November 2026: not included in this estimate.')
+      .toBe('Plus ₱90,000 percentage tax on sales from January to October (Form 2551Q). VAT applies from November 2026: not included in this estimate.')
   })
   it('sales entered for the months are checked like the individual estimator', () => {
     const r = estimateCorporation({ ...W16, crossedMonth: 11, salesThroughCrossMonth: 3500000 })

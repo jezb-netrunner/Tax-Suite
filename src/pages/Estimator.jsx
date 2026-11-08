@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { estimateIndividual, compensationForMixed } from '../engine/estimators/individual.js'
+import { estimateIndividual, compensationForMixed, individualTaxYears } from '../engine/estimators/individual.js'
 import { crossingMonthOptions } from '../engine/estimators/crossing.js'
 import { estimateEmployee } from '../engine/estimators/employee.js'
 import { estimateCorporation, estimateCorporateQuarter, corporateTaxYears, taxablePeriod, EARLIER_YEARS_NOTE } from '../engine/estimators/corporation.js'
@@ -12,7 +12,7 @@ import { withChangedInputs } from '../engine/profile.js'
 import { createInputSaver, figuresToShow } from '../lib/inputSaver.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
-import { RT, percentText, payFactorText } from '../engine/ruleText.js'
+import { RT, percentText, payFactorText, dueDayText } from '../engine/ruleText.js'
 import corporateRules from '../data/rules/corporate.json'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
@@ -126,11 +126,17 @@ function useInputs(app, key) {
   return [vals, update]
 }
 
-function IndividualEstimator({ app, mixed, onOpenTab }) {
+function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
   const p = app.active
   // M05: no sample figures; boxes start empty.
   const [v, set] = useInputs(app, mixed ? 'mixed' : 'individual')
-  const taxYear = useManilaToday().getFullYear()
+  // Audit Nov 2026 (E10): the current or the previous taxable year, starting
+  // on the one whose annual return is due next (last year's until mid-April).
+  const today = useManilaToday()
+  const years = useMemo(() => individualTaxYears({ today }), [today])
+  const taxYear = years.options.some(o => o.year === v.taxYear) ? v.taxYear : years.defaultYear
+  const annualForm = mixed || p.regime === 'graduated_itemized' ? '1701' : '1701A'
+  React.useEffect(() => { if (onPrintYear) onPrintYear(String(taxYear)) }, [onPrintYear, taxYear])
   // Mixed income: compensation comes from the Compensation side tab when it is
   // filled, otherwise from this tab's own boxes.
   const employeeInputs = p.inputs?.employee
@@ -166,6 +172,13 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
     <>
       <div className="card pad">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px' }}>
+          <SelectField
+            label="Taxable year"
+            value={String(taxYear)}
+            onChange={x => set('taxYear', Number(x))}
+            options={years.options.map(o => [String(o.year), String(o.year)])}
+            hint={`Starts on the year whose annual return (${annualForm}) is due next: ${years.defaultYear}, due ${fmtISO(years.options.find(o => o.year === years.defaultYear).dueDate)}.`}
+          />
           <NumField emptyValue={null} label="Business gross sales / receipts · year" value={v.gross} onChange={x => set('gross', x)} prefix="₱" lg />
           <NumField emptyValue={null} label="Itemized expenses" value={v.expenses} onChange={x => set('expenses', x)} prefix="₱" />
           <NumField emptyValue={null} label="NOLCO from prior years" value={v.nolcoPrior} onChange={x => set('nolcoPrior', x)} prefix="₱" hint={`Unused net operating losses from the last ${RT.nolcoYears}. Used only in the itemized option, and only against business income. Losses from ${RT.nolcoPandemicLossYears} may carry over for ${RT.nolcoPandemicYears} (RA 11494); check with your CPA.`} />
@@ -184,7 +197,7 @@ function IndividualEstimator({ app, mixed, onOpenTab }) {
           </div>
         )}
         {mixed && comp.differs && (
-          <div className="mini-warn" role="alert">
+          <div className="mini-warn" role="status">
             The compensation figures typed on this tab
             ({[comp.ownTaxable !== null && `taxable ${money(comp.ownTaxable)}`, comp.ownWithheld !== null && `withheld ${money(comp.ownWithheld)}`].filter(Boolean).join(', ')})
             differ from the Compensation side tab ({money(comp.taxable)} taxable, {money(comp.withheld)} withheld).
@@ -327,19 +340,20 @@ function CrossingCard({ crossing, v, set, monthOptions, extraFields, children })
       <div className="mini-warn" role="note">
         {children}
         {' '}<b>VAT applies from {crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
-        registration) before the end of the month after the month your sales passed {RT.vatThreshold}.
+        registration) by the end of the month after the month your sales passed {RT.vatThreshold}. This timing is not
+        confirmed from an official source: check it with your RDO.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
         <SelectField
           label={`Month your sales passed ${RT.vatThreshold}`}
           value={v.crossedMonth ? String(v.crossedMonth) : ''}
           onChange={x => set('crossedMonth', x ? Number(x) : null)}
-          options={[['', `Not sure: assume even monthly sales (${crossing.evenMonthName})`], ...monthOptions]}
+          options={[['', `Not sure: even sales (${crossing.evenMonthName})`], ...monthOptions]}
         />
         <NumField emptyValue={null} label={`Sales from ${crossing.span}`} value={v.salesThroughCrossMonth} onChange={x => set('salesThroughCrossMonth', x)} prefix="₱" hint="Optional. If blank, the year's sales are spread evenly by month." />
         {extraFields}
       </div>
-      {crossing.warnings.map(w => <div key={w} className="mini-warn" role="alert">{w}</div>)}
+      {crossing.warnings.map(w => <div key={w} className="mini-warn" role="status">{w}</div>)}
     </div>
   )
 }
@@ -520,9 +534,13 @@ function EmployeeEstimator({ app }) {
   // profile's Compensation side tab feeds the annual return, so it stays off there.
   const showMwe = p.type === 'employee'
   const mwe = showMwe && Boolean(v.mwe)
+  // Audit Nov 2026 (U4): an employee profile with more than one employer this
+  // year gets the other employers' boxes and the Form 1700 balance.
+  const multiple = p.type === 'employee' && Boolean(p.multipleEmployers)
   const r = useMemo(() => estimateEmployee({
     ...v, mwe, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0, bonusesAnnual: v.bonusesAnnual ?? 0,
-  }), [v, mwe])
+    multipleEmployers: multiple,
+  }), [v, mwe, multiple])
   const hasFigures = mwe ? Number(v.mweDailyRate) > 0 : Number(v.monthlyBasic) > 0
   return (
     <>
@@ -536,6 +554,21 @@ function EmployeeEstimator({ app }) {
           <NumField emptyValue={null} label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint={`First ${RT.thirteenthMonthCap} is tax-exempt.`} />
           <PayPeriodFields v={v} set={set} mwe={mwe} />
         </div>
+        {multiple && (
+          <>
+            <div className="mini-warn" role="note" style={{ marginTop: '16px' }}>
+              <b>More than one employer this year.</b> The boxes above are for one employer. Each employer withholds and
+              adjusts only on its own pay, so with two jobs at the same time the tax for the year is usually more than
+              what was withheld. If you changed jobs, give your new employer the 2316 from the old one. Either way,
+              substituted filing does not apply: you file Form 1700 by {dueDayText('bir-1700-annual')} with every 2316.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '14px' }}>
+              <NumField emptyValue={null} label="Taxable compensation from your other employer(s) · year" value={v.otherEmployersTaxable} onChange={x => set('otherEmployersTaxable', x)} prefix="₱"
+                hint={`From each other employer's 2316 (taxable compensation from that employer). If your 13th month and other benefits from all employers add up to more than ${RT.thirteenthMonthCap}, add the excess too.`} />
+              <NumField emptyValue={null} label="Tax withheld by your other employer(s) · year" value={v.otherEmployersWithheld} onChange={x => set('otherEmployersWithheld', x)} prefix="₱" hint="The tax withheld shown on each other employer's 2316." />
+            </div>
+          </>
+        )}
         {p.type === 'mixed' && (
           <p className="cite" style={{ marginTop: '14px' }}>
             The minimum wage earner option is on employee profiles and on the Payroll tab. If you earn the minimum wage
@@ -591,7 +624,7 @@ function CorporationEstimator({ app, onPrintYear }) {
   const osd = v.deduction === 'osd'
   const r = useMemo(() => (earlier ? null : estimateCorporation({
     ...v,
-    totalAssets: v.totalAssets ?? 0,
+    totalAssets: v.totalAssets ?? null,
     registrationYear: p.registrationYear,
     taxYear: choice,
     fiscalYearEndMonth: fy,
@@ -599,6 +632,9 @@ function CorporationEstimator({ app, onPrintYear }) {
     excessMcit,
   })), [v, p, choice, fy, earlier, excessMcit])
   const setExcessMcit = (y, x) => set('excessMcit', { ...(v.excessMcit || {}), [y]: x })
+  // Audit Nov 2026 (U5): open when there are figures, then left as the user
+  // sets it (it used to snap shut, and lose the focus, when a box was cleared).
+  const [mcitOpen, setMcitOpen] = useState(() => excessMcit.length > 0)
   // M22: the printout's "Tax year" is the taxable year chosen here.
   const printYear = earlier ? `before ${years.previous}` : taxablePeriod(choice, fy).option
   React.useEffect(() => { if (onPrintYear) onPrintYear(printYear) }, [onPrintYear, printYear])
@@ -629,13 +665,13 @@ function CorporationEstimator({ app, onPrintYear }) {
               ? `Not used with the ${RT.corpOsdRate} OSD.`
               : `Unused net operating losses from the last ${RT.nolcoYears}. Used only with itemized deductions, against taxable income (never the MCIT). Losses from ${RT.nolcoPandemicLossYears} may carry over for ${RT.nolcoPandemicYears} (RA 11494); check with your CPA.`}
           />
-          <NumField emptyValue={null} label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint={`For the ${RT.rcitSmall} small-corporation test. A blank box counts as ₱0.`} />
+          <NumField emptyValue={null} label="Total assets (excl. land)" value={v.totalAssets} onChange={x => set('totalAssets', x)} prefix="₱" hint={`For the ${RT.rcitSmall} small-corporation test (${RT.smallCorpAssetsShort} or less). A blank box counts as zero, and the breakdown then says so.`} />
           <NumField emptyValue={null} label="Creditable tax withheld (2307s)" value={v.cwt} onChange={x => set('cwt', x)} prefix="₱" />
           <NumField emptyValue={null} label="Income tax already paid on this year's quarterly returns (1702Q)" value={v.quarterlyPaid} onChange={x => set('quarterlyPaid', x)} prefix="₱" />
           <NumField emptyValue={null} label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
         {!earlier && (
-          <details style={{ marginTop: '16px' }} open={excessMcit.length > 0 || undefined}>
+          <details style={{ marginTop: '16px' }} open={mcitOpen} onToggle={e => setMcitOpen(e.currentTarget.open)}>
             <summary style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>Excess MCIT from the last {RT.mcitCarryYears} (optional)</summary>
             <p className="cite" style={{ marginTop: '8px' }}>
               If MCIT was higher than the regular tax in an earlier year, the difference is credited against the regular tax
@@ -673,7 +709,7 @@ function CorporationEstimator({ app, onPrintYear }) {
           {r.mcitWarning && (
             <div className="mini-warn" role="note" style={{ marginTop: '10px' }}>
               <b>Check the MCIT.</b> {r.mcitWarning}
-              {p.id && <>{' '}<Link to={`/profiles/${p.id}/edit`}>Edit the profile</Link></>}
+              {p.id && <>{' '}<Link to={`/profiles/${p.id}/edit`} state={{ returnTo: '/estimator' }}>Edit the profile</Link></>}
             </div>
           )}
           <div className="summary-banner" style={{ marginTop: '10px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
@@ -682,7 +718,7 @@ function CorporationEstimator({ app, onPrintYear }) {
                 ? <>Income tax due: {money(r.incomeTaxDue)} if the {RT.mcitRate} MCIT applies, or {money(r.rcit)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate if it does not apply yet.</>
                 : r.usesMcit
                   ? <>The {RT.mcitRate} MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
-                  : <>Income tax due: {money(r.incomeTaxDue)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitStatus !== 'notYet' ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
+                  : <>Income tax due: {money(r.incomeTaxDue)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitStatus === 'notYet' ? '' : r.mcit < r.incomeTaxDue ? `, above the ${money(r.mcit)} MCIT floor` : `, the same as the ${RT.mcitRate} MCIT`}.</>}
               {r.businessTaxNote && <> {r.businessTaxNote}</>}
             </span>
           </div>
@@ -713,7 +749,7 @@ function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
     quarter,
     grossSales: v.qGrossSales, costOfSales: v.qCostOfSales, opex: v.qOpex,
     paidEarlierQuarters: quarter > 1 ? v.qPaidEarlier : 0, cwt: v.qCwt,
-    deduction: v.deduction, totalAssets: v.totalAssets ?? 0, registrationYear: p.registrationYear,
+    deduction: v.deduction, totalAssets: v.totalAssets ?? null, registrationYear: p.registrationYear,
     taxYear, fiscalYearEndMonth: fy, priorYearCredits: v.priorYearCredits, excessMcit,
   }) : null), [hasFigures, quarter, v, p.registrationYear, taxYear, fy, excessMcit])
   return (
@@ -746,6 +782,13 @@ function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
           <p style={{ marginTop: '14px', fontSize: '13px', color: 'var(--mut)' }}>
             <b style={{ color: 'var(--ink)' }}>{q.quarterLabel}.</b> 1702Q due {fmtISO(q.dueDate)}.
           </p>
+          {!osd && Number(v.nolcoPrior) > 0 && (
+            <div className="mini-warn" role="note">
+              The NOLCO from prior years entered above is not deducted in this quarterly estimate: how NOLCO is claimed on
+              the 1702Q was not confirmed for this app. It is applied on the annual return (1702-RT) above; ask your CPA
+              before claiming it on a quarterly return.
+            </div>
+          )}
           <Rows rows={q.rows} />
         </>
       )}
@@ -829,7 +872,7 @@ export default function Estimator() {
 
   return (
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px' }}>
-      <PrintHeader profileName={p.name} taxYear={active === 'corporation' && corpPrintYear ? corpPrintYear : year} />
+      <PrintHeader profileName={p.name} taxYear={(active === 'corporation' || active === 'individual' || active === 'mixed') && corpPrintYear ? corpPrintYear : year} />
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
         <div>
           <h1 className="pg-h1">{titles[active]}</h1>
@@ -851,8 +894,8 @@ export default function Estimator() {
       {/* Keyed by profile and tab so switching either remounts the inputs —
           otherwise one client's saved figures would linger under another's. */}
       <React.Fragment key={`${p.id || 'local'}:${active}`}>
-        {active === 'individual' && <IndividualEstimator app={app} mixed={false} />}
-        {active === 'mixed' && <IndividualEstimator app={app} mixed={true} onOpenTab={setTab} />}
+        {active === 'individual' && <IndividualEstimator app={app} mixed={false} onPrintYear={setCorpPrintYear} />}
+        {active === 'mixed' && <IndividualEstimator app={app} mixed={true} onOpenTab={setTab} onPrintYear={setCorpPrintYear} />}
         {active === 'employee' && <EmployeeEstimator app={app} />}
         {active === 'corporation' && <CorporationEstimator app={app} onPrintYear={setCorpPrintYear} />}
         {active === 'payroll' && <PayrollEstimator app={app} />}

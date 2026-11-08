@@ -85,13 +85,15 @@ export function rollDueDate(dueDate, holidays = HOLIDAY_SET) {
   const due = requireDate(dueDate, 'due date')
   const rolled = shiftToBusinessDay(due, holidays)
   const moved = rolled.getTime() !== due.getTime()
-  const holidayListMissing = [due.getFullYear(), rolled.getFullYear()].some(y => !hasProclaimedList(holidays, y))
+  const years = [...new Set([due.getFullYear(), rolled.getFullYear()])]
+  const holidayListMissingYears = years.filter(y => !hasProclaimedList(holidays, y))
   return {
     dueDate: iso(due),
     rolledDueDate: iso(rolled),
     moved,
     reason: moved ? (isWeekend(due) ? 'weekend' : 'holiday') : null,
-    holidayListMissing,
+    holidayListMissing: holidayListMissingYears.length > 0,
+    holidayListMissingYears,
   }
 }
 
@@ -135,6 +137,7 @@ export function estimatePenalty(in_) {
     dueDateMoved: roll.moved,
     movedBecause: roll.reason,
     holidayListMissing: roll.holidayListMissing,
+    holidayListMissingYears: roll.holidayListMissingYears,
     paymentDate: iso(paid),
     late,
     daysLate,

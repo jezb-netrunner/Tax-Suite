@@ -19,6 +19,13 @@ const PAGES = {
   '/profiles/new': 'New profile',
 }
 
+// Audit Nov 2026 (S1): a malformed address such as #/blog/50%off makes
+// decodeURIComponent throw, which used to blank the whole app. Fall back to
+// the raw text.
+function safeDecode(s) {
+  try { return decodeURIComponent(s) } catch { return s }
+}
+
 /**
  * The page part of the title for a route path.
  * opts.signedOut: accounts mode before sign-in (every route but /privacy shows the sign-in screen).
@@ -31,7 +38,7 @@ export function pageName(pathname, { signedOut = false, recovery = false } = {})
   if (PAGES[path]) return PAGES[path]
   const post = path.match(/^\/blog\/([^/]+)$/)
   if (post) {
-    const p = POSTS.find(x => x.id === decodeURIComponent(post[1]))
+    const p = POSTS.find(x => x.id === safeDecode(post[1]))
     return `${p ? p.title : 'Article not found'} · Blog`
   }
   if (/^\/profiles\/[^/]+\/edit$/.test(path)) return 'Edit profile'

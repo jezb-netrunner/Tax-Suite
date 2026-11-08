@@ -154,13 +154,13 @@ describe('M07 holidays fixed by law, for any year', () => {
 
   it('the penalty calculator rolls over the same calendar and flags years without a proclaimed list', () => {
     expect(rollDueDate('2028-04-30')).toEqual({
-      dueDate: '2028-04-30', rolledDueDate: '2028-05-02', moved: true, reason: 'weekend', holidayListMissing: true,
+      dueDate: '2028-04-30', rolledDueDate: '2028-05-02', moved: true, reason: 'weekend', holidayListMissing: true, holidayListMissingYears: [2028],
     })
     expect(rollDueDate('2028-05-01')).toEqual({
-      dueDate: '2028-05-01', rolledDueDate: '2028-05-02', moved: true, reason: 'holiday', holidayListMissing: true,
+      dueDate: '2028-05-01', rolledDueDate: '2028-05-02', moved: true, reason: 'holiday', holidayListMissing: true, holidayListMissingYears: [2028],
     })
     expect(rollDueDate('2027-10-31')).toEqual({
-      dueDate: '2027-10-31', rolledDueDate: '2027-11-03', moved: true, reason: 'weekend', holidayListMissing: false,
+      dueDate: '2027-10-31', rolledDueDate: '2027-11-03', moved: true, reason: 'weekend', holidayListMissing: false, holidayListMissingYears: [],
     })
     // A plain Set still works: years with any listed date count as covered.
     expect(rollDueDate('2026-11-01', new Set(['2026-11-02'])).rolledDueDate).toBe('2026-11-03')

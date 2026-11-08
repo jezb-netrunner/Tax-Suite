@@ -50,7 +50,7 @@ describe('the calendar does not track filing', () => {
     expect(text).not.toMatch(/overdue/i)
   })
   it('the income-tax box lists the 2026 dates, passed ones as "was due", with no tick or count', () => {
-    expect(text).toContain('2026 income-tax filings')
+    expect(text).toContain('Income-tax filings due in 2026')
     expect(text).toContain('1702Q Q2 · was due Sep 1, 2026')
     expect(text).toContain('1702Q Q3 · due Dec 1, 2026')
     expect(text).not.toMatch(/\d+ of \d+ marked/)

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { AppStateProvider } from './state/AppState.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import './styles/fonts.css'
 import './styles/app.css'
 
@@ -15,10 +16,12 @@ const ROUTER_FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <HashRouter future={ROUTER_FUTURE}>
-      <AppStateProvider>
-        <App />
-      </AppStateProvider>
-    </HashRouter>
+    <ErrorBoundary>
+      <HashRouter future={ROUTER_FUTURE}>
+        <AppStateProvider>
+          <App />
+        </AppStateProvider>
+      </HashRouter>
+    </ErrorBoundary>
   </React.StrictMode>
 )

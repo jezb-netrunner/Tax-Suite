@@ -50,12 +50,13 @@ describe('TB:W16 non-VAT individual at ₱3,200,000 gross, ₱2,000,000 expenses
     expect(r.best.total).toBe(298500)
     expect(r.crossing.vatFrom).toBe('January 2027')
   })
-  it('crossed in November, sales not entered: prorated 3,200,000 × 11/12 = ₱2,933,333 -> PT ₱88,000; VAT from December', () => {
+  it('crossed in November, sales not entered: prorated 3,200,000 × 11/12 = ₱2,933,333 is not over ₱3M, so ₱3,000,000 is used -> PT ₱90,000; VAT from December', () => {
     const r = estimateIndividual({ gross: 3200000, expenses: 2000000, crossedMonth: 11, taxYear: 2026 })
-    expect(r.crossing.ptBase).toBe(2933333)
-    expect(r.crossing.ptBaseProrated).toBe(true)
-    expect(r.best.businessTax.amount).toBe(88000)
-    expect(r.best.total).toBe(290500)
+    expect(r.crossing.ptBase).toBe(3000000)
+    expect(r.crossing.ptBaseProrated).toBe(false)
+    expect(r.crossing.ptBaseFloored).toBe(true)
+    expect(r.best.businessTax.amount).toBe(90000)
+    expect(r.best.total).toBe(292500)
     expect(r.crossing.vatFrom).toBe('December 2026')
   })
   it('crossed in November with ₱3,050,000 sales Jan-Nov and ₱150,000 of 8% paid: PT ₱91,500, payable ₱52,500', () => {
@@ -77,9 +78,28 @@ describe('TB:W16 non-VAT individual at ₱3,200,000 gross, ₱2,000,000 expenses
     const r = estimateIndividual({ gross: 3200000, expenses: 2000000, crossedMonth: 11, taxYear: 2026 })
     const pt = row(r.rows, /^Percentage tax/)
     expect(pt.label).toBe('Percentage tax (3% of sales January to November)')
-    expect(pt.value).toBe(88000)
+    expect(pt.value).toBe(90000)
     expect(row(r.rows, /^Value-added tax/).sub).toBe('VAT applies from December 2026: not included in this estimate.')
     expect(r.rows.some(x => /no longer appl/i.test(x.label + ' ' + (x.sub || '')))).toBe(false)
+  })
+})
+
+describe('crossing month picked early in the year, sales not entered (audit Nov 2026, finding E1)', () => {
+  it('₱6,000,000 crossed in March: Jan-Mar sales must be over ₱3M, so PT is at least ₱90,000 (not ₱45,000)', () => {
+    const r = estimateIndividual({ gross: 6000000, crossedMonth: 3, taxYear: 2026 })
+    expect(r.crossing.ptBase).toBe(3000000)
+    expect(r.percentageTax).toBe(90000)
+    expect(r.crossing.warnings).toHaveLength(1)
+  })
+  it('crossed in July or later: proration is already over ₱3M and is used as before', () => {
+    const r = estimateIndividual({ gross: 6000000, crossedMonth: 7, taxYear: 2026 })
+    expect(r.crossing.ptBase).toBe(3500000)
+    expect(r.crossing.ptBaseProrated).toBe(true)
+    expect(r.crossing.warnings).toEqual([])
+  })
+  it('₱3,000,000.01 typed for January to the crossing month is over the threshold: no warning', () => {
+    const r = estimateIndividual({ gross: 6000000, crossedMonth: 6, salesThroughCrossMonth: 3000000.01, taxYear: 2026 })
+    expect(r.crossing.warnings).toEqual([])
   })
 })
 

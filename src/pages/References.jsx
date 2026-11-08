@@ -1,3 +1,4 @@
+import ScrollRegion from '../components/ScrollRegion.jsx'
 import React from 'react'
 import meta from '../data/rules/meta.json'
 import { AgencyTag } from '../components/ui.jsx'
@@ -33,7 +34,7 @@ function cellCount(node) {
 
 function ValueTable({ node, caption }) {
   return (
-    <div className="ref-scroll" role="region" aria-label={caption} tabIndex={0}>
+    <ScrollRegion label={caption}>
       <table className="ref-tbl">
         <caption className="sr-only">{caption}</caption>
         <thead><tr>{node.columns.map(c => <th key={c} scope="col">{c}</th>)}</tr></thead>
@@ -43,7 +44,7 @@ function ValueTable({ node, caption }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   )
 }
 
@@ -107,6 +108,7 @@ export default function References() {
   const rollOver = reg.holidays.filter(e => e.kind === 'rollOver')
   const years = reg.holidays.filter(e => e.kind === 'year')
   const notes2027 = reg.holidays.find(e => e.id === 'holidays.json:notes2027')
+  const regional = reg.holidays.find(e => e.kind === 'regional')
   const fixed = reg.holidays.find(e => e.kind === 'fixedByLaw')
 
   return (
@@ -168,7 +170,10 @@ export default function References() {
           <h2 className="sec-h" style={{ margin: '26px 0 12px' }}>Deadline extensions</h2>
           <div className="card pad">
             <p style={{ fontSize: '13px', color: 'var(--mut)', lineHeight: 1.55 }}>
-              Deadlines moved by a later BIR issuance. The calendar shows the new date with the issuance.
+              Deadlines moved by a later issuance (BIR or SEC). The calendar shows the new date with the issuance.
+              Extensions for taxpayers in particular places only (for example, areas hit by a typhoon or flooding,
+              as in RMC 89-2026 and RMC 95-2026 in August 2026) are not on the calendar: check the BIR advisory
+              for your RDO.
             </p>
             <ValueTable caption="Deadline extensions" node={{
               kind: 'table', columns: ['Deadline', 'Form', 'Was due', 'Moved to', 'By'],
@@ -187,7 +192,7 @@ export default function References() {
         <Notes text={`Never moved later (${shift.noShift.titles.join('; ')}): ${shift.noShift.note}`} />
 
         <h3 style={{ fontWeight: 600, fontSize: '14px', marginTop: '18px' }}>Weekend and holiday rule by agency</h3>
-        <div className="ref-scroll" role="region" aria-label="Weekend and holiday rule by agency" tabIndex={0}>
+        <ScrollRegion label="Weekend and holiday rule by agency">
           <table className="ref-tbl">
             <caption className="sr-only">Weekend and holiday rule by agency</caption>
             <thead><tr><th scope="col">Agency</th><th scope="col">On a weekend or holiday</th><th scope="col">Basis</th><th scope="col">Confidence</th></tr></thead>
@@ -202,7 +207,7 @@ export default function References() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
 
         {years.map(y => (
           <div key={y.id} style={{ marginTop: '18px' }}>
@@ -218,6 +223,15 @@ export default function References() {
           </div>
         ))}
         <Notes text={reg.holidayConfidenceNote} />
+
+        {regional && (
+          <div style={{ marginTop: '18px' }}>
+            <EntryHead title={regional.title} confidence={regional.confidence} />
+            <RuleValue node={regional.value} caption={regional.title} />
+            <Cite basis={regional.legalBasis} />
+            <Notes text={regional.notes} />
+          </div>
+        )}
 
         <div style={{ marginTop: '18px' }}>
           <EntryHead title={notes2027.title} confidence={notes2027.confidence} />

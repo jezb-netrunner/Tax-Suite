@@ -16,6 +16,7 @@ import SaveNotice from './components/SaveNotice.jsx'
 import meta from './data/rules/meta.json'
 import { statuteListText } from './data/statutes.js'
 import { pageTitle } from './lib/pageTitle.js'
+import { profileInitial } from './engine/profile.js'
 
 // M21: after a page change, focus the new page's main heading so screen
 // readers announce it (the heading gets tabindex -1 so it can take focus).
@@ -62,11 +63,11 @@ function ProfileMenu() {
     action()
   }
 
-  const initial = app.active ? (app.active.name || '?').trim().charAt(0).toUpperCase() : '+'
+  const initial = app.active ? profileInitial(app.active.name) : '+'
 
   return (
     <div className="menu-anchor" ref={ref} onKeyDown={onKeyDown} onBlur={onBlur}>
-      <button ref={btnRef} type="button" className="avatar" aria-expanded={open} aria-controls="profile-menu"
+      <button ref={btnRef} type="button" className="avatar" aria-expanded={open} aria-controls={open ? 'profile-menu' : undefined}
         title={app.active ? app.active.name : 'Profiles'}
         aria-label={app.active ? `Profiles (${app.active.name} selected)` : 'Profiles'}
         onClick={() => setOpen(o => !o)}><span aria-hidden="true">{initial}</span></button>

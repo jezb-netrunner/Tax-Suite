@@ -3,9 +3,9 @@ import { printHeaderText } from '../lib/exports.js'
 
 // M22: a line shown only on paper (and in "Save as PDF"):
 // "JEZ Tax Suite · <profile> · Tax year <year> · Printed <Manila date>".
-export function PrintHeader({ profileName, taxYear }) {
+export function PrintHeader({ profileName, taxYear, periodText = null }) {
   const today = useManilaToday()
-  return <p className="print-only print-head">{printHeaderText({ profileName, taxYear, printedOn: today })}</p>
+  return <p className="print-only print-head">{printHeaderText({ profileName, taxYear, printedOn: today, periodText })}</p>
 }
 
 // "Print / Save as PDF": the browser's print dialog, which also saves a PDF.

@@ -25,8 +25,12 @@ export function cancelWizard(nav, location) {
 
 // M24: after saving, the wizard's history entry is replaced, so Back does not
 // reopen an empty wizard (and invite a duplicate profile).
-export function leaveAfterSave(nav) {
-  nav('/', { replace: true })
+// Audit Nov 2026 (S3): a page that opens the wizard to fix one answer (the
+// Estimator's "Edit the profile" link) can ask to come back to it; only the
+// app's own pages are accepted.
+const RETURN_PAGES = ['/', '/estimator', '/checklist', '/profiles']
+export function leaveAfterSave(nav, returnTo) {
+  nav(RETURN_PAGES.includes(returnTo) ? returnTo : '/', { replace: true })
 }
 
 export default function ProfileWizard() {
@@ -138,9 +142,13 @@ function WizardForm({ app, editing }) {
     try {
       // M06: an edit is written onto the newest stored profile, changing only
       // what this form changed, so figures typed meanwhile are never wiped.
-      if (base) await app.updateProfile(base.id, latest => withWizardChanges(latest, base, p))
-      else await app.save(p)
-      leaveAfterSave(nav)
+      if (base) {
+        await app.updateProfile(base.id, latest => withWizardChanges(latest, base, p))
+        // Audit Nov 2026 (S3): the edited profile becomes the active one, so
+        // the page that opens next shows it, not another client's calendar.
+        if (app.setActive) app.setActive(base.id)
+      } else await app.save(p)
+      leaveAfterSave(nav, location.state && location.state.returnTo)
     } catch (ex) {
       setErr(ex.message || 'Could not save the profile.')
       setBusy(false)

@@ -40,6 +40,12 @@ export function createInputSaver({ save, onError, onSettled, stash, delay = SAVE
   let unconfirmed = {} // fields sent in saves that have not finished yet
   let stashStamp = null // the browser copy (accounts mode), until the saves finish
   let failed = false // a save failed since the last time none was in flight
+  // Audit Nov 2026 (S2): fields whose save failed and that have not been saved
+  // since. They count as this tab's own unsaved changes (busy), so the
+  // estimator keeps showing what was typed instead of going back to the stored
+  // figures while the box still shows the typed number, and they are sent
+  // again with the next save (the next change, or when the page is hidden).
+  let failedValues = null
 
   function report(cause) {
     if (onError) onError(figuresNotSaved(cause))
@@ -56,7 +62,14 @@ export function createInputSaver({ save, onError, onSettled, stash, delay = SAVE
     // After each save, ok or not (onSettled: e.g. show the stored figures again).
     const settle = ok => {
       inFlight--
-      if (!ok) failed = true
+      if (!ok) {
+        failed = true
+        failedValues = { ...(failedValues || {}), ...values }
+      } else if (failedValues) {
+        const left = { ...failedValues }
+        for (const k of Object.keys(values)) delete left[k]
+        failedValues = Object.keys(left).length ? left : null
+      }
       if (inFlight === 0) {
         // Every save finished: the browser copy is no longer needed, unless
         // one failed (then it is saved on the next load) or more changes wait.
@@ -83,6 +96,7 @@ export function createInputSaver({ save, onError, onSettled, stash, delay = SAVE
   // The page is being hidden, reloaded or closed: keep a browser copy of the
   // figures not yet saved (accounts mode), then save at once.
   function saveNow() {
+    if (!pending && failedValues) pending = { values: { ...failedValues } }
     if (stash && (pending || inFlight > 0)) {
       try {
         const stamp = stash.write({ ...unconfirmed, ...(pending ? pending.values : {}) })
@@ -103,12 +117,13 @@ export function createInputSaver({ save, onError, onSettled, stash, delay = SAVE
 
   return {
     schedule(changes) {
-      pending = { values: { ...(pending ? pending.values : {}), ...changes } }
+      pending = { values: { ...(failedValues || {}), ...(pending ? pending.values : {}), ...changes } }
       clearTimeout(timer)
       timer = setTimeout(flush, delay)
     },
     flush,
-    busy: () => pending !== null || inFlight > 0,
+    busy: () => pending !== null || inFlight > 0 || failedValues !== null,
+    unsaved: () => (failedValues ? { ...failedValues } : null),
     dispose() {
       flush()
       if (listening.win) win.removeEventListener('pagehide', onPageHide)

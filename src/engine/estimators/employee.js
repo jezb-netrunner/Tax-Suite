@@ -82,19 +82,55 @@ export function estimateEmployee(in_) {
       ? 'The number of paydays in a month varies, so the amount withheld in a month varies; this is the average.'
       : `Revised withholding table effective ${RT.withholdingTablesFrom} (RR 11-2018, as amended).`,
   })
-  r('Estimated monthly take-home', monthlyTakeHome, { strong: true })
+  r('Estimated monthly take-home', monthlyTakeHome, {
+    strong: true,
+    // Audit Nov 2026 (U12): very low pay is still charged the SSS and
+    // PhilHealth minimums (the ₱5,000 salary credit and ₱10,000 income floor).
+    ...(monthlyTakeHome < 0 ? { sub: 'Below zero: the SSS and PhilHealth minimum contributions are more than this pay. Check the figures with SSS and PhilHealth.' } : {}),
+  })
+
+  // Audit Nov 2026 (U4): more than one employer in the year. Each employer
+  // withholds and adjusts only on its own pay, so the year's tax is computed
+  // on the total from every 2316 and settled on Form 1700 (no substituted
+  // filing). The other employers' figures are optional inputs.
+  const multiple = Boolean(in_.multipleEmployers)
+  const otherTaxableC = multiple ? Math.max(0, C(in_.otherEmployersTaxable || 0)) : 0
+  const otherWithheldC = multiple ? Math.max(0, C(in_.otherEmployersWithheld || 0)) : 0
 
   const annualRows = []
   const a = (label, value, o = {}) => annualRows.push({ label, value, ...o })
   a('Annualized taxable compensation (×12)', P(monthlyTaxableC * 12))
   a('13th month & other benefits', bonusesAnnual)
-  a(`Less: exclusion cap (${pesoText(CAP13)})`, -P(Math.min(C(bonusesAnnual), C(CAP13))))
-  a('Annual taxable income', annualTaxable, { rule: true })
-  a('Annual income tax (graduated table)', annualTax, { strong: true, sub: 'Your employer trues this up in December: extra tax is withheld or over-withholding refunded (NIRC Sec 79(H)).' })
+  a(`Less: tax-exempt part (up to ${pesoText(CAP13)})`, -P(Math.min(C(bonusesAnnual), C(CAP13))))
+  a(multiple ? 'Annual taxable income from this employer' : 'Annual taxable income', annualTaxable, { rule: true })
+  a(multiple ? 'Income tax on this employer\'s pay alone (graduated table)' : 'Annual income tax (graduated table)', annualTax, {
+    strong: !multiple,
+    sub: multiple
+      ? 'This employer trues up only its own pay in December (NIRC Sec 79(H)); your tax for the year is on the total below.'
+      : 'Your employer trues this up in December: extra tax is withheld or over-withholding refunded (NIRC Sec 79(H)).',
+  })
   a(pw.payPeriod === 'monthly' ? 'Total withheld over 12 months' : `Total withheld over the year (${pw.periodsPerYear} paydays)`, P(withheld12C))
   const diff = P(annualTaxC - withheld12C)
   if (Math.abs(diff) >= 1) {
-    a(diff > 0 ? 'Year-end adjustment: extra withholding due' : 'Year-end adjustment: refund due to you', Math.abs(diff), { strong: true })
+    a(diff > 0 ? `${multiple ? 'This employer\'s y' : 'Y'}ear-end adjustment: extra withholding due` : `${multiple ? 'This employer\'s y' : 'Y'}ear-end adjustment: refund due to you`, Math.abs(diff), { strong: !multiple })
+  }
+  let combined = null
+  if (multiple) {
+    const combinedTaxableC = annualTaxableC + otherTaxableC
+    const combinedTaxC = bracketTaxCentavos(BR, combinedTaxableC)
+    const totalWithheldC = annualTaxC + otherWithheldC // this employer's withholding after its December adjustment, plus the others'
+    const balanceC = combinedTaxC - totalWithheldC
+    a('Add: taxable compensation from your other employer(s)', P(otherTaxableC), { sub: 'From the 2316 of each other employer this year.' })
+    a('Total taxable compensation, all employers', P(combinedTaxableC), { rule: true })
+    a('Income tax on the total (graduated table)', P(combinedTaxC), { strong: true })
+    a('Less: withheld by this employer (after its December adjustment)', -P(annualTaxC))
+    a('Less: withheld by your other employer(s)', -P(otherWithheldC))
+    a(balanceC >= 0 ? 'Balance to pay with Form 1700' : 'Overpayment on Form 1700', P(Math.abs(balanceC)), {
+      strong: true,
+      rule: true,
+      sub: 'With more than one employer in the year, substituted filing does not apply: file Form 1700 by April 15 with every 2316.',
+    })
+    combined = { taxable: P(combinedTaxableC), tax: P(combinedTaxC), withheld: P(totalWithheldC), balance: P(balanceC) }
   }
 
   return {
@@ -111,6 +147,7 @@ export function estimateEmployee(in_) {
     annualTaxable,
     annualTax,
     yearEndDifference: diff,
+    combined,
     rows,
     annualRows,
     references: [

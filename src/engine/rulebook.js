@@ -270,6 +270,18 @@ function holidayRegister() {
       legalBasis: [], notes: '', confidence: strongest([(holidays.confidenceByYear || {})[String(y)] || holidays.confidence]),
     })
   }
+  if (holidays.regionalHolidays) {
+    const R = holidays.regionalHolidays
+    out.push({
+      id: `${H}:regionalHolidays`, sources: [`${H}:regionalHolidays`], kind: 'regional',
+      title: 'Holidays in one region only (not used to move deadlines)',
+      value: {
+        kind: 'table', columns: ['Date', 'Region', 'Holiday'],
+        rows: R.value.map(r => [r.date, r.region, r.name]),
+      },
+      legalBasis: R.legalBasis || [], notes: R.notes || '', confidence: strongest([R.confidence]),
+    })
+  }
   out.push({
     id: `${H}:notes2027`, sources: [`${H}:notes2027`], title: 'Notes on the 2027 list',
     value: null, legalBasis: [], notes: holidays.notes2027.notes, confidence: strongest([holidays.notes2027.confidence]),

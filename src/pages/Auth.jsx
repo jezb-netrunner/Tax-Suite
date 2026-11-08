@@ -92,8 +92,8 @@ export default function AuthPage() {
 
   const titles = { signin: 'Welcome back', signup: 'Create your account', forgot: 'Reset your password' }
   const subs = {
-    signin: 'Your tax calendar, estimates, and checklists, saved to your account, for every business you manage.',
-    signup: 'Your tax calendar, estimates, and checklists, saved to your account, for every business you manage.',
+    signin: 'Your taxpayer profiles and the figures you type, saved to your account: a tax calendar, estimates and a checklist for every business you manage.',
+    signup: 'Your taxpayer profiles and the figures you type, saved to your account: a tax calendar, estimates and a checklist for every business you manage.',
     forgot: "Enter the email you signed up with. We'll send a link to set a new password.",
   }
   const buttons = { signin: 'Sign in', signup: 'Create account', forgot: 'Send reset link' }

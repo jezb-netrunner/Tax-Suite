@@ -27,10 +27,10 @@ const text = html.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#x27
 describe('the Checklist is a reference list', () => {
   it('still lists the obligations with no fixed date, with their legal basis', () => {
     expect(text).toContain('Compliance checklist')
-    expect(text).toContain('Issue BIR-registered invoices for every sale')
+    expect(text).toContain('Issue BIR-registered invoices for your sales')
     expect(text).toContain('Keep books of accounts up to date')
     expect(text).toContain('File the General Information Sheet (GIS)')
-    expect(text).toContain('NIRC Sec 237, as amended by RA 11976 (EOPT)')
+    expect(text).toContain('NIRC Secs 113 and 237, as amended by RA 11976 (EOPT)')
   })
   it('has no tick boxes and no ticked count, and ignores old ticks', () => {
     expect(html).not.toContain('type="checkbox"')

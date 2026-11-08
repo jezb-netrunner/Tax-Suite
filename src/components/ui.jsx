@@ -76,6 +76,15 @@ export function NumField({ label, value, onChange, prefix, lg, hint, kind = 'mon
 
   function handleBlur() {
     focused.current = false
+    // Audit Nov 2026 (S2): a change from outside that arrived while the box
+    // had focus (it does not redraw while you type) is shown now, so the box
+    // and the estimate always agree.
+    if (!sameValue(value, last.current)) {
+      last.current = value
+      setText(format(value))
+      setError(null)
+      return
+    }
     const r = parse(text, { allowShortGroups: true })
     if (r.ok && !r.empty) setText(format(r.value))
   }

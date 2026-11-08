@@ -46,6 +46,17 @@ const STATUTORY_NOTE = ROLL_OVER.LGU.note
 // usual (weekend-moved) date and is shown as "Extended to <date> by <basis>".
 const OVERRIDES = obligationRules.overrides || []
 
+// Holidays declared for one region only (holidays.json regionalHolidays, e.g.
+// the NCR ASEAN Summit days of Nov 16-18, 2026). They never move a deadline,
+// because no agency rule says a regional holiday does; a deadline that falls on
+// one carries `regionalHoliday` so the calendar can say the national date is
+// kept. Keyed by ISO date.
+const REGIONAL = new Map((holidayRules.regionalHolidays ? holidayRules.regionalHolidays.value : []).map(h => [h.date, h]))
+
+export function regionalHolidayOn(date) {
+  return REGIONAL.get(typeof date === 'string' ? date : iso(date)) || null
+}
+
 // ---------------------------------------------------------------------------
 // Confidence (H07, owner decision 8). Every rule in the rulebook carries
 // confidence 'verified' or 'needs_review'; needs_review rules are shown with an
@@ -102,6 +113,8 @@ function deadlineConfidence(ob, { rawDate, dueDate, shifted, nonWorkingDay, poli
   return { confidence: reasons.length ? 'needs_review' : 'verified', confidenceReasons: reasons }
 }
 
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 function resolveDay(year, month, day) {
   return day === 'last' ? lastDayOfMonth(year, month) : mkDate(year, month, day)
 }
@@ -112,19 +125,23 @@ function rawOccurrences(ob, profile, from, to) {
   const out = []
   const fyEnd = sched.calendarBasis ? 12
     : profile.type === 'corporation' ? (profile.fiscalYearEndMonth || 12) : 12
+  const fiscalProfile = profile.type === 'corporation' && Number(profile.fiscalYearEndMonth || 12) !== 12
   const years = []
   for (let y = from.getFullYear() - 1; y <= to.getFullYear() + 1; y++) years.push(y)
 
   if (sched.kind === 'quarterly_fixed') {
     for (const y of years) {
       for (const e of sched.entries) {
-        out.push({ date: mkDate(y, e.month, e.day), label: e.label || null, period: `${e.label || ''} ${y}`.trim() })
+        // The 'Annual' entry (e.g. the SAWT filed with the April annual return)
+        // belongs to the taxable year just ended, like the return it goes with.
+        const period = e.label === 'Annual' ? `TY ${y - 1}` : `${e.label || ''} ${y}`.trim()
+        out.push({ date: mkDate(y, e.month, e.day), label: e.label || null, period })
       }
     }
   } else if (sched.kind === 'quarterly_offset') {
     for (const y of years) {
       const quarters = taxableYearQuarters(y, fyEnd)
-      for (const { q, end } of quarters) {
+      for (const { q, start, end } of quarters) {
         if (sched.quarters && !sched.quarters.includes(q)) continue
         let date
         if (sched.daysAfterEnd != null) date = addDays(end, sched.daysAfterEnd)
@@ -134,7 +151,17 @@ function rawOccurrences(ob, profile, from, to) {
           const mm = ((m - 1) % 12) + 1
           date = resolveDay(yy, mm, sched.day)
         }
-        out.push({ date, label: `Q${q}`, period: `Q${q} FY${y}` })
+        // A calendar-year quarter is named by its year ('Q4 2025'); a fiscal
+        // one by the fiscal year it belongs to ('Q2 FY2027'). Audit Nov 2026
+        // (U6): a fiscal-year taxpayer meets both numberings (withholding
+        // returns follow calendar quarters, income tax and percentage tax its
+        // own quarters), so its labels also name the months.
+        const months = fiscalProfile ? ` (${MON[start.getMonth()]}–${MON[end.getMonth()]} ${end.getFullYear()})` : ''
+        out.push({
+          date,
+          label: `Q${q}${months}`,
+          period: (fyEnd === 12 ? `Q${q} ${y}` : `Q${q} FY${y}`) + months,
+        })
       }
     }
   } else if (sched.kind === 'monthly') {
@@ -262,6 +289,7 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
         lastWorkingDayBefore: nonWorkingDay ? previousBusinessDay(dueDate, holidays) : null,
         rollNote,
         extended: ov ? { basis: ov.basis, from: usualDate, notes: ov.notes || null } : null,
+        regionalHoliday: regionalHolidayOn(dueDate),
         ...deadlineConfidence(ob, { rawDate: occ.date, dueDate, shifted, nonWorkingDay, policy, agencyRule }),
       })
     }

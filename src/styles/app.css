@@ -144,7 +144,10 @@ main h1[tabindex="-1"]:focus { outline: none; }
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px;
   box-shadow: 0 14px 34px rgba(24,52,74,.18);
 }
-.hero-side { text-align: right; flex-shrink: 0; border-left: 1px solid rgba(255,255,255,.14); padding-left: 24px; }
+/* The countdown column keeps a fixed width; its notes (moved / extended /
+   holiday) wrap inside it instead of widening it past the card (audit Nov
+   2026, U1). */
+.hero-side { text-align: right; flex: 0 1 260px; min-width: 180px; max-width: 300px; border-left: 1px solid rgba(255,255,255,.14); padding-left: 24px; overflow-wrap: anywhere; }
 .hero-days { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 52px; font-weight: 600; line-height: 1; letter-spacing: -.02em; }
 .eyebrow {
   font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; font-weight: 500;
@@ -211,11 +214,14 @@ main h1[tabindex="-1"]:focus { outline: none; }
 
 /* headings */
 .pg-h1 { font-size: 24px; font-weight: 800; letter-spacing: -.025em; }
-.pg-sub { font-size: 14px; color: var(--mut); margin-top: 4px; }
+.pg-sub { font-size: 14px; color: var(--mut); margin-top: 4px; overflow-wrap: anywhere; }
+/* Audit Nov 2026 (U14): profile names are typed by users and may have no
+   spaces; they wrap instead of widening the page on phones. */
+.pg-h1, .user-text, .print-head { overflow-wrap: anywhere; }
 .sec-h { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
 
 /* misc */
-.linkbtn { border: none; background: transparent; font-size: 12.5px; font-weight: 600; color: var(--accInk); cursor: pointer; padding: 0; }
+.linkbtn { border: none; background: transparent; font-size: 12.5px; font-weight: 600; color: var(--accInk); cursor: pointer; padding: 0; min-height: 24px; } /* U16: 24px target (WCAG 2.5.8) */
 .linkbtn:hover { text-decoration: underline; }
 .mini-warn { margin-top: 12px; font-size: 12.5px; color: #7a5a1f; background: var(--warnSoft); border-radius: 9px; padding: 10px 13px; line-height: 1.5; }
 .acc-body { animation: rise .2s ease both; }
@@ -226,7 +232,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
   .wrap { padding-left: 18px; padding-right: 18px; }
   .hdr { padding: 12px 18px; }
   .hero { padding: 22px; }
-  .hero-side { border-left: none; padding-left: 0; text-align: left; border-top: 1px solid rgba(255,255,255,.14); padding-top: 16px; width: 100%; }
+  .hero-side { border-left: none; padding-left: 0; text-align: left; border-top: 1px solid rgba(255,255,255,.14); padding-top: 16px; width: 100%; max-width: none; flex-basis: 100%; }
   .hero-days { font-size: 40px; }
   .pg-h1 { font-size: 21px; }
 }
@@ -302,6 +308,10 @@ main h1[tabindex="-1"]:focus { outline: none; }
   position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; min-width: 250px;
   background: var(--sf); border: 1px solid var(--line); border-radius: 13px;
   box-shadow: var(--shadow-md); padding: 8px; animation: rise .18s ease both;
+  /* Audit Nov 2026 (U2): with many profiles the menu scrolls inside the
+     screen, so the last clients and "New profile" / "Manage profiles" stay
+     reachable. */
+  max-height: calc(100vh - 90px); overflow-y: auto; overscroll-behavior: contain;
 }
 .menu-item {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
@@ -380,7 +390,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
   clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 .dl-details { margin-top: 6px; font-size: 12.5px; }
-.dl-details > summary { cursor: pointer; color: var(--accInk); font-weight: 600; padding: 3px 0; width: fit-content; }
+.dl-details > summary { cursor: pointer; color: var(--accInk); font-weight: 600; padding: 4px 0; line-height: 16px; width: fit-content; } /* U16: 24px target (WCAG 2.5.8) */
 .dl-details-body { margin-top: 4px; color: #4a5a6a; line-height: 1.55; }
 .dl-details-body p + p { margin-top: 5px; }
 .dl-details-body .cite { color: #56667a; }
@@ -394,7 +404,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
   text-align: left; padding: 6px 10px; font-size: 11px; font-weight: 700; color: #4a5a6a;
   background: #f3f7fb; white-space: nowrap;
 }
-.ref-tbl td { padding: 6px 10px; border-top: 1px solid var(--line2); vertical-align: top; }
+.ref-tbl td { padding: 6px 10px; border-top: 1px solid var(--line2); vertical-align: top; min-width: 7em; }
 .ref-tbl td.num { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; white-space: nowrap; }
 .ref-tbl td.long { min-width: 14em; }
 .ref-fields { display: grid; grid-template-columns: minmax(110px, max-content) minmax(0, 1fr); gap: 4px 14px; font-size: 12.5px; margin-top: 8px; }
@@ -471,7 +481,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .profile-row-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
 
 @media (max-width: 720px) {
-  .menu-pop { position: fixed; left: 12px; right: 12px; top: 62px; min-width: 0; }
+  .menu-pop { position: fixed; left: 12px; right: 12px; top: 62px; min-width: 0; max-height: calc(100vh - 74px); max-height: calc(100dvh - 74px); }
   .frow { padding: 14px 14px; }
   .dl-row-main { flex-wrap: wrap; align-items: flex-start; column-gap: 12px; row-gap: 8px; }
   .dl-tags { flex: 1 1 100%; flex-wrap: wrap; padding-left: 56px; min-width: 0; }

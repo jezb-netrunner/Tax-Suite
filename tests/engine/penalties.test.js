@@ -186,8 +186,11 @@ describe('due date on a weekend or holiday moves to the next working day', () =>
   it('rollDueDate flags years with no holiday list (only weekends are skipped there)', () => {
     expect(rollDueDate('2026-07-25').holidayListMissing).toBe(false)
     expect(rollDueDate('2023-11-15').holidayListMissing).toBe(true)
+    // Audit Nov 2026 (E8): the note names the year that has no list, which can
+    // be the year the date rolls into: Dec 30, 2027 rolls to Jan 3, 2028.
+    expect(rollDueDate('2027-12-30').holidayListMissingYears).toEqual([2028])
     expect(rollDueDate('2017-04-15')).toEqual({
-      dueDate: '2017-04-15', rolledDueDate: '2017-04-17', moved: true, reason: 'weekend', holidayListMissing: true,
+      dueDate: '2017-04-15', rolledDueDate: '2017-04-17', moved: true, reason: 'weekend', holidayListMissing: true, holidayListMissingYears: [2017],
     })
   })
 })

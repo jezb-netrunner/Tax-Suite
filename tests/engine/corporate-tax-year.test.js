@@ -78,11 +78,24 @@ describe('fiscal-year corporations (year ends June 30)', () => {
   it('Oct 16, 2026: default moves to the FY ending June 2027', () => {
     expect(corporateTaxYears({ today: mkDate(2026, 10, 16), fiscalYearEndMonth: 6 }).defaultYear).toBe(2027)
   })
-  it('MCIT test counts the fiscal year being filed: registered 2022, FY ending June 2026 is the 4th year', () => {
+  it('MCIT test counts the fiscal year being filed: registered 2022, FY ending June 2026 is the 4th year only if registered Jan-Jun 2022 (audit Nov 2026, E2), so it is shown both ways', () => {
     const r = estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2026, fiscalYearEndMonth: 6 })
-    expect(r.mcitApplies).toBe(true)
-    expect(r.incomeTaxDue).toBe(120000)
+    expect(r.mcitStatus).toBe('unknown')
+    expect(r.mcitApplies).toBe(false)
+    expect(r.incomeTaxDue).toBe(120000) // if MCIT applies
+    expect(r.mcitWarning).toContain('only if it registered with the BIR from January to June 2022')
+    expect(r.mcitWarning).toContain('from July to December 2022, MCIT starts a year later')
     expect(r.period.label).toBe('Fiscal year July 2025 to June 2026')
+  })
+  it('registered 2022: the FY ending June 2027 is the 4th year whatever the month (MCIT applies); June 2025 is too early', () => {
+    expect(estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2027, fiscalYearEndMonth: 6 }).mcitApplies).toBe(true)
+    const early = estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2025, fiscalYearEndMonth: 6 })
+    expect(early.mcitStatus).toBe('notYet')
+    expect(early.rows.find(x => x.label === 'Minimum corporate income tax').sub)
+      .toContain('MCIT starts with the fiscal year ending June 2026 if the corporation registered with the BIR from January to June 2022, or with the fiscal year ending June 2027 if it registered from July to December 2022')
+  })
+  it('calendar-year corporations are unchanged: registered 2022, TY 2026 is the 4th year', () => {
+    expect(estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2026 }).mcitApplies).toBe(true)
   })
 })
 

@@ -22,6 +22,14 @@ export const PROFILE_TYPES = {
   corporation: { name: 'Corporation', desc: 'Domestic corporation or taxable partnership' },
 }
 
+// The letter on a profile's avatar: the first character of the name, taken
+// as a whole character (an emoji is one character, not half of one; audit
+// Nov 2026, U15).
+export function profileInitial(name) {
+  const first = Array.from(String(name || '').trim())[0]
+  return first ? first.toUpperCase() : '?'
+}
+
 // The income-tax regime in a few words (profile cards and summaries). L21:
 // one copy instead of one per page.
 export function regimeLabel(regime) {
@@ -130,11 +138,41 @@ function sameValue(a, b) {
   return a === b || JSON.stringify(a) === JSON.stringify(b)
 }
 
+// Audit Nov 2026 (S4): the self-employed and mixed-income estimators keep
+// their figures under different keys, so switching a profile between those
+// two types used to show empty boxes ("saved figures are kept", yet hidden).
+// When the new type's estimator has no figures yet, the business figures the
+// two share are copied over from the old type's (the old copy stays too).
+const ESTIMATOR_KEY = { individual: 'individual', mixed: 'mixed' }
+export const SHARED_BUSINESS_FIGURES = [
+  'gross', 'expenses', 'cwt', 'otherIncome', 'otherPercentageTax', 'nolcoPrior', 'quarterlyPaid',
+  'priorYearCredits', 'crossedMonth', 'salesThroughCrossMonth', 'eightPercentPaid', 'declaredMonthlyEarnings',
+]
+
+const hasFigure = v => v !== null && v !== undefined && v !== ''
+
+export function carryBusinessFigures(inputs, fromType, toType) {
+  const fromKey = ESTIMATOR_KEY[fromType]
+  const toKey = ESTIMATOR_KEY[toType]
+  if (!fromKey || !toKey || fromKey === toKey || !inputs) return inputs
+  const from = inputs[fromKey] || {}
+  const to = inputs[toKey] || {}
+  if (Object.values(to).some(hasFigure)) return inputs
+  const carried = {}
+  for (const k of SHARED_BUSINESS_FIGURES) if (hasFigure(from[k])) carried[k] = from[k]
+  if (!Object.keys(carried).length) return inputs
+  return { ...inputs, [toKey]: { ...to, ...carried } }
+}
+
 export function withWizardChanges(latest, base, edited) {
   const next = { ...latest }
   for (const k of Object.keys(edited)) {
     if (NOT_WIZARD_FIELDS.has(k)) continue
     if (!sameValue(edited[k], base[k])) next[k] = edited[k]
+  }
+  if (edited.type !== base.type) {
+    const inputs = carryBusinessFigures(latest.inputs, base.type, edited.type)
+    if (inputs !== latest.inputs) next.inputs = inputs
   }
   return next
 }

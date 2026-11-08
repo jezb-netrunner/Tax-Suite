@@ -31,7 +31,7 @@ export const POSTS = [
     { kind: 'h', text: 'Every quarter: file 1701Q' },
     { kind: 'p', text: 'Three times a year you total your income so far, compute the tax, and pay the difference. The calendar in this app counts down each one for you.' },
     { kind: 'h', text: 'Once a year: the annual return' },
-    { kind: 'p', text: `By ${ANNUAL} you file your annual return (1701A or 1701) reconciling all four quarters. Claim any 2307 certificates your clients gave you (that is tax already paid on your behalf) and upload the scans through the BIR's eAFS portal within ${EAFS_DAYS} days after the ${ANNUAL} deadline (or after you e-file, if later).` },
+    { kind: 'p', text: `By ${ANNUAL} you file your annual return (1701A or 1701) for the whole year, crediting what you paid on the three quarterly returns. Claim any 2307 certificates your clients gave you (that is tax already paid on your behalf) and upload the scans through the BIR's eAFS portal within ${EAFS_DAYS} days after the ${ANNUAL} deadline (or after you e-file, if later).` },
     { kind: 'quote', text: 'The whole system rewards small, steady habits. Invoice, set aside, file. Repeat.' },
   ] },
   { id: '2307', cat: 'Withholding', title: 'What to do with every 2307 your clients hand you', excerpt: 'One of the few pieces of BIR paperwork that works in your favour, and the money you lose by ignoring it.', read: '4 min read', date: 'May 2026', reviewed: 'October 2026', body: [
