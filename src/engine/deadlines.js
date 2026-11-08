@@ -113,6 +113,8 @@ function deadlineConfidence(ob, { rawDate, dueDate, shifted, nonWorkingDay, poli
   return { confidence: reasons.length ? 'needs_review' : 'verified', confidenceReasons: reasons }
 }
 
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 function resolveDay(year, month, day) {
   return day === 'last' ? lastDayOfMonth(year, month) : mkDate(year, month, day)
 }
@@ -123,6 +125,7 @@ function rawOccurrences(ob, profile, from, to) {
   const out = []
   const fyEnd = sched.calendarBasis ? 12
     : profile.type === 'corporation' ? (profile.fiscalYearEndMonth || 12) : 12
+  const fiscalProfile = profile.type === 'corporation' && Number(profile.fiscalYearEndMonth || 12) !== 12
   const years = []
   for (let y = from.getFullYear() - 1; y <= to.getFullYear() + 1; y++) years.push(y)
 
@@ -138,7 +141,7 @@ function rawOccurrences(ob, profile, from, to) {
   } else if (sched.kind === 'quarterly_offset') {
     for (const y of years) {
       const quarters = taxableYearQuarters(y, fyEnd)
-      for (const { q, end } of quarters) {
+      for (const { q, start, end } of quarters) {
         if (sched.quarters && !sched.quarters.includes(q)) continue
         let date
         if (sched.daysAfterEnd != null) date = addDays(end, sched.daysAfterEnd)
@@ -149,8 +152,16 @@ function rawOccurrences(ob, profile, from, to) {
           date = resolveDay(yy, mm, sched.day)
         }
         // A calendar-year quarter is named by its year ('Q4 2025'); a fiscal
-        // one by the fiscal year it belongs to ('Q2 FY2027').
-        out.push({ date, label: `Q${q}`, period: fyEnd === 12 ? `Q${q} ${y}` : `Q${q} FY${y}` })
+        // one by the fiscal year it belongs to ('Q2 FY2027'). Audit Nov 2026
+        // (U6): a fiscal-year taxpayer meets both numberings (withholding
+        // returns follow calendar quarters, income tax and percentage tax its
+        // own quarters), so its labels also name the months.
+        const months = fiscalProfile ? ` (${MON[start.getMonth()]}–${MON[end.getMonth()]} ${end.getFullYear()})` : ''
+        out.push({
+          date,
+          label: `Q${q}${months}`,
+          period: (fyEnd === 12 ? `Q${q} ${y}` : `Q${q} FY${y}`) + months,
+        })
       }
     }
   } else if (sched.kind === 'monthly') {

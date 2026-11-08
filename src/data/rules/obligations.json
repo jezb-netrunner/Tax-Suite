@@ -165,7 +165,7 @@
     {
       "id": "bir-2316-collect",
       "title": "Collect BIR Form 2316 from your employer",
-      "desc": "Your employer's certificate of compensation paid and tax withheld; with one employer and correct withholding it doubles as your filed return.",
+      "desc": "Each employer's certificate of compensation paid and tax withheld: collect one from every employer you had this year. With one employer and correct withholding it doubles as your filed return; with more than one, you file Form 1700 with all of them.",
       "form": "2316",
       "agency": "BIR",
       "category": "income",
@@ -1098,7 +1098,7 @@
       "id": "lgu-business-permit",
       "title": "Renew business / mayor's permit",
       "desc": "Annual renewal of the LGU business permit and payment of local business tax for the year.",
-      "form": "LGU",
+      "form": "Mayor's permit",
       "agency": "LGU",
       "category": "registration",
       "appliesTo": {

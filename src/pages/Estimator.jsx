@@ -12,7 +12,7 @@ import { withChangedInputs } from '../engine/profile.js'
 import { createInputSaver, figuresToShow } from '../lib/inputSaver.js'
 import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
 import { money, money2 } from '../lib/format.js'
-import { RT, percentText, payFactorText } from '../engine/ruleText.js'
+import { RT, percentText, payFactorText, dueDayText } from '../engine/ruleText.js'
 import corporateRules from '../data/rules/corporate.json'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
@@ -340,14 +340,15 @@ function CrossingCard({ crossing, v, set, monthOptions, extraFields, children })
       <div className="mini-warn" role="note">
         {children}
         {' '}<b>VAT applies from {crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
-        registration) before the end of the month after the month your sales passed {RT.vatThreshold}.
+        registration) by the end of the month after the month your sales passed {RT.vatThreshold}. This timing is not
+        confirmed from an official source: check it with your RDO.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
         <SelectField
           label={`Month your sales passed ${RT.vatThreshold}`}
           value={v.crossedMonth ? String(v.crossedMonth) : ''}
           onChange={x => set('crossedMonth', x ? Number(x) : null)}
-          options={[['', `Not sure: assume even monthly sales (${crossing.evenMonthName})`], ...monthOptions]}
+          options={[['', `Not sure: even sales (${crossing.evenMonthName})`], ...monthOptions]}
         />
         <NumField emptyValue={null} label={`Sales from ${crossing.span}`} value={v.salesThroughCrossMonth} onChange={x => set('salesThroughCrossMonth', x)} prefix="₱" hint="Optional. If blank, the year's sales are spread evenly by month." />
         {extraFields}
@@ -533,9 +534,13 @@ function EmployeeEstimator({ app }) {
   // profile's Compensation side tab feeds the annual return, so it stays off there.
   const showMwe = p.type === 'employee'
   const mwe = showMwe && Boolean(v.mwe)
+  // Audit Nov 2026 (U4): an employee profile with more than one employer this
+  // year gets the other employers' boxes and the Form 1700 balance.
+  const multiple = p.type === 'employee' && Boolean(p.multipleEmployers)
   const r = useMemo(() => estimateEmployee({
     ...v, mwe, monthlyBasic: v.monthlyBasic ?? 0, monthlyAllowances: v.monthlyAllowances ?? 0, bonusesAnnual: v.bonusesAnnual ?? 0,
-  }), [v, mwe])
+    multipleEmployers: multiple,
+  }), [v, mwe, multiple])
   const hasFigures = mwe ? Number(v.mweDailyRate) > 0 : Number(v.monthlyBasic) > 0
   return (
     <>
@@ -549,6 +554,21 @@ function EmployeeEstimator({ app }) {
           <NumField emptyValue={null} label="13th month & bonuses · year" value={v.bonusesAnnual} onChange={x => set('bonusesAnnual', x)} prefix="₱" hint={`First ${RT.thirteenthMonthCap} is tax-exempt.`} />
           <PayPeriodFields v={v} set={set} mwe={mwe} />
         </div>
+        {multiple && (
+          <>
+            <div className="mini-warn" role="note" style={{ marginTop: '16px' }}>
+              <b>More than one employer this year.</b> The boxes above are for one employer. Each employer withholds and
+              adjusts only on its own pay, so with two jobs at the same time the tax for the year is usually more than
+              what was withheld. If you changed jobs, give your new employer the 2316 from the old one. Either way,
+              substituted filing does not apply: you file Form 1700 by {dueDayText('bir-1700-annual')} with every 2316.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '14px' }}>
+              <NumField emptyValue={null} label="Taxable compensation from your other employer(s) · year" value={v.otherEmployersTaxable} onChange={x => set('otherEmployersTaxable', x)} prefix="₱"
+                hint={`From each other employer's 2316 (taxable compensation from that employer). If your 13th month and other benefits from all employers add up to more than ${RT.thirteenthMonthCap}, add the excess too.`} />
+              <NumField emptyValue={null} label="Tax withheld by your other employer(s) · year" value={v.otherEmployersWithheld} onChange={x => set('otherEmployersWithheld', x)} prefix="₱" hint="The tax withheld shown on each other employer's 2316." />
+            </div>
+          </>
+        )}
         {p.type === 'mixed' && (
           <p className="cite" style={{ marginTop: '14px' }}>
             The minimum wage earner option is on employee profiles and on the Payroll tab. If you earn the minimum wage
@@ -612,6 +632,9 @@ function CorporationEstimator({ app, onPrintYear }) {
     excessMcit,
   })), [v, p, choice, fy, earlier, excessMcit])
   const setExcessMcit = (y, x) => set('excessMcit', { ...(v.excessMcit || {}), [y]: x })
+  // Audit Nov 2026 (U5): open when there are figures, then left as the user
+  // sets it (it used to snap shut, and lose the focus, when a box was cleared).
+  const [mcitOpen, setMcitOpen] = useState(() => excessMcit.length > 0)
   // M22: the printout's "Tax year" is the taxable year chosen here.
   const printYear = earlier ? `before ${years.previous}` : taxablePeriod(choice, fy).option
   React.useEffect(() => { if (onPrintYear) onPrintYear(printYear) }, [onPrintYear, printYear])
@@ -648,7 +671,7 @@ function CorporationEstimator({ app, onPrintYear }) {
           <NumField emptyValue={null} label="Excess credits carried over from last year" value={v.priorYearCredits} onChange={x => set('priorYearCredits', x)} prefix="₱" hint="Only if last year's annual return carried an overpayment over to this year." />
         </div>
         {!earlier && (
-          <details style={{ marginTop: '16px' }} open={excessMcit.length > 0 || undefined}>
+          <details style={{ marginTop: '16px' }} open={mcitOpen} onToggle={e => setMcitOpen(e.currentTarget.open)}>
             <summary style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>Excess MCIT from the last {RT.mcitCarryYears} (optional)</summary>
             <p className="cite" style={{ marginTop: '8px' }}>
               If MCIT was higher than the regular tax in an earlier year, the difference is credited against the regular tax
@@ -695,7 +718,7 @@ function CorporationEstimator({ app, onPrintYear }) {
                 ? <>Income tax due: {money(r.incomeTaxDue)} if the {RT.mcitRate} MCIT applies, or {money(r.rcit)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate if it does not apply yet.</>
                 : r.usesMcit
                   ? <>The {RT.mcitRate} MCIT binds this year: {money(r.incomeTaxDue)} (RCIT would be {money(r.rcit)}).</>
-                  : <>Income tax due: {money(r.incomeTaxDue)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitStatus !== 'notYet' ? `, above the ${money(r.mcit)} MCIT floor` : ''}.</>}
+                  : <>Income tax due: {money(r.incomeTaxDue)} at the {percentText(r.rcitRate)} {r.smallCorp ? 'small-corporation' : 'standard'} rate{r.mcitStatus === 'notYet' ? '' : r.mcit < r.incomeTaxDue ? `, above the ${money(r.mcit)} MCIT floor` : `, the same as the ${RT.mcitRate} MCIT`}.</>}
               {r.businessTaxNote && <> {r.businessTaxNote}</>}
             </span>
           </div>

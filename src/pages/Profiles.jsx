@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
-import { PROFILE_TYPES } from '../engine/profile.js'
+import { PROFILE_TYPES, profileInitial } from '../engine/profile.js'
 import { exportFileName } from '../lib/backend.js'
 
 function downloadJson(name, obj) {
@@ -272,7 +272,7 @@ export default function ProfilesPage() {
         {app.profiles.map(p => (
           // H15: below 720 px the buttons move under the name (see .profile-row).
           <div key={p.id} className="frow profile-row">
-            <div className="avatar" aria-hidden="true" style={{ cursor: 'default' }}>{(p.name || '?').trim().charAt(0).toUpperCase()}</div>
+            <div className="avatar" aria-hidden="true" style={{ cursor: 'default' }}>{profileInitial(p.name)}</div>
             <div className="profile-row-body">
               <div style={{ fontWeight: 600, fontSize: '14.5px', overflowWrap: 'anywhere' }}>
                 {p.name}

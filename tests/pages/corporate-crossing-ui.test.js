@@ -33,7 +33,7 @@ describe('TB:W16 (corporate) on the estimator page', () => {
     const t = text()
     expect(t).toContain('Your sales passed ₱3,000,000 this year')
     expect(t).toContain('Month your sales passed ₱3,000,000')
-    expect(t).toContain('Not sure: assume even monthly sales (December)')
+    expect(t).toContain('Not sure: even sales (December)')
     expect(t).toContain('Plus ₱96,000 percentage tax on sales from January to December (Form 2551Q). VAT applies from January 2027: not included in this estimate.')
     expect(t).not.toContain('8% income tax already paid')
   })

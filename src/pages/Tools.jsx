@@ -10,7 +10,8 @@ import { NumField, Seg, Switch, SelectField, Disclaimer } from '../components/ui
 import { money, money2, pct } from '../lib/format.js'
 import { iso, fromISO } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
-import { HOLIDAY_SET } from '../lib/deadlineData.js'
+import { HOLIDAY_SET, OBLIGATIONS } from '../lib/deadlineData.js'
+import obligationsData from '../data/rules/obligations.json'
 import { RT, payFactorText, fixedHolidayExamples } from '../engine/ruleText.js'
 import { useApp } from '../state/AppState.jsx'
 
@@ -20,6 +21,24 @@ const SUR = penaltyRules.surcharge.value
 const INT = penaltyRules.interest.value
 const SMALL_BELOW = penaltyRules.classification.value.small.grossSalesBelow
 const DAYS_IN_YEAR = penaltyRules.interestDayCount.value.daysInYear
+
+// Audit Nov 2026 (U8): the deadline extensions the calendar knows
+// (obligations.json "overrides"), grouped by the date they moved, so the
+// penalty calculator can point out that an entered due date was extended.
+// [{ rawDate, newDate, basis, forms: ['1700', '1701', ...] }]
+export const KNOWN_EXTENSIONS = (() => {
+  const groups = new Map()
+  for (const o of obligationsData.overrides || []) {
+    if (!o.rawDate) continue
+    const key = `${o.rawDate}|${o.newDate}|${o.basis}`
+    const ob = OBLIGATIONS.find(x => x.id === o.obligationId)
+    const g = groups.get(key) || { rawDate: o.rawDate, newDate: o.newDate, basis: o.basis, forms: [] }
+    const form = ob && ob.form && ob.form !== '—' ? ob.form : null
+    if (form && !g.forms.includes(form)) g.forms.push(form)
+    groups.set(key, g)
+  }
+  return [...groups.values()]
+})()
 
 // Dates the penalty calculator accepts (a sanity range for typed dates).
 const DATE_MIN = '2000-01-01'
@@ -116,6 +135,16 @@ function PenaltyCard() {
       ? `${fmtShort(pen.dueDate)} is a ${fromISO(pen.dueDate).toLocaleDateString('en-US', { weekday: 'long' })}`
       : `${fmtShort(pen.dueDate)} is a holiday${holiday ? ` (${holiday.name})` : ''}`
     notes.push(<>Due date moved to <b>{fmtDay(pen.rolledDueDate)}</b> (weekend/holiday: {why}). Filing and paying by then is on time.</>)
+  }
+  for (const ext of KNOWN_EXTENSIONS.filter(e => e.rawDate === dueDate)) {
+    notes.push(
+      <>
+        Returns due {fmtShort(ext.rawDate)} ({ext.forms.join(', ')}) were extended to <b>{fmtDay(ext.newDate)}</b> by {ext.basis}.
+        If this payment is for one of them, the due date is the extended one.{' '}
+        <button type="button" className="linkbtn" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}
+          onClick={() => setDueDate(ext.newDate)}>Use {fmtShort(ext.newDate)}</button>
+      </>,
+    )
   }
   if (pen && pen.holidayListMissing) {
     const year = pen.holidayListMissingYears.join(' and ')
@@ -246,16 +275,20 @@ function ProjectorCard() {
   const profile = app ? app.active : null
   const profileKind = projectorKind(profile)
   const [askedKind, setAskedKind] = useState(null)
-  const [gross, setGross] = useState(240000)
-  const [months, setMonths] = useState(6)
+  // Audit Nov 2026 (U11): no made-up figures. Gross starts blank, and "months
+  // in" starts at the months of this year already finished (Manila date).
+  const today = useManilaToday()
+  const [gross, setGross] = useState(null)
+  const [months, setMonths] = useState(() => Math.min(MONTHS_MAX, Math.max(MONTHS_MIN, today.getMonth())))
   const kind = profileKind ?? askedKind
   const reduction = money(EIGHT.allowanceForPureSelfEmployed)
   const ceiling = wholePesoMillions(EIGHT.grossCeiling)
 
   const r = useMemo(
-    () => projectYear({ grossSoFar: gross, monthsIn: months, kind: kind ?? 'mixed' }),
+    () => projectYear({ grossSoFar: gross ?? 0, monthsIn: months, kind: kind ?? 'mixed' }),
     [gross, months, kind]
   )
+  const hasGross = Number(gross) > 0
   const estimatorLink = <Link to="/estimator" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Open the Estimator</Link>
 
   let why = null
@@ -292,11 +325,16 @@ function ProjectorCard() {
           </div>
         )}
       <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '12px', marginTop: '18px', alignItems: 'start' }}>
-        <NumField label="Gross so far" value={gross} onChange={setGross} prefix="₱" />
+        <NumField emptyValue={null} label="Gross so far" value={gross} onChange={setGross} prefix="₱" />
         <NumField label="Months in" value={months} onChange={setMonths} kind="integer" min={MONTHS_MIN} max={MONTHS_MAX}
           hint={`${MONTHS_MIN} to ${MONTHS_MAX}`} />
       </div>
-      <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
+      {!hasGross && (
+        <p style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '12px', lineHeight: 1.5 }}>
+          Enter your gross sales or receipts from January to now to see where the year is heading.
+        </p>
+      )}
+      {hasGross && <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <span style={{ fontSize: '13.5px', color: 'var(--mut)' }}>Projected gross sales / receipts</span>
           <span className="mono" style={{ fontSize: '14px', fontWeight: 600 }}>{money(r.projectedGross)}</span>
@@ -315,7 +353,7 @@ function ProjectorCard() {
             </div>
           </>
         )}
-      </div>
+      </div>}
       {!kind && (
         <p style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '12px', lineHeight: 1.5 }}>
           Choose "Self-employed only" or "Mixed income" to see the {pct(EIGHT.rate)} tax.
@@ -328,7 +366,7 @@ function ProjectorCard() {
         </p>
       )}
       {why && <div className="mini-warn">{why}</div>}
-      {!why && profileKind && (profileKind === 'pure' || profileKind === 'mixed') && profile.regime && profile.regime !== '8pct' && r.eightPercentAvailable && (
+      {hasGross && !why && profileKind && (profileKind === 'pure' || profileKind === 'mixed') && profile.regime && profile.regime !== '8pct' && r.eightPercentAvailable && (
         <div className="mini-warn">
           {profile.name} is on graduated rates this year, so this {pct(EIGHT.rate)} figure is only a comparison: the{' '}
           {pct(EIGHT.rate)} option is chosen at the start of the year (on the first quarterly return) and cannot be

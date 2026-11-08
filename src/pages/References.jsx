@@ -1,3 +1,4 @@
+import ScrollRegion from '../components/ScrollRegion.jsx'
 import React from 'react'
 import meta from '../data/rules/meta.json'
 import { AgencyTag } from '../components/ui.jsx'
@@ -33,7 +34,7 @@ function cellCount(node) {
 
 function ValueTable({ node, caption }) {
   return (
-    <div className="ref-scroll" role="region" aria-label={caption} tabIndex={0}>
+    <ScrollRegion label={caption}>
       <table className="ref-tbl">
         <caption className="sr-only">{caption}</caption>
         <thead><tr>{node.columns.map(c => <th key={c} scope="col">{c}</th>)}</tr></thead>
@@ -43,7 +44,7 @@ function ValueTable({ node, caption }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   )
 }
 
@@ -191,7 +192,7 @@ export default function References() {
         <Notes text={`Never moved later (${shift.noShift.titles.join('; ')}): ${shift.noShift.note}`} />
 
         <h3 style={{ fontWeight: 600, fontSize: '14px', marginTop: '18px' }}>Weekend and holiday rule by agency</h3>
-        <div className="ref-scroll" role="region" aria-label="Weekend and holiday rule by agency" tabIndex={0}>
+        <ScrollRegion label="Weekend and holiday rule by agency">
           <table className="ref-tbl">
             <caption className="sr-only">Weekend and holiday rule by agency</caption>
             <thead><tr><th scope="col">Agency</th><th scope="col">On a weekend or holiday</th><th scope="col">Basis</th><th scope="col">Confidence</th></tr></thead>
@@ -206,7 +207,7 @@ export default function References() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
 
         {years.map(y => (
           <div key={y.id} style={{ marginTop: '18px' }}>

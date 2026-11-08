@@ -22,6 +22,14 @@ export const PROFILE_TYPES = {
   corporation: { name: 'Corporation', desc: 'Domestic corporation or taxable partnership' },
 }
 
+// The letter on a profile's avatar: the first character of the name, taken
+// as a whole character (an emoji is one character, not half of one; audit
+// Nov 2026, U15).
+export function profileInitial(name) {
+  const first = Array.from(String(name || '').trim())[0]
+  return first ? first.toUpperCase() : '?'
+}
+
 // The income-tax regime in a few words (profile cards and summaries). L21:
 // one copy instead of one per page.
 export function regimeLabel(regime) {

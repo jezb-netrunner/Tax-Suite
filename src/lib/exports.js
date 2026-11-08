@@ -54,8 +54,10 @@ export function deadlineCsvFileName(profileName, today, { filtered = false } = {
 }
 
 // "JEZ Tax Suite · Maria Santos · Tax year 2026 · Printed Oct 7, 2026"
-export function printHeaderText({ profileName, taxYear, printedOn }) {
-  return [BRAND, profileName, `Tax year ${taxYear}`, `Printed ${fmtDate(printedOn)}`].filter(Boolean).join(' · ')
+// periodText replaces "Tax year <year>" where a page is not about one taxable
+// year (the calendar covers the next 13 months; audit Nov 2026, U6).
+export function printHeaderText({ profileName, taxYear, printedOn, periodText = null }) {
+  return [BRAND, profileName, periodText || `Tax year ${taxYear}`, `Printed ${fmtDate(printedOn)}`].filter(Boolean).join(' · ')
 }
 
 // Browser only: save text as a file. The byte-order mark lets Excel read the

@@ -118,9 +118,11 @@ export default function Dashboard() {
   const isEmployee = p.type === 'employee'
   // The summary is printed, so a filtered printout says what it leaves out.
   const only = filtered ? ` (only ${filterText(active)})` : ''
+  // U10: no double period after a name that ends in one ("Santos Inc.").
+  const endSentence = text => (/[.!?]$/.test(text) ? text : `${text}.`)
   const summary = isEmployee
-    ? `Showing what applies to ${p.name} as an employee on compensation income${only}.`
-    : `Showing ${filtered ? `${shown.length} of ${deadlines.length}` : deadlines.length} dated obligations over the next 13 months for ${p.name}${only}.`
+    ? endSentence(`Showing what applies to ${p.name} as an employee on compensation income${only}`)
+    : endSentence(`Showing ${filtered ? `${shown.length} of ${deadlines.length}` : deadlines.length} dated obligations over the next 13 months for ${p.name}${only}`)
   const noMatch = filtered && !shown.length
 
   // Income-tax rail: this year's income tax due dates, for reference.
@@ -131,11 +133,11 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <PrintHeader profileName={p.name} taxYear={t.getFullYear()} />
+      <PrintHeader profileName={p.name} taxYear={t.getFullYear()} periodText={`Deadlines for the 13 months from ${fmtDate(t)}`} />
       <div style={{ background: 'var(--sf)', borderBottom: '1px solid var(--line)' }}>
         <div className="wrap" style={{ padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: '14.5px' }}>{p.name}</span>
+            <span className="user-text" style={{ fontWeight: 700, fontSize: '14.5px', minWidth: 0 }}>{p.name}</span>
             <span className="tag">{PROFILE_TYPES[p.type].name}</span>
             {p.type !== 'employee' && <span className="tag">{p.vatRegistered ? 'VAT' : 'Non-VAT'}</span>}
             {(p.type === 'individual' || p.type === 'mixed') && !p.vatRegistered && (
@@ -260,8 +262,8 @@ export default function Dashboard() {
 
                 {laterItems.length > 0 && (
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '28px 0 12px' }}>
-                      <h2 className="sec-h">Coming up</h2>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: '12px', rowGap: '2px', margin: '28px 0 12px' }}>
+                      <h2 className="sec-h" style={{ whiteSpace: 'nowrap' }}>Coming up</h2>
                       <span style={{ fontSize: '13px', color: 'var(--mut)' }}>next due date per obligation; recurring ones repeat</span>
                     </div>
                     <div className="list-card">
@@ -329,7 +331,7 @@ export default function Dashboard() {
           <div style={{ flex: '1 1 300px', maxWidth: '340px' }}>
             {!isEmployee && fullYear.length > 0 && (
               <div className="card tight">
-                <h2 id="rail-h" style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '-.01em' }}>{t.getFullYear()} income-tax filings</h2>
+                <h2 id="rail-h" style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '-.01em' }}>Income-tax filings due in {t.getFullYear()}</h2>
                 <FilingRail items={fullYear} today={t} />
               </div>
             )}
@@ -468,6 +470,15 @@ function RailIcon({ passed }) {
   return <span aria-hidden="true" style={{ ...base, border: '2px solid var(--line)' }} />
 }
 
+// U18: the rail names each filing by its form and period ("1701Q Q3",
+// "1701A TY 2025"), and the eAFS item by what it is.
+function railName(d) {
+  const form = d.obligation.form || ''
+  const what = form.startsWith('via ') ? `${form.slice(4)} attachments` : form
+  const when = d.label || (d.period && d.period.startsWith('TY ') ? d.period : '')
+  return [what, when].filter(Boolean).join(' ')
+}
+
 function FilingRail({ items, today }) {
   return (
     <ul aria-labelledby="rail-h" style={{ listStyle: 'none', margin: '14px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -477,7 +488,7 @@ function FilingRail({ items, today }) {
           <li key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <RailIcon passed={passed} />
             <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: passed ? 'var(--mut)' : 'var(--ink)', fontWeight: passed ? 400 : 600 }}>
-              {d.obligation.form} {d.label || ''} · {passed ? 'was due' : 'due'} {fmtDate(d.date)}{d.extended ? ` (extended by ${d.extended.basis})` : ''}
+              {railName(d)} · {passed ? 'was due' : 'due'} {fmtDate(d.date)}{d.extended ? ` (extended by ${d.extended.basis})` : ''}
             </span>
           </li>
         )

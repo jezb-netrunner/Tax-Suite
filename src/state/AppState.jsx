@@ -122,6 +122,30 @@ export function AppStateProvider({ children }) {
     [profiles, activeId]
   )
 
+  // Audit Nov 2026 (U17): the profile in use was deleted in another window or
+  // tab. The app used to switch to the next profile without a word, so the
+  // next figure typed went to another client. Now it says so (SaveNotice) and
+  // makes the profile it shows the active one. A delete made here is not
+  // reported (removingId).
+  const previousProfiles = useRef({ userId: null, list: [] })
+  const removingId = useRef(null)
+  useEffect(() => {
+    const before = previousProfiles.current
+    previousProfiles.current = { userId, list: profiles }
+    // Only a switch to ANOTHER profile is risky; an emptied list (erased, or
+    // signed out) or another signed-in user is not this case.
+    if (!activeId || removingId.current === activeId || before.userId !== userId || profiles.length === 0) return
+    const gone = before.list.find(p => p.id === activeId)
+    if (!gone || profiles.some(p => p.id === activeId)) return
+    const next = profiles[0]
+    setSaveProblem(new Error(
+      `${gone.name || 'The profile you were using'} was deleted in another window.` +
+      ` Now showing ${next.name || 'another profile'}.`,
+    ))
+    setActiveId(next.id)
+    try { localStorage.setItem(ACTIVE_KEY, next.id) } catch { /* ignore */ }
+  }, [profiles, activeId, userId])
+
   const api = useMemo(() => ({
     hasCloud,
     session,
@@ -165,8 +189,13 @@ export function AppStateProvider({ children }) {
     reportSaveProblem(e) { setSaveProblem(e || null) },
     clearSaveProblem() { setSaveProblem(null) },
     async remove(id) {
-      await deleteProfile(userId, id)
-      await refreshProfiles()
+      removingId.current = id
+      try {
+        await deleteProfile(userId, id)
+        await refreshProfiles()
+      } finally {
+        removingId.current = null
+      }
       if (activeId === id) {
         setActiveId(null)
         // Audit Nov 2026 (S7): forget the stored choice too, so "Download my

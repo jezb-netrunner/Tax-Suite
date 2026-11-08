@@ -80,7 +80,7 @@ describe('labels follow a changed rulebook (H16)', () => {
 
   it('employee: 13th-month cap', () => {
     const e = estimateEmployee({ monthlyBasic: 50000, bonusesAnnual: 150000 })
-    expect(text(e.annualRows)).toContain('Less: exclusion cap (₱120,000)')
+    expect(text(e.annualRows)).toContain('Less: tax-exempt part (up to ₱120,000)')
   })
 
   it('corporation: MCIT rate, start year and carry-forward', () => {
