@@ -508,7 +508,7 @@
         "RMC 112-2026 (Oct 22, 2026: systems covered by mandatory e-invoicing, such as computerized accounting systems, until Dec 31, 2026)"
       ],
       "confidence": "verified",
-      "notes": "Changing a registered system only to add this field is a limited modification: no new registration is needed. The BIR may set a later date. Leave the field blank, or show N/A or 0.00, when the buyer does not withhold."
+      "notes": "Dec 31, 2026 is for systems covered by mandatory e-invoicing (computerized accounting systems are the example RMC 112-2026 gives); a system not yet under mandatory e-invoicing (for example, a micro taxpayer's) has until Mar 31, 2027, like cash registers and POS. Changing a registered system only to add this field is a limited modification: no new registration is needed. The BIR may set a later date. Leave the field blank, or show N/A or 0.00, when the buyer does not withhold."
     },
     {
       "id": "bir-cwt-invoice-field-pos",
