@@ -118,7 +118,7 @@ function PenaltyCard() {
     notes.push(<>Due date moved to <b>{fmtDay(pen.rolledDueDate)}</b> (weekend/holiday: {why}). Filing and paying by then is on time.</>)
   }
   if (pen && pen.holidayListMissing) {
-    const year = pen.dueDate.slice(0, 4)
+    const year = pen.holidayListMissingYears.join(' and ')
     notes.push(<>The app does not have the proclaimed holiday list for {year}, so only weekends and the holidays fixed by law (such as {fixedHolidayExamples()}) were skipped. If the due date fell on another holiday, enter the next working day as the original due date.</>)
   }
 
@@ -134,6 +134,7 @@ function PenaltyCard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '16px', marginTop: '18px', alignItems: 'start' }}>
         <NumField label="Basic tax due" value={taxDue} onChange={setTaxDue} prefix="₱" />
         <DateField label="Original due date" value={dueDate} onChange={setDueDate}
+          hint="If the BIR extended this deadline (for example for your area after a calamity), enter the extended date."
           error={dueErr && !dueErr.empty ? dueErr.message : null} />
         <DateField label="Payment date" value={paid} onChange={setPaidDate}
           hint="Today, or the day you plan to pay."
@@ -327,6 +328,13 @@ function ProjectorCard() {
         </p>
       )}
       {why && <div className="mini-warn">{why}</div>}
+      {!why && profileKind && (profileKind === 'pure' || profileKind === 'mixed') && profile.regime && profile.regime !== '8pct' && r.eightPercentAvailable && (
+        <div className="mini-warn">
+          {profile.name} is on graduated rates this year, so this {pct(EIGHT.rate)} figure is only a comparison: the{' '}
+          {pct(EIGHT.rate)} option is chosen at the start of the year (on the first quarterly return) and cannot be
+          switched to mid-year. {estimatorLink} for the tax on graduated rates.
+        </div>
+      )}
     </div>
   )
 }

@@ -219,12 +219,38 @@ export default function ProfilesPage() {
   const app = useApp()
   const nav = useNavigate()
   const [confirmId, setConfirmId] = useState(null)
+  // Audit Nov 2026 (S5, S6): the delete question takes the focus when it
+  // opens; afterwards the focus goes to a control that still exists (the row's
+  // Delete button after "Keep", its Edit button after "Use", the page heading
+  // after a delete), and a failed delete says so in the row.
+  const [removeErr, setRemoveErr] = useState(null) // { id, text }
+  const [focusId, setFocusId] = useState(null)
+  const questionRef = useRef(null)
+  const headingRef = useRef(null)
+  useEffect(() => { if (confirmId && questionRef.current) questionRef.current.focus() }, [confirmId])
+  useEffect(() => {
+    if (!focusId) return
+    const el = focusId === 'heading' ? headingRef.current : document.getElementById(focusId)
+    if (el) el.focus()
+    setFocusId(null)
+  }, [focusId, app.profiles, app.active])
+
+  async function removeProfile(p) {
+    setRemoveErr(null)
+    try {
+      await app.remove(p.id)
+      setConfirmId(null)
+      setFocusId('heading')
+    } catch (e) {
+      setRemoveErr({ id: p.id, text: (e && e.message) || 'Could not delete the profile.' })
+    }
+  }
 
   return (
     <div className="page wrap" style={{ paddingTop: '30px', paddingBottom: '64px', maxWidth: '760px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
         <div>
-          <h1 className="pg-h1">Taxpayer profiles</h1>
+          <h1 className="pg-h1" ref={headingRef} tabIndex={-1}>Taxpayer profiles</h1>
           <p className="pg-sub">Every business or person you track. Switch between them from the avatar menu.</p>
         </div>
         <button className="btn" onClick={() => nav('/profiles/new')}>+ New profile</button>
@@ -259,17 +285,23 @@ export default function ProfilesPage() {
               </div>
             </div>
             {confirmId === p.id ? (
-              <div className="profile-row-actions">
-                <button className="btn sm danger" onClick={async () => { await app.remove(p.id); setConfirmId(null) }}>Delete</button>
-                <button className="btn sm ghost" onClick={() => setConfirmId(null)}>Keep</button>
+              <div className="profile-row-actions" role="group" aria-labelledby={`delete-q-${p.id}`}>
+                <span id={`delete-q-${p.id}`} ref={questionRef} tabIndex={-1} style={{ fontSize: '13px', fontWeight: 600 }}>
+                  Delete {p.name || 'this profile'} and its saved figures? This can't be undone.
+                </span>
+                <button className="btn sm danger" onClick={() => removeProfile(p)} aria-label={`Delete ${p.name}`}>Delete</button>
+                <button className="btn sm ghost" onClick={() => { setConfirmId(null); setRemoveErr(null); setFocusId(`delete-${p.id}`) }} aria-label={`Keep ${p.name}`}>Keep</button>
+                {removeErr && removeErr.id === p.id && (
+                  <div className="form-err" role="alert" style={{ width: '100%' }}>{removeErr.text}</div>
+                )}
               </div>
             ) : (
               <div className="profile-row-actions">
                 {(!app.active || app.active.id !== p.id) && (
-                  <button className="btn sm ghost" onClick={() => app.setActive(p.id)}>Use</button>
+                  <button className="btn sm ghost" onClick={() => { app.setActive(p.id); setFocusId(`edit-${p.id}`) }} aria-label={`Use ${p.name}`}>Use</button>
                 )}
-                <button className="btn sm ghost" onClick={() => nav(`/profiles/${p.id}/edit`)}>Edit</button>
-                <button className="btn sm ghost" onClick={() => setConfirmId(p.id)} aria-label={`Delete ${p.name}`}>Delete</button>
+                <button id={`edit-${p.id}`} className="btn sm ghost" onClick={() => nav(`/profiles/${p.id}/edit`)} aria-label={`Edit ${p.name}`}>Edit</button>
+                <button id={`delete-${p.id}`} className="btn sm ghost" onClick={() => setConfirmId(p.id)} aria-label={`Delete ${p.name}`}>Delete</button>
               </div>
             )}
           </div>

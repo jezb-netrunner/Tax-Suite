@@ -135,14 +135,16 @@ describe('H14 sign-up consent', () => {
       redirectTo: 'https://example.ph/tax/',
     })
     expect(r.ok).toBe(true)
-    expect(PRIVACY_NOTICE_VERSION).toBe('2026-10-07')
+    // Audit Nov 2026 (S8): in step with the notice's "last updated" date.
+    expect(PRIVACY_NOTICE_VERSION).toBe('2026-10-17')
+    expect(PRIVACY_NOTICE_UPDATED).toBe('October 17, 2026')
     expect(client.auth.signUp).toHaveBeenCalledTimes(1)
     expect(client.auth.signUp).toHaveBeenCalledWith({
       email: 'ana@example.com',
       password: 'longenough',
       options: {
         emailRedirectTo: 'https://example.ph/tax/',
-        data: { privacy_notice_version: '2026-10-07', privacy_consent_at: '2026-10-07T03:15:00.000Z' },
+        data: { privacy_notice_version: '2026-10-17', privacy_consent_at: '2026-10-07T03:15:00.000Z' },
       },
     })
   })

@@ -25,9 +25,11 @@ describe('H10 NCR minimum wage reference (Wage Order No. NCR-28)', () => {
     expect(rule.notes).not.toMatch(/remains NCR-26/)
     expect(rule.value.history.map(h => h.order)).toEqual(['NCR-26', 'NCR-27'])
   })
-  it('stays needs_review with the NWPC confirmation note', () => {
-    expect(rule.confidence).toBe('needs_review')
+  it('verified on Nov 8, 2026 from several reports of NCR-28 taking effect; the NWPC PDF is still the primary source to check', () => {
+    expect(rule.confidence).toBe('verified')
+    expect(rule.notes).toContain('Re-checked Nov 8, 2026')
     expect(rule.notes).toContain('confirm against the NWPC wage-order PDF (reported by GMA News, Daily Tribune, Philstar, Sept 2026)')
+    expect(rule.value.history.find(h => h.order === 'NCR-27').status).toContain('injunction maintained as reported Oct 21, 2026')
   })
   it('the minimum wage earner hint quotes the NCR-28 rates', () => {
     expect(minimumWageReferenceNote()).toBe(

@@ -14,7 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { iso, manilaToday } from '../engine/dates.js'
-import { withChangedInputs } from '../engine/profile.js'
+import { withChangedInputs, PROFILE_TYPES } from '../engine/profile.js'
 import { isRecoveryLink, authLinkError } from './auth.js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
@@ -108,12 +108,24 @@ export function watchProfileChanges(onChange, { cloud = hasCloud, win = globalTh
   return () => doc.removeEventListener('visibilitychange', onVisible)
 }
 
+// Audit Nov 2026 (S11): only well-formed profiles reach the pages (an object
+// with an id and a known taxpayer type). Anything else in storage (edited by
+// hand, or written by another site on a shared address) used to blank every
+// page; it is now left in storage untouched but not shown.
+export function usableProfiles(list) {
+  if (!Array.isArray(list)) return []
+  return list.filter(p => p && typeof p === 'object' && typeof p.id === 'string' && p.id !== '' && Object.prototype.hasOwnProperty.call(PROFILE_TYPES, p.type))
+}
+
 export function createBackend({ client = null, storage } = {}) {
   const cloud = Boolean(client)
   const store = () => (storage !== undefined ? storage : globalThis.localStorage)
 
   function localLoad() {
-    try { return JSON.parse(store().getItem(LS_KEY) || '[]') } catch { return [] }
+    try {
+      const list = JSON.parse(store().getItem(LS_KEY) || '[]')
+      return Array.isArray(list) ? list : []
+    } catch { return [] }
   }
   function localSave(profiles) {
     // Let the failure surface. Swallowing it told the user their client was
@@ -132,7 +144,7 @@ export function createBackend({ client = null, storage } = {}) {
   }
 
   async function listProfiles(userId) {
-    if (!cloud) return localLoad()
+    if (!cloud) return usableProfiles(localLoad())
     if (!userId) return []
     // Filter by the signed-in user as well as relying on row-level security.
     const { data, error } = await client
@@ -141,7 +153,7 @@ export function createBackend({ client = null, storage } = {}) {
       .eq('user_id', userId)
       .order('created_at', { ascending: true })
     if (error) throw error
-    return data.map(r => ({ ...r.data, id: r.id }))
+    return usableProfiles(data.map(r => ({ ...r.data, id: r.id })))
   }
 
   // Saves a whole profile: a new one (no id) is created; an existing one is
@@ -317,7 +329,10 @@ export function createBackend({ client = null, storage } = {}) {
     if (!cloud) {
       let activeProfileId = null
       try { activeProfileId = store().getItem(ACTIVE_KEY) || null } catch { /* ignore */ }
-      return { ...head, storedIn: 'this browser', activeProfileId, profiles: localLoad() }
+      const profiles = localLoad()
+      // Audit Nov 2026 (S7): never name a profile that is no longer stored.
+      if (!profiles.some(p => p && p.id === activeProfileId)) activeProfileId = null
+      return { ...head, storedIn: 'this browser', activeProfileId, profiles }
     }
     const { data, error } = await client
       .from('taxpayer_profiles')

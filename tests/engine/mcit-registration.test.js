@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { estimateCorporation, registrationYearOptions, registrationYearChoice } from '../../src/engine/estimators/corporation.js'
 import corp from '../../src/data/rules/corporate.json'
 
-// H13: MCIT starts in the 4th taxable year after the year of BIR registration
+// H13: MCIT starts in the 4th taxable year after the taxable year of BIR registration
 // (RR 9-98). The profile asks "Year registered with the BIR (for MCIT)",
 // accepting any year up to the current Manila year or "1997 or earlier". When
 // the year is not set, the estimate shows both RCIT and MCIT with a warning
@@ -61,7 +61,7 @@ describe('WH:WS-24 MCIT counted from the BIR registration year', () => {
     const r = estimateCorporation({ ...lean, registrationYear: 2023 })
     expect(r.mcitStatus).toBe('notYet')
     expect(r.incomeTaxDue).toBe(20000)
-    expect(row(r.rows, /^Minimum corporate income tax/).sub).toBe('Not yet applicable: MCIT starts with TY 2027, the 4th taxable year after the year of BIR registration (RR 9-98).')
+    expect(row(r.rows, /^Minimum corporate income tax/).sub).toBe('Not yet applicable: MCIT starts with TY 2027, the 4th taxable year after the taxable year of BIR registration (RR 9-98).')
   })
 })
 

@@ -69,7 +69,7 @@ describe('NOLCO from prior years (itemized option only)', () => {
     expect(r.nolco.left).toBe(100000)
     expect(opt(r, 'itemized').incomeTax).toBe(0)
     expect(row(r.rowsFor(opt(r, 'itemized')), /^Less: NOLCO from prior years/).sub)
-      .toBe('₱100,000 of NOLCO is left for later years, within its 3-year limit.')
+      .toBe('₱100,000 of NOLCO is left. Each year\'s loss can be deducted only in the 3 years after the year it was incurred, so part of it may expire this year: check the year of each loss.')
   })
   it('never against compensation: mixed, ₱50,000 business income absorbs ₱50,000 of ₱100,000 NOLCO; tax ₱62,500', () => {
     const r = estimateIndividual({ gross: 300000, expenses: 250000, mixed: true, compensationTaxable: 600000, nolcoPrior: 100000 })

@@ -77,4 +77,11 @@ describe('M24 Cancel and the page after saving', () => {
     leaveAfterSave(nav)
     expect(nav.mock.calls).toEqual([['/', { replace: true }]])
   })
+  it('a page that asked to come back gets the user back (only the app\'s own pages)', () => {
+    const nav = vi.fn()
+    leaveAfterSave(nav, '/estimator')
+    leaveAfterSave(nav, 'https://example.com/')
+    leaveAfterSave(nav, '/profiles/x/edit')
+    expect(nav.mock.calls).toEqual([['/estimator', { replace: true }], ['/', { replace: true }], ['/', { replace: true }]])
+  })
 })

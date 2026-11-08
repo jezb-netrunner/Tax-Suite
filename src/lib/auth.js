@@ -8,7 +8,7 @@
 
 // The Privacy Notice version the user agrees to at sign-up (its "last updated"
 // date). Stored with the account together with the time of consent.
-export const PRIVACY_NOTICE_VERSION = '2026-10-07'
+export const PRIVACY_NOTICE_VERSION = '2026-10-17'
 
 export const CONSENT_REQUIRED = 'Please tick the box to agree to the Privacy Notice before creating an account.'
 

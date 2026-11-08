@@ -37,10 +37,11 @@ describe('TB:W16 (corporate) on the estimator page', () => {
     expect(t).toContain('Plus ₱96,000 percentage tax on sales from January to December (Form 2551Q). VAT applies from January 2027: not included in this estimate.')
     expect(t).not.toContain('8% income tax already paid')
   })
-  it('October: banner shows ₱80,000 and VAT from November 2026', () => {
+  it('October: banner shows ₱90,000 (the ₱3,000,000 floor) and VAT from November 2026', () => {
     state.profile = fox({ crossedMonth: 10 })
     const t = text()
     expect(t).toContain('Sales from January to October')
-    expect(t).toContain('Plus ₱80,000 percentage tax on sales from January to October (Form 2551Q). VAT applies from November 2026: not included in this estimate.')
+    expect(t).toContain('Plus ₱90,000 percentage tax on sales from January to October (Form 2551Q). VAT applies from November 2026: not included in this estimate.')
+    expect(t).toContain('The estimate uses ₱3,000,000, the least they can be')
   })
 })

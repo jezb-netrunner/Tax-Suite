@@ -484,7 +484,55 @@
         "RMC 98-2026 (Sept 22, 2026: coverage and operating rules)"
       ],
       "confidence": "needs_review",
-      "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). The Dec 31, 2026 date for the first covered group was reconfirmed in October 2026 (RR 26-2025 keeps it), but confirm whether this taxpayer is covered; until then SLSP/eSubmission duties continue unchanged."
+      "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). The Dec 31, 2026 date for the first covered group was reconfirmed in October 2026 (RR 26-2025 keeps it) and again on November 8, 2026 (RMC 98-2026 restates it; no extension found), but confirm whether this taxpayer is covered; until then SLSP/eSubmission duties continue unchanged. Separately, invoicing systems must add the creditable withholding tax field (RR 6-2026; RMC 112-2026)."
+    },
+    {
+      "id": "bir-cwt-invoice-field-cas",
+      "title": "Add the withholding-tax line to your computerized invoices",
+      "desc": "Invoices printed from a computerized accounting system or an e-invoicing system must have a field for the creditable withholding tax (labelled 'Less: Withholding Tax', 'Less: Creditable Withholding Tax' or 'Less: CWT'), filled in when the buyer withholds.",
+      "form": "CAS",
+      "agency": "BIR",
+      "category": "admin",
+      "appliesTo": {
+        "allOf": [
+          "books:cas"
+        ]
+      },
+      "schedule": {
+        "kind": "once",
+        "date": "2026-12-31",
+        "noWeekendShift": true
+      },
+      "legalBasis": [
+        "RR 6-2026 (creditable withholding tax shown as a separate item on invoices)",
+        "RMC 112-2026 (Oct 22, 2026: systems covered by mandatory e-invoicing, such as computerized accounting systems, until Dec 31, 2026)"
+      ],
+      "confidence": "verified",
+      "notes": "Changing a registered system only to add this field is a limited modification: no new registration is needed. The BIR may set a later date. Leave the field blank, or show N/A or 0.00, when the buyer does not withhold."
+    },
+    {
+      "id": "bir-cwt-invoice-field-pos",
+      "title": "Add the withholding-tax line to your cash register / POS invoices",
+      "desc": "Cash register (CRM), point-of-sale (POS) and other invoicing systems not yet under mandatory e-invoicing must show the creditable withholding tax on the invoice as a separate line when the buyer withholds.",
+      "form": "CRM/POS",
+      "agency": "BIR",
+      "category": "admin",
+      "appliesTo": {
+        "allOf": [
+          "crm-pos"
+        ]
+      },
+      "schedule": {
+        "kind": "once",
+        "date": "2027-03-31",
+        "noWeekendShift": true
+      },
+      "legalBasis": [
+        "RR 6-2026 (creditable withholding tax shown as a separate item on invoices)",
+        "RMC 112-2026 (Oct 22, 2026: CRM, POS and other systems not yet under mandatory e-invoicing, until Mar 31, 2027)"
+      ],
+      "confidence": "verified",
+      "notes": "Changing a registered machine or system only to add this field is a limited modification: no new registration is needed. The BIR may set an earlier date. Printed invoices already in stock may be used until they run out if 'Less: Withholding Tax' is stamped on them."
     },
     {
       "id": "bir-1601c",
@@ -914,10 +962,11 @@
       },
       "legalBasis": [
         "RA 9679 (HDMF Law)",
-        "HDMF Circular 275 (remittance staggered by first letter of the employer's registered name)"
+        "HDMF Circular 275 (remittance staggered by first letter of the employer's registered name)",
+        "HDMF Circular 499-2026 (employers remit through the eSRS facility with a payment reference number; replaces the Circular 275 remittance schedule; reported effective Aug 21, 2026)"
       ],
-      "confidence": "verified",
-      "notes": "Staggered by the first letter of the employer's REGISTERED name, in the month after the period: A–D the 10th–14th, E–L 15th–19th, M–Q 20th–24th, R–Z and numerals 25th–month-end. The 10th is shown as the safe-side date covering every window; check your own letter's window."
+      "confidence": "needs_review",
+      "notes": "HDMF Circular 499-2026 requires every employer to prepare the remittance schedule in Virtual Pag-IBIG's eSRS facility and get a payment reference number before paying, and it replaced the old schedule staggered by the first letter of the employer's registered name (A–D the 10th–14th, E–L 15th–19th, M–Q 20th–24th, R–Z 25th–month-end, under Circular 275). The new due days were not confirmed here, so the 10th, the earliest of the old windows, is shown; check your due date in eSRS."
     },
     {
       "id": "sss-self",
@@ -1209,10 +1258,11 @@
       "legalBasis": [
         "Revised Corporation Code Sec 177",
         "SRC Rule 68",
-        "SEC MC 9-2026 (Feb 11, 2026: single uniform date via eFAST; FY2025's May 29 was revised to June 15, 2026 after the BIR's AITR extension)"
+        "SEC MC 9-2026 (Feb 11, 2026: single uniform date via eFAST; FY2025's May 29 was revised to June 15, 2026 after the BIR's AITR extension)",
+        "SEC MC 16-2026 (May 13, 2026: monthly late-filing penalties for AFS and GIS suspended to Dec 31, 2026)"
       ],
       "confidence": "needs_review",
-      "notes": "The SEC sets the exact date each year by memorandum circular; the old last-digit staggering is gone, but the date can move mid-year (FY2025: May 29 → June 15, 2026). Later years shown at May 29 until each year's MC issues. Attach the BIR eAFS Transaction Reference Number in lieu of a BIR-stamped AFS. PSE-listed/public companies follow the 105-day SEC Form 17-A rule instead. Corporations with total assets or total liabilities under ₱600,000 file FS certified under oath by the treasurer/CFO instead of audited (RCC Sec 177)."
+      "notes": "The SEC sets the exact date each year by memorandum circular; the old last-digit staggering is gone, but the date can move mid-year (FY2025: May 29 → June 15, 2026). Later years shown at May 29 until each year's MC issues. Attach the BIR eAFS Transaction Reference Number in lieu of a BIR-stamped AFS. PSE-listed/public companies follow the 105-day SEC Form 17-A rule instead. Corporations with total assets or total liabilities under ₱600,000 file FS certified under oath by the treasurer/CFO instead of audited (RCC Sec 177). Late filing in 2026: SEC MC 16-2026 suspends the monthly late-filing penalties for the AFS and GIS from May 13 to Dec 31, 2026; the basic fines under SEC MC 6-2024 still apply, and penalties already paid are not refunded."
     },
     {
       "id": "sec-afs-fiscal",
@@ -1234,10 +1284,11 @@
       "legalBasis": [
         "Revised Corporation Code Sec 177",
         "SRC Rule 68",
-        "SEC MC 9-2026"
+        "SEC MC 9-2026",
+        "SEC MC 16-2026 (May 13, 2026: monthly late-filing penalties for AFS and GIS suspended to Dec 31, 2026)"
       ],
       "confidence": "verified",
-      "notes": "Within 120 calendar days from the end of a fiscal year other than December 31 (per the annual SEC MC, most recently MC 9-2026). Corporations with total assets or total liabilities under ₱600,000 file FS certified under oath by the treasurer/CFO instead of audited (RCC Sec 177)."
+      "notes": "Within 120 calendar days from the end of a fiscal year other than December 31 (per the annual SEC MC, most recently MC 9-2026). Corporations with total assets or total liabilities under ₱600,000 file FS certified under oath by the treasurer/CFO instead of audited (RCC Sec 177). Late filing in 2026: SEC MC 16-2026 suspends the monthly late-filing penalties for the AFS and GIS from May 13 to Dec 31, 2026; the basic fines under SEC MC 6-2024 still apply, and penalties already paid are not refunded."
     },
     {
       "id": "sec-gis",
@@ -1256,10 +1307,11 @@
       },
       "legalBasis": [
         "Revised Corporation Code Sec 177",
-        "SEC MC 9-2026 (30 calendar days from the actual annual meeting, via eFAST)"
+        "SEC MC 9-2026 (30 calendar days from the actual annual meeting, via eFAST)",
+        "SEC MC 16-2026 (May 13, 2026: monthly late-filing penalties for AFS and GIS suspended to Dec 31, 2026)"
       ],
       "confidence": "verified",
-      "notes": "The due date depends on your annual meeting date (often fixed in the by-laws). Diary it 30 days after the meeting; file through eFAST."
+      "notes": "The due date depends on your annual meeting date (often fixed in the by-laws). Diary it 30 days after the meeting; file through eFAST. Late filing in 2026: SEC MC 16-2026 suspends the monthly late-filing penalties for the AFS and GIS from May 13 to Dec 31, 2026; the basic fines under SEC MC 6-2024 still apply, and penalties already paid are not refunded."
     },
     {
       "id": "bir-8pct-election",
@@ -1286,8 +1338,8 @@
     },
     {
       "id": "bir-invoices",
-      "title": "Issue BIR-registered invoices for every sale",
-      "desc": "Since the EOPT Act, the invoice is the primary document for both goods and services; official receipts are supplementary only.",
+      "title": "Issue BIR-registered invoices for your sales",
+      "desc": "Since the EOPT Act, the invoice is the primary document for sales of goods and services; official receipts are supplementary only. VAT-registered sellers issue a VAT invoice for every sale, whatever the amount. Since October 2026, an invoice for a sale the buyer withholds tax on must also show the creditable withholding tax as a separate line.",
       "form": "—",
       "agency": "BIR",
       "category": "admin",
@@ -1300,11 +1352,37 @@
         "kind": "ongoing"
       },
       "legalBasis": [
-        "NIRC Sec 237, as amended by RA 11976 (EOPT)",
-        "RR 7-2024, as amended by RR 11-2024"
+        "NIRC Secs 113 and 237, as amended by RA 11976 (EOPT)",
+        "RR 7-2024, as amended by RR 11-2024 and RR 6-2026",
+        "RMC 77-2024 (VAT invoice for every sale; non-VAT ₱500 rule and end-of-day invoice)",
+        "RR 6-2026 (creditable withholding tax shown as a separate item; published on the BIR website Oct 1, 2026, effective Oct 16, 2026, per firm alerts)",
+        "RMC 112-2026 (Oct 22, 2026: how to show the withholding line; transition for invoicing systems)"
       ],
       "confidence": "verified",
-      "notes": "Mandatory issuance applies to sales of ₱500 or more (per transaction, adjustable every 3 years); issue one anyway when the buyer asks."
+      "notes": "Non-VAT sellers must issue an invoice for each sale of ₱500 or more, whenever the buyer asks for one, and one end-of-day invoice for the day's smaller sales once they add up to ₱500 (the ₱500 floor is adjusted for inflation every 3 years). RR 6-2026 adds the amount of creditable withholding tax, when the sale is subject to it, as a required separate item on the invoice. Unused printed invoices may be used until they run out if 'Less: Withholding Tax' is conspicuously stamped on them; no new Authority to Print is needed just for this. Per RMC 112-2026, the line is needed only when the buyer actually withholds (otherwise leave it blank or write N/A or 0.00), and changing an invoicing system only to add the withholding field counts as a limited modification. Invoicing systems get more time: until Dec 31, 2026 for systems covered by mandatory e-invoicing, such as computerized accounting systems, and until Mar 31, 2027 for cash registers, POS and other systems not yet under e-invoicing (RMC 112-2026)."
+    },
+    {
+      "id": "bir-payee-sworn-declaration",
+      "title": "Give clients who withhold your sworn declaration of gross receipts",
+      "desc": "If your gross receipts for the year will not exceed ₱3M, give each client that withholds from you a sworn declaration of gross receipts with a copy of your Certificate of Registration (Form 2303), so professional fees are withheld at 5% instead of 10%. With a single client (lone payor), the declaration also keeps the first ₱250,000 of the year free of withholding.",
+      "form": "Sworn declaration",
+      "agency": "BIR",
+      "category": "admin",
+      "appliesTo": {
+        "allOf": [
+          "individual-business",
+          "receives-2307",
+          "nonvat"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "RR 2-98 Sec 2.57.2, as amended by RR 11-2018 and RR 14-2018 (income payee's sworn declaration, Annexes B-1 to B-3)"
+      ],
+      "confidence": "needs_review",
+      "notes": "Give it at the start of each year, before the first payment. The yearly deadline usually cited is January 15, but it was not confirmed from an official source here. Without the declaration the client must withhold 10%. The rates are on the References page under expanded withholding."
     },
     {
       "id": "bir-books-current",
@@ -1352,7 +1430,7 @@
     {
       "id": "bir-micro-abatement-2026",
       "title": "One-time penalty abatement for micro taxpayers: avail by Dec 31, 2026",
-      "desc": "Micro taxpayers (gross sales below ₱3M) can wipe out delinquencies, assessments, and open stop-filer cases as of Dec 31, 2025 (where the basic tax and/or penalties are ₱80,000 or less per taxable year) for a one-time ₱5,000 abatement fee.",
+      "desc": "Micro taxpayers (gross sales below ₱3M, per their BIR registration records as of Dec 31, 2025) can clear delinquencies, assessments and open stop-filer cases existing as of Dec 31, 2025, where the basic tax and/or penalties are ₱80,000 or less for a taxable year, by paying an abatement fee of ₱5,000 per taxable year once the application is approved. Apply at your RDO by Dec 31, 2026.",
       "form": "per RR 4-2026",
       "agency": "BIR",
       "category": "admin",
@@ -1366,10 +1444,11 @@
       },
       "showUntil": "2026-12-31",
       "legalBasis": [
-        "RR 4-2026 (issued June 18, 2026; effective July 7, 2026, per firm alerts)"
+        "RR 4-2026 (issued June 18, 2026; posted June 22; effective July 7, 2026, per firm alerts)",
+        "RMC 84-2026 (questions and answers on RR 4-2026: who qualifies, documents, filing, the fee)"
       ],
       "confidence": "needs_review",
-      "notes": "Time-boxed: availment runs until December 31, 2026 (extendable by the DOF Secretary); this item is hidden from January 1, 2027. If you have old open 2550Q/2551Q cases or small assessments, ask your CPA whether this clears them before the window closes. The issuance and effectivity dates come from firm alerts (Grant Thornton, KPMG), not from the BIR text itself, and whether the ₱5,000 fee is per taxable year is reported inconsistently."
+      "notes": "Time-boxed: availment runs until December 31, 2026 (extendable by the DOF Secretary); this item is hidden from January 1, 2027. If you have old open 2550Q/2551Q cases or small assessments, ask your CPA whether this clears them before the window closes. The issuance and effectivity dates come from firm alerts (Grant Thornton, KPMG), not from the BIR text itself; RMC 84-2026 and the firm alerts describe the ₱5,000 fee as per taxable year, and no extension of the Dec 31, 2026 window had been found as of November 8, 2026."
     },
     {
       "id": "dti-bn-renewal",
@@ -1433,10 +1512,11 @@
       },
       "legalBasis": [
         "NIRC Sec 236, as amended by RA 11976 (EOPT)",
-        "RMC 91-2024"
+        "RMC 91-2024",
+        "RMC 47-2026 (closure and cancellation of registration)"
       ],
       "confidence": "verified",
-      "notes": "Under EOPT, transfers and updates can be filed at any RDO, with no transfer-first requirement (RA 11976; RMC 91-2024)."
+      "notes": "Under EOPT, transfers and updates can be filed at any RDO, with no transfer-first requirement (RA 11976; RMC 91-2024). Closing a business: RMC 47-2026 (May 19, 2026) simplified closure and cancellation of registration: file Form 1905 with a short list of documents, surrender unused invoices with their inventory, and micro taxpayers are no longer audited first as a rule. Until the closure is completed, every return stays due, so file it as soon as operations stop."
     },
     {
       "id": "bir-fbt-note",
@@ -1525,6 +1605,13 @@
       "newDate": "2026-05-15",
       "basis": "RMC 30-2026",
       "notes": "RMC 30-2026 (EO 110 energy emergency) moved the filing and payment of the 2025 annual income tax returns from April 15 to May 15, 2026."
+    },
+    {
+      "obligationId": "sec-afs-calendar",
+      "rawDate": "2026-05-29",
+      "newDate": "2026-06-15",
+      "basis": "SEC Notice of Apr 14, 2026",
+      "notes": "The SEC en banc moved the filing of 2025 audited financial statements of calendar-year corporations from May 29 to June 15, 2026 (revising the dates in SEC MC 9-2026), after the BIR extended the 2025 annual income tax returns. Companies filing SEC Form 17-A or 52-AR had other dates."
     },
     {
       "obligationId": "bir-eafs-itr-attachments-individual",

@@ -83,6 +83,16 @@
     { "date": "2027-12-30", "name": "Rizal Day", "type": "regular" },
     { "date": "2027-12-31", "name": "Last Day of the Year", "type": "special_non_working" }
   ],
+  "regionalHolidays": {
+    "value": [
+      { "date": "2026-11-16", "region": "NCR", "name": "49th ASEAN Summit", "type": "special_non_working" },
+      { "date": "2026-11-17", "region": "NCR", "name": "49th ASEAN Summit", "type": "special_non_working" },
+      { "date": "2026-11-18", "region": "NCR", "name": "49th ASEAN Summit", "type": "special_non_working" }
+    ],
+    "legalBasis": ["Proclamation No. 1447 s.2026 (signed Sept 17, 2026): Nov 16 to 18, 2026 are special non-working days in the National Capital Region for the 49th ASEAN Summit (reported by the PIA, Philstar, Manila Times and Inquirer)"],
+    "confidence": "verified",
+    "notes": "Holidays declared for one region only. They are not in the national list above, so the calendar keeps the national due date: filing and paying by that date is always on time. As of November 8, 2026 no BIR, SSS, PhilHealth or Pag-IBIG issuance was found saying whether a deadline on these days moves to the next working day for taxpayers in that region (for example, the Q3 2026 Form 1701Q, due Monday Nov 16 after the Nov 15 Sunday); check for an advisory before relying on a later date."
+  },
   "notes2027": {
     "confidence": "needs_review",
     "notes": "Proclamation No. 1427 s.2026 (Sept 8, 2026) set the 2027 holidays: the regular holidays and special days fixed by law, plus special non-working days on Feb 6 (Chinese New Year, a Saturday), Mar 27 (Black Saturday), Nov 2 (All Souls' Day, a Tuesday) and Dec 24 (Christmas Eve, a Friday). Feb 25 (EDSA anniversary) stays a special WORKING day. Still pending: Eid'l Fitr and Eid'l Adha 2027 (astronomical estimates: Eid'l Fitr about Mar 9, Eid'l Adha about May 16), proclaimed separately closer to the dates; add them here when proclaimed. Nov 2, 2027 moves the Q3 2027 1601-EQ, 1601-FQ and QAP and the September 2027 SSS and PhilHealth payments from Tue Nov 2 to Wed Nov 3."

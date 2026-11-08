@@ -86,7 +86,7 @@ describe('labels follow a changed rulebook (H16)', () => {
   it('corporation: MCIT rate, start year and carry-forward', () => {
     const notYet = estimateCorporation({ grossSales: 10000000, costOfSales: 6000000, opex: 3900000, totalAssets: 1000000, registrationYear: 2020, taxYear: 2024 })
     expect(notYet.mcitStatus).toBe('notYet')
-    expect(text(notYet.rows)).toContain('MCIT starts with TY 2025, the 5th taxable year after the year of BIR registration')
+    expect(text(notYet.rows)).toContain('MCIT starts with TY 2025, the 5th taxable year after the taxable year of BIR registration')
     const applies = estimateCorporation({ grossSales: 10000000, costOfSales: 6000000, opex: 3900000, totalAssets: 1000000, registrationYear: 2020, taxYear: 2025 })
     expect(applies.mcitStatus).toBe('applies')
     expect(text(applies.rows)).toContain('Minimum corporate income tax @ 1.5% of gross income')

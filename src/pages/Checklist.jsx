@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS } from '../lib/deadlineData.js'
 import { generateChecklist, isUnconfirmed } from '../engine/deadlines.js'
@@ -43,7 +43,7 @@ export default function Checklist() {
       <h1 className="pg-h1">Compliance checklist</h1>
       <p className="pg-sub">
         The obligations with no countdown clock: recurring habits and registration upkeep for <b>{p.name}</b>.
-        Dated deadlines live on the <button className="linkbtn" style={{ fontSize: '14px' }} onClick={() => nav('/')}>calendar</button>.
+        Dated deadlines live on the <Link to="/" style={{ color: 'var(--accInk)', fontWeight: 600 }}>calendar</Link>.
       </p>
 
       {groups.map(([cat, label]) => {

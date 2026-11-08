@@ -24,7 +24,7 @@ const EXT_EAFS = { basis: 'RMC 30-2026 and RMC 39-2026', from: '2026-04-30' }
 
 describe('L07 rulebook overrides', () => {
   it('records RMC 30-2026 for every TY2025 annual return item, all moved to May 15, 2026', () => {
-    expect(obligationsData.overrides.map(o => [o.obligationId, o.rawDate, o.newDate, o.basis])).toEqual([
+    expect(obligationsData.overrides.filter(o => o.basis.startsWith('RMC 30-2026')).map(o => [o.obligationId, o.rawDate, o.newDate, o.basis])).toEqual([
       ['bir-1701a-annual', '2026-04-15', '2026-05-15', 'RMC 30-2026'],
       ['bir-1701-annual', '2026-04-15', '2026-05-15', 'RMC 30-2026'],
       ['bir-1700-annual', '2026-04-15', '2026-05-15', 'RMC 30-2026'],
@@ -35,6 +35,16 @@ describe('L07 rulebook overrides', () => {
       ['bir-eafs-itr-attachments-corp', '2026-04-30', '2026-05-15', 'RMC 30-2026 and RMC 39-2026'],
     ])
     for (const o of obligationsData.overrides) expect(OB.some(ob => ob.id === o.obligationId), o.obligationId).toBe(true)
+  })
+  it('records the SEC move of the 2025 AFS deadline to June 15, 2026', () => {
+    expect(obligationsData.overrides.filter(o => !o.basis.startsWith('RMC 30-2026')).map(o => [o.obligationId, o.rawDate, o.newDate, o.basis])).toEqual([
+      ['sec-afs-calendar', '2026-05-29', '2026-06-15', 'SEC Notice of Apr 14, 2026'],
+    ])
+    const p = { ...defaultProfile('corporation'), name: 'C' }
+    expect(view(gen(p, '2026-01-01', '2027-06-30'), 'sec-afs-calendar')).toEqual([
+      { raw: '2026-05-29', date: '2026-06-15', extended: { basis: 'SEC Notice of Apr 14, 2026', from: '2026-05-29' } },
+      { raw: '2027-05-29', date: '2027-05-29', extended: null },
+    ])
   })
   it('matches the attachments rulebook (RMC 30-2026: May 15, 2026)', () => {
     expect(attachments.itrAttachmentDeadline.notes).toContain('RMC 30-2026 moved filing, payment AND attachments to May 15, 2026')

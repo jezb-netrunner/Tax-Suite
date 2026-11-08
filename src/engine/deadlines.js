@@ -46,6 +46,17 @@ const STATUTORY_NOTE = ROLL_OVER.LGU.note
 // usual (weekend-moved) date and is shown as "Extended to <date> by <basis>".
 const OVERRIDES = obligationRules.overrides || []
 
+// Holidays declared for one region only (holidays.json regionalHolidays, e.g.
+// the NCR ASEAN Summit days of Nov 16-18, 2026). They never move a deadline,
+// because no agency rule says a regional holiday does; a deadline that falls on
+// one carries `regionalHoliday` so the calendar can say the national date is
+// kept. Keyed by ISO date.
+const REGIONAL = new Map((holidayRules.regionalHolidays ? holidayRules.regionalHolidays.value : []).map(h => [h.date, h]))
+
+export function regionalHolidayOn(date) {
+  return REGIONAL.get(typeof date === 'string' ? date : iso(date)) || null
+}
+
 // ---------------------------------------------------------------------------
 // Confidence (H07, owner decision 8). Every rule in the rulebook carries
 // confidence 'verified' or 'needs_review'; needs_review rules are shown with an
@@ -118,7 +129,10 @@ function rawOccurrences(ob, profile, from, to) {
   if (sched.kind === 'quarterly_fixed') {
     for (const y of years) {
       for (const e of sched.entries) {
-        out.push({ date: mkDate(y, e.month, e.day), label: e.label || null, period: `${e.label || ''} ${y}`.trim() })
+        // The 'Annual' entry (e.g. the SAWT filed with the April annual return)
+        // belongs to the taxable year just ended, like the return it goes with.
+        const period = e.label === 'Annual' ? `TY ${y - 1}` : `${e.label || ''} ${y}`.trim()
+        out.push({ date: mkDate(y, e.month, e.day), label: e.label || null, period })
       }
     }
   } else if (sched.kind === 'quarterly_offset') {
@@ -134,7 +148,9 @@ function rawOccurrences(ob, profile, from, to) {
           const mm = ((m - 1) % 12) + 1
           date = resolveDay(yy, mm, sched.day)
         }
-        out.push({ date, label: `Q${q}`, period: `Q${q} FY${y}` })
+        // A calendar-year quarter is named by its year ('Q4 2025'); a fiscal
+        // one by the fiscal year it belongs to ('Q2 FY2027').
+        out.push({ date, label: `Q${q}`, period: fyEnd === 12 ? `Q${q} ${y}` : `Q${q} FY${y}` })
       }
     }
   } else if (sched.kind === 'monthly') {
@@ -262,6 +278,7 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
         lastWorkingDayBefore: nonWorkingDay ? previousBusinessDay(dueDate, holidays) : null,
         rollNote,
         extended: ov ? { basis: ov.basis, from: usualDate, notes: ov.notes || null } : null,
+        regionalHoliday: regionalHolidayOn(dueDate),
         ...deadlineConfidence(ob, { rawDate: occ.date, dueDate, shifted, nonWorkingDay, policy, agencyRule }),
       })
     }

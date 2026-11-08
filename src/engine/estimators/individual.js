@@ -12,7 +12,9 @@ import incomeTax from '../../data/rules/income-tax.json'
 import businessTax from '../../data/rules/business-tax.json'
 import { bracketTax, bracketTaxCentavos } from '../tax.js'
 import { toCentavos, fromCentavos, toWholePesos, mulRate, groupThousands } from '../../lib/money.js'
-import { manilaToday } from '../dates.js'
+import { manilaToday, mkDate, iso, fromISO, shiftToBusinessDay } from '../dates.js'
+import { HOLIDAY_SET, OBLIGATIONS } from '../../lib/deadlineData.js'
+import obligationRules from '../../data/rules/obligations.json'
 import { estimateEmployee } from './employee.js'
 import { RT, MONTH_NAMES } from '../ruleText.js'
 import { thresholdCrossing, crossingRows } from './crossing.js'
@@ -41,6 +43,33 @@ export const VAT_ROW_NOTE = `Not included in this estimate. VAT (${RT.vatRate} o
 export function annualReturnForm({ mixed = false, regime }) {
   if (mixed) return '1701'
   return regime === 'itemized' || regime === 'graduated_itemized' ? '1701' : '1701A'
+}
+
+// Audit Nov 2026 (E10): the taxable years the individual estimator offers,
+// like the corporate one: the current calendar year (by the Manila date) and
+// the previous one. The default is the year whose annual return (1701/1701A,
+// April 15, moved off a weekend or holiday, or as extended by a recorded BIR
+// issuance) is due next, so from January to mid-April it is last year's.
+// Both years use the rates in the rulebook (current law); a law that changes
+// the rates for one year needs dated rate tables first.
+const ANNUAL_RULE_ID = 'bir-1701a-annual'
+export function individualTaxYears({ today = manilaToday(), holidays = HOLIDAY_SET } = {}) {
+  const current = today.getFullYear()
+  const previous = current - 1
+  const ob = OBLIGATIONS.find(o => o.id === ANNUAL_RULE_ID)
+  const dueFor = year => {
+    const raw = mkDate(year + 1, ob.schedule.month, ob.schedule.day)
+    const ext = (obligationRules.overrides || []).find(o => o.obligationId === ANNUAL_RULE_ID && o.rawDate === iso(raw))
+    return ext ? fromISO(ext.newDate) : shiftToBusinessDay(raw, holidays)
+  }
+  const prevDue = dueFor(previous)
+  const defaultYear = iso(today) <= iso(prevDue) ? previous : current
+  return {
+    current,
+    previous,
+    defaultYear,
+    options: [current, previous].map(year => ({ year, dueDate: iso(dueFor(year)) })),
+  }
 }
 
 export function gradTax(taxable) {
@@ -345,7 +374,7 @@ export function estimateIndividual(in_) {
       } else if (nolcoAppliedC > 0) {
         r('Net business income', P(businessNetC), { rule: true })
         r('Less: NOLCO from prior years', -P(nolcoAppliedC), nolcoLeftC > 0
-          ? { sub: `${pesoText(nolcoLeftC)} of NOLCO is left for later years, within its ${NOLCO_YEARS}-year limit.` }
+          ? { sub: `${pesoText(nolcoLeftC)} of NOLCO is left. Each year's loss can be deducted only in the ${NOLCO_YEARS} years after the year it was incurred, so part of it may expire this year: check the year of each loss.` }
           : {})
       }
       r('Net taxable business income', itemNet, { rule: netLossC === 0 && nolcoAppliedC === 0 })

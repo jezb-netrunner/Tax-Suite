@@ -229,6 +229,7 @@ export default function Dashboard() {
                       )}
                       <ExtendedNote d={hero} onDark />
                       <RollNote d={hero} onDark />
+                      <RegionalNote d={hero} onDark />
                     </div>
                   </div>
                 ) : (
@@ -240,7 +241,7 @@ export default function Dashboard() {
                     <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: '#cdddea', marginTop: '11px', maxWidth: '520px' }}>
                       {isEmployee
                         ? `Your employer withholds tax from every payslip and files on your behalf. Watch for your BIR Form 2316 by ${dueDayText('bir-2316-collect')}; it's your proof of tax paid for the year.`
-                        : 'Everything on your calendar is either done or ongoing. Check the Checklist tab for the recurring obligations that keep you compliant.'}
+                        : 'Nothing on your calendar falls due in the next 13 months. Check the Checklist tab for the recurring obligations that keep you compliant.'}
                     </p>
                   </div>
                 )}
@@ -310,6 +311,7 @@ export default function Dashboard() {
                             </div>
                             <ExtendedNote d={d} />
                             <RollNote d={d} />
+                            <RegionalNote d={d} />
                             <DeadlineDetails d={d} />
                           </div>
                         </div>
@@ -494,6 +496,20 @@ function ExtendedNote({ d, onDark }) {
   )
 }
 
+// A deadline on a holiday declared for one region only (e.g. Nov 16-18, 2026
+// in NCR): the national date is kept, and the note says so.
+function RegionalNote({ d, onDark }) {
+  if (!d.regionalHoliday) return null
+  const h = d.regionalHoliday
+  return (
+    <div style={{ fontSize: '12px', lineHeight: 1.5, marginTop: '5px', color: onDark ? '#f3cf9a' : '#7a5a1f' }}>
+      <b>{fmtDay(d.date)} is a special non-working day in {h.region === 'NCR' ? 'NCR (Metro Manila)' : h.region} only ({h.name}).</b> The national due date is
+      shown; filing and paying by then is always on time. No advisory was found saying the deadline moves for
+      taxpayers in {h.region}.
+    </div>
+  )
+}
+
 // LGU, SEC and DOLE dates (and 13th-month pay) are not moved to the next
 // working day (M08). Their note is always shown; when the date itself is a
 // weekend or holiday, say so and name the last working day before it.
@@ -588,6 +604,7 @@ function DeadlineRow({ d, showFreq }) {
           </div>
           <ExtendedNote d={d} />
           <RollNote d={d} />
+          <RegionalNote d={d} />
         </div>
         <div className="dl-tags">
           {showFreq && FREQ_LABEL[d.obligation.schedule.kind] && <span className="tag">{FREQ_LABEL[d.obligation.schedule.kind]}</span>}

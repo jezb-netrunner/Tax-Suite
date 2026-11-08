@@ -44,8 +44,8 @@
   },
   "invoiceIssuanceThreshold": {
     "value": 500,
-    "legalBasis": ["NIRC Sec 237, as amended by RA 11976 (EOPT)", "RR 7-2024, as amended by RR 11-2024", "RMC 77-2024"],
+    "legalBasis": ["NIRC Sec 237, as amended by RA 11976 (EOPT)", "RR 7-2024, as amended by RR 11-2024 and RR 6-2026", "RMC 77-2024", "RMC 112-2026"],
     "confidence": "verified",
-    "notes": "An invoice must issue for every sale of ₱500 or more; VAT-registered sellers issue one regardless of amount, and any seller must on the buyer's request. Non-VAT sellers may issue one aggregated end-of-day invoice for the day's sub-₱500 sales. Adjusted for CPI every 3 years from EOPT effectivity; first adjustment expected ~Jan 2027 alongside the ₱3M threshold review."
+    "notes": "An invoice must issue for every sale of ₱500 or more; VAT-registered sellers issue one regardless of amount, and any seller must on the buyer's request. Non-VAT sellers issue one aggregated end-of-day invoice for the day's sub-₱500 sales once they reach ₱500. Adjusted for CPI every 3 years from EOPT effectivity; first adjustment expected ~Jan 2027 alongside the ₱3M threshold review. Since Oct 16, 2026 (RR 6-2026, per firm alerts), an invoice for a sale subject to creditable withholding tax must show the withholding amount as a separate item; old printed invoices stay usable until exhausted if stamped 'Less: Withholding Tax' (RMC 112-2026 clarifies the presentation and gave more time for system changes)."
   }
 }

@@ -10,9 +10,9 @@ const USER = 'aaaaaaaa-0000-0000-0000-000000000001'
 
 describe('L17 accounts-mode queries', () => {
   it('listProfiles asks only for this user\'s rows', async () => {
-    const client = mockClient({ respond: () => ({ data: [{ id: 'r1', data: { name: 'Maria Santos' }, updated_at: 'x' }], error: null }) })
+    const client = mockClient({ respond: () => ({ data: [{ id: 'r1', data: { name: 'Maria Santos', type: 'individual' }, updated_at: 'x' }], error: null }) })
     const be = createBackend({ client, storage: memoryStorage() })
-    expect(await be.listProfiles(USER)).toEqual([{ name: 'Maria Santos', id: 'r1' }])
+    expect(await be.listProfiles(USER)).toEqual([{ name: 'Maria Santos', type: 'individual', id: 'r1' }])
     expect(client.queries).toEqual([[
       ['from', 'taxpayer_profiles'],
       ['select', 'id, data, updated_at'],

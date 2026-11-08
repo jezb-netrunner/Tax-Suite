@@ -11,8 +11,8 @@ const form = FORMS_DATA.find(f => f.code === '1905')
 
 describe('M14 Form 1905 venue', () => {
   it('checklist item: any RDO, citing RA 11976 and RMC 91-2024', () => {
-    expect(ob.notes).toBe(VENUE)
-    expect(ob.legalBasis).toEqual(['NIRC Sec 236, as amended by RA 11976 (EOPT)', 'RMC 91-2024'])
+    expect(ob.notes.startsWith(VENUE)).toBe(true)
+    expect(ob.legalBasis).toEqual(['NIRC Sec 236, as amended by RA 11976 (EOPT)', 'RMC 91-2024', 'RMC 47-2026 (closure and cancellation of registration)'])
   })
   it('Forms page says the same', () => {
     expect(form.summary).toContain(VENUE)

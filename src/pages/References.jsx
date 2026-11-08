@@ -107,6 +107,7 @@ export default function References() {
   const rollOver = reg.holidays.filter(e => e.kind === 'rollOver')
   const years = reg.holidays.filter(e => e.kind === 'year')
   const notes2027 = reg.holidays.find(e => e.id === 'holidays.json:notes2027')
+  const regional = reg.holidays.find(e => e.kind === 'regional')
   const fixed = reg.holidays.find(e => e.kind === 'fixedByLaw')
 
   return (
@@ -168,7 +169,10 @@ export default function References() {
           <h2 className="sec-h" style={{ margin: '26px 0 12px' }}>Deadline extensions</h2>
           <div className="card pad">
             <p style={{ fontSize: '13px', color: 'var(--mut)', lineHeight: 1.55 }}>
-              Deadlines moved by a later BIR issuance. The calendar shows the new date with the issuance.
+              Deadlines moved by a later issuance (BIR or SEC). The calendar shows the new date with the issuance.
+              Extensions for taxpayers in particular places only (for example, areas hit by a typhoon or flooding,
+              as in RMC 89-2026 and RMC 95-2026 in August 2026) are not on the calendar: check the BIR advisory
+              for your RDO.
             </p>
             <ValueTable caption="Deadline extensions" node={{
               kind: 'table', columns: ['Deadline', 'Form', 'Was due', 'Moved to', 'By'],
@@ -218,6 +222,15 @@ export default function References() {
           </div>
         ))}
         <Notes text={reg.holidayConfidenceNote} />
+
+        {regional && (
+          <div style={{ marginTop: '18px' }}>
+            <EntryHead title={regional.title} confidence={regional.confidence} />
+            <RuleValue node={regional.value} caption={regional.title} />
+            <Cite basis={regional.legalBasis} />
+            <Notes text={regional.notes} />
+          </div>
+        )}
 
         <div style={{ marginTop: '18px' }}>
           <EntryHead title={notes2027.title} confidence={notes2027.confidence} />

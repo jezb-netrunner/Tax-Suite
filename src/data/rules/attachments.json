@@ -5,7 +5,7 @@
       "what": "BIR web facility (eafs.bir.gov.ph) for submitting the filed ITR, audited FS, and other required attachments as scanned PDFs",
       "who": "Any taxpayer, regardless of filing channel (eFPS, eBIRForms, or manual)",
       "enrollment": "Create an account with the taxpayer's TIN and an official email address; activate via the emailed link",
-      "fileFormat": "PDF only, up to 4.8 GB per file",
+      "fileFormat": "PDF only, within the per-file size limit the portal shows (published guides disagree on the figure, so check the portal; split a large group across the numbered -01, -02 … files)",
       "proof": "System-generated Transaction Reference Number (TRN) plus the confirmation email. Keep both; they stand in for a manual 'Received' stamp"
     },
     "legalBasis": ["RMC 49-2020 (eAFS introduction)", "RMC 82-2020 (fiscal-year & quarterly coverage)", "RMC 43-2021 (revised guidelines; RPT & tax-credit groups)", "RMC 34-2025 & RMC 20-2026 (eAFS as the default channel for AITR attachments)"],

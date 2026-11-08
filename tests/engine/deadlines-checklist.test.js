@@ -22,7 +22,11 @@ describe('L05 micro-taxpayer abatement item', () => {
     expect(penalties.classification.value.micro).toEqual({ grossSalesBelow: 3000000 })
   })
   it('cites RR 4-2026 with the issuance and effectivity dates from firm alerts, flagged needs_review', () => {
-    expect(ob.legalBasis).toEqual(['RR 4-2026 (issued June 18, 2026; effective July 7, 2026, per firm alerts)'])
+    expect(ob.legalBasis).toEqual([
+      'RR 4-2026 (issued June 18, 2026; posted June 22; effective July 7, 2026, per firm alerts)',
+      'RMC 84-2026 (questions and answers on RR 4-2026: who qualifies, documents, filing, the fee)',
+    ])
+    expect(ob.desc).toContain('₱5,000 per taxable year')
     expect(ob.confidence).toBe('needs_review')
   })
   it('is shown until Dec 31, 2026 and hidden from Jan 1, 2027', () => {

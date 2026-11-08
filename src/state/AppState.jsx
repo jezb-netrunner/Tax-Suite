@@ -167,7 +167,12 @@ export function AppStateProvider({ children }) {
     async remove(id) {
       await deleteProfile(userId, id)
       await refreshProfiles()
-      if (activeId === id) setActiveId(null)
+      if (activeId === id) {
+        setActiveId(null)
+        // Audit Nov 2026 (S7): forget the stored choice too, so "Download my
+        // data" never names a deleted profile as the active one.
+        try { localStorage.setItem(ACTIVE_KEY, '') } catch { /* ignore */ }
+      }
     },
     async signOut() {
       if (hasCloud) await supabase.auth.signOut()

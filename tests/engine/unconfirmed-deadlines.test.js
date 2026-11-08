@@ -32,7 +32,8 @@ const casPosEmployer = {
 }
 const corp = { ...defaultProfile('corporation'), name: 'Corp Inc', hasEmployees: true }
 const employee = { ...defaultProfile('employee'), name: 'Emil' }
-const PROFILES = [freelancer, casPosEmployer, corp, employee]
+const freelancer2307 = { ...freelancer, name: 'Paolo with 2307s', receives2307: true }
+const PROFILES = [freelancer, freelancer2307, casPosEmployer, corp, employee]
 
 describe('H07 the reason texts', () => {
   it('are plain-language sentences', () => {
@@ -47,8 +48,8 @@ describe('H07 every needs_review obligation yields items flagged unconfirmed', (
 
   it('the rulebook has needs_review obligations to check', () => {
     expect(review.map(o => o.id)).toEqual([
-      'bir-einvoicing', 'philhealth-self', 'pagibig-self', 'lgu-cedula', 'sec-afs-calendar',
-      'bir-micro-abatement-2026', 'bir-crm-pos', 'bir-fbt-note',
+      'bir-einvoicing', 'pagibig-employer', 'philhealth-self', 'pagibig-self', 'lgu-cedula', 'sec-afs-calendar',
+      'bir-payee-sworn-declaration', 'bir-micro-abatement-2026', 'bir-crm-pos', 'bir-fbt-note',
     ])
   })
 
@@ -137,12 +138,17 @@ describe('H07 dates moved past a weekend or holiday', () => {
   it('Pag-IBIG employer remittance for Sep 2026: Sat Oct 10 -> Mon Oct 12, 2026 under the needs_review Pag-IBIG roll-over rule: unconfirmed', () => {
     expect(holidaysData.rollOverByAgency['Pag-IBIG'].confidence).toBe('needs_review')
     const d = pick(gen(casPosEmployer, '2026-10-01', '2026-10-31'), 'pagibig-employer', '2026-10-10')
-    expect(summary(d)).toEqual({ raw: '2026-10-10', due: '2026-10-12', confidence: 'needs_review', reasons: [unconfirmedRollOverReason('Pag-IBIG')] })
+    expect(summary(d)).toEqual({ raw: '2026-10-10', due: '2026-10-12', confidence: 'needs_review', reasons: [UNCONFIRMED_RULE, unconfirmedRollOverReason('Pag-IBIG')] })
   })
 
-  it('Pag-IBIG employer remittance for Oct 2026 on Tue Nov 10, 2026 is not moved: verified', () => {
+  it('Pag-IBIG employer remittance for Oct 2026 on Tue Nov 10, 2026 is not moved, but the schedule itself is unconfirmed (HDMF Circular 499-2026)', () => {
     const d = pick(gen(casPosEmployer, '2026-11-01', '2026-11-30'), 'pagibig-employer', '2026-11-10')
-    expect(summary(d)).toEqual({ raw: '2026-11-10', due: '2026-11-10', confidence: 'verified', reasons: [] })
+    expect(summary(d)).toEqual({ raw: '2026-11-10', due: '2026-11-10', confidence: 'needs_review', reasons: [UNCONFIRMED_RULE] })
+  })
+
+  it('SSS employer remittance for Oct 2026 due Mon Nov 30 -> Tue Dec 1, 2026 (Bonifacio Day): verified', () => {
+    const d = pick(gen(casPosEmployer, '2026-11-01', '2026-12-31'), 'sss-employer', '2026-11-30')
+    expect(summary(d)).toEqual({ raw: '2026-11-30', due: '2026-12-01', confidence: 'verified', reasons: [] })
   })
 
   it('Pag-IBIG self-employed for Sep 2026 (needs_review rule, moved): both reasons', () => {
