@@ -34,4 +34,9 @@ describe('dependency versions (L19)', () => {
   })
   it('nanoid is 3.3.18 or later (GHSA-2v37-7h3g-55p8)', () => atLeast('nanoid', '3.3.18'))
   it('source-map-js is 1.2.2 or later (GHSA-68fv-2mgg-jv7q)', () => atLeast('source-map-js', '1.2.2'))
+  // Audit Nov 12, 2026 (X18): build tools patched with `npm audit fix`.
+  it('vite is past the advisories fixed after 6.4.3 (>= 6.4.4)', () => atLeast('vite', '6.4.4'))
+  it('zod (a lint-tool dependency) is 4.6.6 or later', () => {
+    for (const v of versionsOf('zod')) expect(cmp(v, '4.6.6')).toBeGreaterThanOrEqual(0)
+  })
 })

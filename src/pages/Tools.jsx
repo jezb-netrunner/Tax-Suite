@@ -6,7 +6,8 @@ import { withholdingCalculator, PAY_PERIODS, PAY_FACTORS, DEFAULT_PAY_FACTOR } f
 import businessTax from '../data/rules/business-tax.json'
 import incomeTax from '../data/rules/income-tax.json'
 import penaltyRules from '../data/rules/penalties.json'
-import { NumField, Seg, Switch, SelectField, Disclaimer } from '../components/ui.jsx'
+import { NumField, Seg, Switch, SelectField, Disclaimer, ResultStatus } from '../components/ui.jsx'
+import { PrintHeader } from '../components/PrintHeader.jsx'
 import { money, money2, pct } from '../lib/format.js'
 import { iso, fromISO, shiftToBusinessDay } from '../engine/dates.js'
 import { REGIONAL_EXTENSIONS } from '../engine/deadlines.js'
@@ -115,7 +116,8 @@ function Row({ label, value, text }) {
 
 function PenaltyCard() {
   const today = useManilaToday()
-  const [taxDue, setTaxDue] = useState(50000)
+  // U8: no made-up starting figure; a blank box asks for the amount.
+  const [taxDue, setTaxDue] = useState(null)
   const [dueDate, setDueDate] = useState('')
   const [paidDate, setPaidDate] = useState(null) // null = today in Manila
   const [microSmall, setMicroSmall] = useState(true)
@@ -124,7 +126,8 @@ function PenaltyCard() {
   const paid = paidDate ?? iso(today)
   const dueErr = dateError(dueDate, 'Enter the original due date of the return or payment.')
   const paidErr = dateError(paid, 'Enter the payment date.')
-  const ready = !dueErr && !paidErr
+  const taxBlank = taxDue === null || taxDue === undefined || taxDue === ''
+  const ready = !dueErr && !paidErr && !taxBlank
 
   const pen = useMemo(
     () => (ready ? estimatePenalty({ taxDue, dueDate, paymentDate: paid, microSmall, willful }) : null),
@@ -177,7 +180,8 @@ function PenaltyCard() {
         returns due on or after {reducedFrom}.
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '16px', marginTop: '18px', alignItems: 'start' }}>
-        <NumField label="Basic tax due" value={taxDue} onChange={setTaxDue} prefix="₱" />
+        <NumField label="Basic tax due" value={taxDue} onChange={setTaxDue} emptyValue={null} prefix="₱"
+          hint="The tax on the return before penalties. Type 0 for a return with no tax due that was filed late." />
         <DateField label="Original due date" value={dueDate} onChange={setDueDate}
           hint="If the BIR extended this deadline (for example for your area after a calamity), enter the extended date."
           error={dueErr && !dueErr.empty ? dueErr.message : null} />
@@ -215,9 +219,12 @@ function PenaltyCard() {
       <div style={{ marginTop: '18px', borderTop: '1px solid var(--line2)', paddingTop: '6px' }}>
         {!pen && (
           <p style={{ fontSize: '13.5px', color: 'var(--mut)', padding: '10px 0' }}>
-            {dueErr ? dueErr.message : paidErr.message} The estimate appears here.
+            {taxBlank ? 'Enter the basic tax due.' : dueErr ? dueErr.message : paidErr.message} The estimate appears here.
           </p>
         )}
+        <ResultStatus text={!pen ? '' : pen.late
+          ? `Estimate updated. ${pen.daysLate} ${pen.daysLate === 1 ? 'day' : 'days'} late. Estimated total to pay ${money2(pen.total)}.`
+          : 'Estimate updated. Not late: no surcharge, interest or compromise.'} />
         {pen && !pen.late && (
           <>
             <div style={{ marginTop: '10px', background: 'var(--goodSoft)', color: 'var(--ink)', borderRadius: '9px', padding: '10px 13px', fontSize: '13.5px', lineHeight: 1.5 }}>
@@ -395,7 +402,8 @@ function ProjectorCard() {
 
 // Ported from v1; the math now runs through the shared engine + data layer.
 export default function ToolsPage() {
-  const [whComp, setWhComp] = useState(50000)
+  const toolsApp = useApp()
+  const [whComp, setWhComp] = useState(null)
   const [whGrossMode, setWhGrossMode] = useState('taxable')
   // L08: pay period (and paid days a year for daily pay).
   const [whPeriod, setWhPeriod] = useState('monthly')
@@ -413,6 +421,7 @@ export default function ToolsPage() {
 
   return (
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px' }}>
+      <PrintHeader profileName={toolsApp && toolsApp.active ? toolsApp.active.name : ''} periodText="Tools and calculators" />
       <div style={{ marginBottom: '20px' }}>
         <h1 className="pg-h1">Tools &amp; calculators</h1>
         <p className="pg-sub">Quick utilities for the in-between moments: estimate a penalty, figure out withholding, or project where your year is heading.</p>
@@ -436,10 +445,14 @@ export default function ToolsPage() {
                 hint="Used to spread the month's SSS, PhilHealth and Pag-IBIG shares over the paid days."
               />
             )}
-            <NumField label={`${perWord} ${whGrossMode === 'taxable' ? 'taxable' : 'gross'} pay`} value={whComp} onChange={setWhComp} prefix="₱" />
+            <NumField label={`${perWord} ${whGrossMode === 'taxable' ? 'taxable' : 'gross'} pay`} value={whComp} onChange={setWhComp} emptyValue={null} prefix="₱" />
             <Seg options={[['taxable', 'I have taxable pay'], ['gross', 'Start from gross']]} value={whGrossMode} onChange={setWhGrossMode} ariaLabel="Input mode" />
           </div>
-          <div style={{ marginTop: '18px', background: 'var(--accSoft)', borderRadius: '11px', padding: '16px' }}>
+          {!(Number(whComp) > 0) && (
+            <p style={{ fontSize: '13.5px', color: 'var(--mut)', marginTop: '18px' }}>Enter the pay for one payday. The tax to withhold appears here.</p>
+          )}
+          <ResultStatus text={Number(whComp) > 0 ? `Tax to withhold ${payday}: ${money2(whTax)}.` : ''} />
+          {Number(whComp) > 0 && <div style={{ marginTop: '18px', background: 'var(--accSoft)', borderRadius: '11px', padding: '16px' }}>
             {whGrossMode === 'gross' && (
               <div style={{ fontSize: '12.5px', color: 'var(--accInk)', marginBottom: '7px' }}>
                 Taxable after SSS/PhilHealth/Pag-IBIG employee shares{whPeriod !== 'monthly' && <> ({money2(wh.deductionsPerPeriod)} {payday}, the month's shares spread evenly)</>}: <b className="mono">{money2(whTaxable)}</b>
@@ -448,7 +461,7 @@ export default function ToolsPage() {
             <div style={{ fontSize: '12px', color: 'var(--accInk)', fontWeight: 600 }}>Tax to withhold {payday}</div>
             <div className="mono" style={{ fontSize: '24px', fontWeight: 600, color: 'var(--accInk)', marginTop: '5px' }}>{money2(whTax)}</div>
             <div style={{ fontSize: '12.5px', color: 'var(--accInk)', marginTop: '3px' }}>Effective rate {whRate.toFixed(1)}% of taxable pay</div>
-          </div>
+          </div>}
         </div>
         <ProjectorCard />
       </div>

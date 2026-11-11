@@ -27,7 +27,7 @@ export const BACKUP_MAX_PROFILES = 500
 export const NAME_MAX_LENGTH = 120
 
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-const ID_SHAPE = /^[A-Za-z0-9_.-]{1,64}$/
+const ID_SHAPE = /^[A-Za-z0-9-]{1,64}$/
 const REGIMES = { individual: ['8pct', 'graduated_osd', 'graduated_itemized'], corporation: ['corporate'] }
 const BOOKS = ['manual', 'looseleaf', 'cas']
 const BOOLEAN_FIELDS = [
@@ -40,6 +40,15 @@ const MAX_FIGURES_PER_TAB = 80
 const MAX_TEXT = 60
 // Amount boxes stop at ₱999,999,999,999.99 (format.js).
 const MAX_AMOUNT = 999999999999.99
+// The choices the estimators save as text (a taxable year "earlier", yes/no,
+// the deduction method, the pay period). Any other text is dropped: a number
+// typed as text ("1e30") would otherwise reach the calculators (X3).
+const CHOICES = new Set(['earlier', 'yes', 'no', 'osd', 'itemized', 'monthly', 'semiMonthly', 'weekly', 'daily'])
+// The one field saved as { year: amount }: excess MCIT by taxable year.
+const BY_YEAR_FIELDS = new Set(['excessMcit'])
+const MAX_YEARS = 10
+// The same limit the accounts database puts on one profile (64 kB).
+export const PROFILE_MAX_CHARS = 64000
 
 const isPlainObject = x => x !== null && typeof x === 'object' && !Array.isArray(x)
 
@@ -49,17 +58,21 @@ function fail(message) {
   return e
 }
 
-// One saved figure: a number in the range an amount box accepts, short text
-// (a chosen option), true/false, or blank.
+// One saved figure: an amount an amount box would accept (zero or more, up
+// to the box's limit, to the centavo), one of the known choices, true/false,
+// or blank. The amount boxes refuse negative amounts, so a restore does too.
 function cleanFigure(v) {
   if (v === null || typeof v === 'boolean') return { ok: true, value: v }
-  if (typeof v === 'number') return Number.isFinite(v) && Math.abs(v) <= MAX_AMOUNT ? { ok: true, value: v } : { ok: false }
-  if (typeof v === 'string') return v.length <= MAX_TEXT ? { ok: true, value: v } : { ok: false }
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v) || v < 0 || v > MAX_AMOUNT) return { ok: false }
+    return { ok: true, value: Math.round(v * 100) / 100 }
+  }
+  if (typeof v === 'string') return CHOICES.has(v) ? { ok: true, value: v } : { ok: false }
   return { ok: false }
 }
 
-// The figures of one estimator tab: { field: figure }, plus one level of
-// { year: amount } (the corporate tab's excess MCIT by year).
+// The figures of one estimator tab: { field: figure }, plus { year: amount }
+// for the corporate tab's excess MCIT (4-digit years, a few entries).
 function cleanFigures(raw) {
   const out = {}
   if (!isPlainObject(raw)) return out
@@ -68,12 +81,13 @@ function cleanFigures(raw) {
     if (UNSAFE_KEYS.has(k) || k.length > MAX_TEXT || ++n > MAX_FIGURES_PER_TAB) continue
     const v = raw[k]
     if (isPlainObject(v)) {
+      if (!BY_YEAR_FIELDS.has(k)) continue
       const inner = {}
       let m = 0
       for (const y of Object.keys(v)) {
-        if (UNSAFE_KEYS.has(y) || y.length > MAX_TEXT || ++m > MAX_FIGURES_PER_TAB) continue
+        if (!/^\d{4}$/.test(y) || ++m > MAX_YEARS) continue
         const f = cleanFigure(v[y])
-        if (f.ok) inner[y] = f.value
+        if (f.ok && typeof f.value !== 'string' && typeof f.value !== 'boolean') inner[y] = f.value
       }
       out[k] = inner
       continue
@@ -93,7 +107,7 @@ export function cleanProfile(raw, { thisYear = new Date().getFullYear() } = {}) 
   const type = typeof raw.type === 'string' && Object.prototype.hasOwnProperty.call(PROFILE_TYPES, raw.type) ? raw.type : null
   if (!type) return null
   const p = defaultProfile(type)
-  p.id = typeof raw.id === 'string' && ID_SHAPE.test(raw.id) ? raw.id : null
+  p.id = typeof raw.id === 'string' && ID_SHAPE.test(raw.id) && !UNSAFE_KEYS.has(raw.id) ? raw.id : null
   // Control characters (tabs, line breaks) become spaces; the rest is kept as typed.
   // eslint-disable-next-line no-control-regex
   const name = typeof raw.name === 'string' ? raw.name.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, NAME_MAX_LENGTH) : ''
@@ -120,11 +134,13 @@ export function cleanProfile(raw, { thisYear = new Date().getFullYear() } = {}) 
     }
   }
   p.inputs = inputs
+  // X6: one profile never takes more room than an account allows.
+  if (JSON.stringify(p).length > PROFILE_MAX_CHARS) return null
   return p
 }
 
 /**
- * The text of a backup file -> { profiles, skipped, exportedAt, storedIn }.
+ * The text of a backup file -> { profiles, skipped, exportedAt, storedIn, stamps }.
  * Accepts the "Download my data" file and the copy offered by the error
  * screen ("Download a copy of my data"). Throws an Error (code 'bad-backup')
  * with a plain-language message for anything else.
@@ -172,5 +188,16 @@ export function parseBackup(text, { thisYear } = {}) {
     profiles.push(p)
   }
   if (!profiles.length) throw fail('That backup holds no profiles.')
-  return { profiles, skipped, exportedAt, storedIn }
+  // X12: when each profile in the file was last changed, if the file says.
+  const stamps = {}
+  if (isPlainObject(data) && Array.isArray(data.records)) {
+    for (const r of data.records.slice(0, BACKUP_MAX_PROFILES)) {
+      if (isPlainObject(r) && typeof r.id === 'string' && seen.has(r.id) && typeof r.updatedAt === 'string' && !Number.isNaN(Date.parse(r.updatedAt))) {
+        stamps[r.id] = r.updatedAt
+      }
+    }
+  }
+  // U7: the profile that was selected when the backup was made.
+  const activeProfileId = isPlainObject(data) && typeof data.activeProfileId === 'string' && seen.has(data.activeProfileId) ? data.activeProfileId : null
+  return { profiles, skipped, exportedAt, storedIn, stamps, activeProfileId }
 }

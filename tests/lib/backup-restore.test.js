@@ -28,7 +28,7 @@ describe('a downloaded backup can be restored (round trip)', () => {
     expect(parsed.exportedAt).toBe('2026-11-11T02:00:00.000Z')
     expect(parsed.skipped).toBe(0)
     const r = await be.importProfiles(null, parsed.profiles)
-    expect(r).toEqual({ added: 2, replaced: 0, kept: 0, overLimit: 0, failed: 0 })
+    expect(r).toEqual({ added: 2, replaced: 0, kept: 0, overLimit: 0, failed: 0, canUndo: false })
     expect(await be.listProfiles()).toEqual([maria, corp])
   })
 
@@ -42,9 +42,10 @@ describe('a downloaded backup can be restored (round trip)', () => {
     const changed = { ...maria, name: 'Maria S. (edited)', inputs: { mixed: { gross: 999 } } }
     const { be } = backendWith([changed])
     const incoming = parseBackup(JSON.stringify({ format: 'jez-tax-suite-export', version: 1, profiles: [maria, corp] })).profiles
-    expect(await be.importProfiles(null, incoming)).toEqual({ added: 1, replaced: 0, kept: 1, overLimit: 0, failed: 0 })
+    expect(await be.importProfiles(null, incoming)).toEqual({ added: 1, replaced: 0, kept: 1, overLimit: 0, failed: 0, canUndo: false })
     expect((await be.listProfiles()).map(p => p.name)).toEqual(['Maria S. (edited)', 'Santos Inc.'])
-    expect(await be.importProfiles(null, incoming, { replaceExisting: true })).toEqual({ added: 0, replaced: 2, kept: 0, overLimit: 0, failed: 0 })
+    // Only the one that differs is replaced; the identical one counts as already here.
+    expect(await be.importProfiles(null, incoming, { replaceExisting: true })).toEqual({ added: 0, replaced: 1, kept: 1, overLimit: 0, failed: 0, canUndo: true })
     expect((await be.listProfiles())[0]).toEqual(maria)
   })
 
@@ -52,7 +53,7 @@ describe('a downloaded backup can be restored (round trip)', () => {
     const many = Array.from({ length: PROFILE_LIMIT }, (_, i) => ({ ...defaultProfile('employee'), id: `p-${i}`, name: `Client ${i}` }))
     const { be } = backendWith(many)
     const r = await be.importProfiles(null, [maria])
-    expect(r).toEqual({ added: 0, replaced: 0, kept: 0, overLimit: 1, failed: 0 })
+    expect(r).toEqual({ added: 0, replaced: 0, kept: 0, overLimit: 1, failed: 0, canUndo: false })
     expect((await be.listProfiles()).length).toBe(PROFILE_LIMIT)
   })
 
@@ -113,7 +114,7 @@ describe('a backup file is untrusted: only clean profiles come out', () => {
     expect(p.registrationYear).toBeNull()
     expect(p.hasEmployees).toBe(true)
     expect('extra' in p || 'filed' in p || 'checklistDone' in p).toBe(false)
-    expect(p.inputs).toEqual({ individual: { expenses: 1200.5, mwe: true, nested: {} } })
+    expect(p.inputs).toEqual({ individual: { expenses: 1200.5, mwe: true } })
   })
 
   it('a VAT-registered individual never comes back on the 8% option', () => {

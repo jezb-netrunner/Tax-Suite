@@ -25,6 +25,10 @@ function focusMainHeading() {
   const h = document.querySelector('main h1')
   if (!h) return false
   if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1')
+  // U5: the old-rules notice sits above the heading, where a screen-reader
+  // user who starts reading at the heading would never meet it.
+  if (document.getElementById('stale-rules')) h.setAttribute('aria-describedby', 'stale-rules')
+  else h.removeAttribute('aria-describedby')
   h.focus({ preventScroll: true })
   return true
 }

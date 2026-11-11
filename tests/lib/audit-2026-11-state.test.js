@@ -41,12 +41,23 @@ describe('S11 malformed stored profiles are not shown (and no longer blank every
     expect(usableProfiles([null, 1, 'x', { id: 'a' }, { id: '', type: 'employee' }, { id: 'b', type: 'robot' }, { id: 'c', type: 'employee' }]))
       .toEqual([{ id: 'c', type: 'employee' }])
   })
-  it('local mode: an object instead of a list in storage gives an empty list, and saving still works', async () => {
+  // Audit Nov 12, 2026 (X1): stored data that is not a list used to read as
+  // "no profiles yet", and the next save then replaced it for good. It is
+  // now reported as unreadable, kept untouched, and never written over.
+  it('local mode: an object instead of a list in storage is reported as unreadable, and nothing writes over it', async () => {
     const storage = memoryStorage({ [LS_KEY]: '{}' })
     const be = createBackend({ storage })
-    expect(await be.listProfiles()).toEqual([])
-    const saved = await be.saveProfile(null, { ...defaultProfile('employee'), name: 'E' })
-    expect(await be.listProfiles()).toEqual([saved])
+    await expect(be.listProfiles()).rejects.toMatchObject({ code: 'damaged-data' })
+    await expect(be.saveProfile(null, { ...defaultProfile('employee'), name: 'E' })).rejects.toMatchObject({ code: 'damaged-data' })
+    expect(storage.getItem(LS_KEY)).toBe('{}')
+  })
+  it('local mode: empty or missing storage is still simply "no profiles yet"', async () => {
+    for (const init of [{}, { [LS_KEY]: '' }, { [LS_KEY]: '[]' }]) {
+      const be = createBackend({ storage: memoryStorage(init) })
+      expect(await be.listProfiles()).toEqual([])
+      const saved = await be.saveProfile(null, { ...defaultProfile('employee'), name: 'E' })
+      expect(await be.listProfiles()).toEqual([saved])
+    }
   })
 })
 

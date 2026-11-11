@@ -10,7 +10,8 @@ import { selfEmployedMonthlyContributions, selfEmployedMonthlyEarnings } from '.
 import { fromISO, taxableYearQuarters } from '../engine/dates.js'
 import { withChangedInputs } from '../engine/profile.js'
 import { createInputSaver, figuresToShow } from '../lib/inputSaver.js'
-import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
+import { NumField, SelectField, Switch, Disclaimer, ResultStatus } from '../components/ui.jsx'
+import { rulesAge } from '../lib/rulesAge.js'
 import { money, money2 } from '../lib/format.js'
 import { RT, percentText, payFactorText, dueDayText } from '../engine/ruleText.js'
 import corporateRules from '../data/rules/corporate.json'
@@ -136,6 +137,7 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
   // Audit Nov 2026 (E10): the current or the previous taxable year, starting
   // on the one whose annual return is due next (last year's until mid-April).
   const today = useManilaToday()
+  const age = rulesAge(today)
   const years = useMemo(() => individualTaxYears({ today }), [today])
   const taxYear = years.options.some(o => o.year === v.taxYear) ? v.taxYear : years.defaultYear
   const annualForm = mixed || p.regime === 'graduated_itemized' ? '1701' : '1701A'
@@ -168,6 +170,13 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
   // breakdown" on another card switches to that option. When the profile's
   // regime is not available with these figures, the cheapest one is shown.
   const [picked, setPicked] = useState(null)
+  // U3: after "Show this breakdown" the button is gone, so focus moves to
+  // the breakdown's heading instead of dropping to the top of the page.
+  const breakdownRef = React.useRef(null)
+  function pick(key) {
+    setPicked(key)
+    requestAnimationFrame(() => { if (breakdownRef.current) breakdownRef.current.focus() })
+  }
   const profileOpt = r.options.find(o => o.key === REGIME_OPTION[p.regime])
   const pickedOpt = r.options.find(o => o.key === picked && o.eligible)
   const usesProfileRegime = Boolean(profileOpt && profileOpt.eligible)
@@ -278,7 +287,9 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
           )}
 
           <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
-            <b style={{ color: 'var(--ink)' }}>{r.ratesLabel}.</b> {r.ratesNote}
+            <b style={{ color: 'var(--ink)' }}>{age.stale && taxYear > Number(age.verifiedISO.slice(0, 4))
+              ? `Using the rates last checked ${age.verifiedText} (not confirmed for ${taxYear})`
+              : r.ratesLabel}.</b> {r.ratesNote}
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '14px', marginTop: '12px' }}>
@@ -286,7 +297,7 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
               // Every option in a tie for the lowest tax is marked (L01).
               const isBest = c.eligible && (c === r.best || Boolean(r.tie && r.tie.includes(c.key)))
               return (
-                <div key={c.key} style={{
+                <div key={c.key} className="print-keep" style={{
                   borderRadius: '13px', padding: '18px',
                   // M19: an option that is not available has a dashed outline instead of faded (unreadable) text.
                   border: isBest ? '1.5px solid var(--acc)' : c.eligible ? '1.5px solid var(--line)' : '1.5px dashed var(--field)',
@@ -323,7 +334,7 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
                       {usesProfileRegime && c === profileOpt && <span className="tag" style={{ background: '#eef3f8', color: 'var(--ink)' }}>On this profile</span>}
                       {c === shown
                         ? <span style={{ fontWeight: 600 }}>Breakdown shown below</span>
-                        : <button type="button" className="linkbtn no-print" style={{ minHeight: '24px' }} aria-label={`Show the breakdown for ${c.name}`} onClick={() => setPicked(c.key)}>Show this breakdown</button>}
+                        : <button type="button" className="linkbtn no-print" style={{ minHeight: '24px' }} aria-label={`Show the breakdown for ${c.name}`} onClick={() => pick(c.key)}>Show this breakdown</button>}
                     </div>
                   )}
                 </div>
@@ -331,6 +342,7 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
             })}
           </div>
 
+          <ResultStatus text={`Estimate updated. ${r.tie ? r.tieNote : `${r.best.name} is the cheapest option at ${money(r.best.total)}.`} Breakdown shown for ${shown.name}: ${money(shown.total)} for the year.`} />
           <div className="summary-banner" style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px', display: 'flex', alignItems: 'center', gap: '13px' }}>
             <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--good)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>✓</span>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
@@ -344,7 +356,7 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
             <div className="card pad">
-              <h2 className="sec-h">How we got there: {shown.name}</h2>
+              <h2 className="sec-h" ref={breakdownRef} tabIndex={-1} style={{ outline: 'none' }}>How we got there: {shown.name}</h2>
               <p className="cite" style={{ marginTop: '4px' }} role="status">
                 {shownIsProfile ? 'The regime on this profile.' : shown === r.best ? (r.tie ? 'Tied for the lowest tax.' : 'The cheapest option with these figures.') : 'The option you chose to view.'}
               </p>
@@ -612,6 +624,7 @@ function EmployeeEstimator({ app }) {
           : 'Start with your monthly basic salary (more than ₱0). Your payslip and annual tax appear here as you type.'}</EnterFigures>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
+          <ResultStatus text={`Estimate updated. Withholding tax ${money2(r.monthlyWithholding)} a month; take-home ${money2(r.monthlyTakeHome)} a month; income tax for the year ${money2(r.annualTax)}.`} />
           <div className="card pad">
             <h2 className="sec-h">Your monthly payslip</h2>
             <Rows fmt="centavo" rows={r.rows} />
@@ -741,6 +754,7 @@ function CorporationEstimator({ app, onPrintYear }) {
               {p.id && <>{' '}<Link to={`/profiles/${p.id}/edit`} state={{ returnTo: '/estimator' }}>Edit the profile</Link></>}
             </div>
           )}
+          <ResultStatus text={`Estimate updated. Income tax due ${money(r.incomeTaxDue)}${r.credits > 0 ? `; after credits ${r.netPayable >= 0 ? `${money(r.netPayable)} still payable` : `an overpayment of ${money(-r.netPayable)}`}` : ''}.`} />
           <div className="summary-banner" style={{ marginTop: '10px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
               {r.mcitStatus === 'unknown' && r.usesMcit
@@ -851,6 +865,7 @@ function PayrollEstimator({ app }) {
           : 'Start with the employee\'s monthly basic pay (more than ₱0). The withholding and true cost appear here as you type.'}</EnterFigures>
       ) : (
         <div className="card pad" style={{ marginTop: '20px' }}>
+          <ResultStatus text={`Estimate updated. Withholding tax to remit ${money2(r.monthlyWithholding)} a month; total employer cost ${money2(r.totalMonthlyCost)} a month.`} />
           <h2 className="sec-h">Withholding &amp; true cost for this employee</h2>
           <Rows fmt="centavo" rows={r.rows} />
           <BasisNote refs={r.references} />

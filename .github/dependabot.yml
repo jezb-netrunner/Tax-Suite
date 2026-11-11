@@ -1,0 +1,18 @@
+# Audit Nov 12, 2026 (X18): the pinned GitHub Actions and the npm packages
+# never got update notices. Dependabot opens a pull request when one has a
+# newer version or a security fix; each pull request runs the same checks as
+# any other (lint, tests, build) before anyone merges it.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dev-tools:
+        dependency-type: development
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

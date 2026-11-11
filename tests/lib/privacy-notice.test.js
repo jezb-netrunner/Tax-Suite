@@ -25,8 +25,8 @@ describe('H14 Privacy Notice page', () => {
 
   it('names the law and is dated', () => {
     expect(local).toContain('Data Privacy Act of 2012 (Republic Act 10173)')
-    expect(PRIVACY_NOTICE_UPDATED).toBe('October 17, 2026')
-    expect(local).toContain('Last updated October 17, 2026')
+    expect(PRIVACY_NOTICE_UPDATED).toBe('November 12, 2026')
+    expect(local).toContain('Last updated November 12, 2026')
   })
 
   it('shows the owner placeholders, clearly marked, while operator.json is not filled in', () => {
@@ -63,9 +63,11 @@ describe('H14 Privacy Notice page', () => {
     expect(accounts).toContain('Singapore')
   })
 
-  it('operator.json has exactly the three details, as text', () => {
-    expect(Object.keys(operator).filter(k => !k.startsWith('$')).sort()).toEqual(['contactEmail', 'dpoName', 'region'])
-    for (const k of ['contactEmail', 'dpoName', 'region']) expect(typeof operator[k]).toBe('string')
+  it('operator.json has the three privacy details and the site address, as text', () => {
+    expect(Object.keys(operator).filter(k => !k.startsWith('$')).sort()).toEqual(['contactEmail', 'dpoName', 'region', 'siteUrl'])
+    for (const k of ['contactEmail', 'dpoName', 'region', 'siteUrl']) expect(typeof operator[k]).toBe('string')
+    // The site address is shown as text in the old-rules notice; it must be a plain https address.
+    if (operator.siteUrl) expect(operator.siteUrl).toMatch(/^https:\/\/[^\s<>"']+$/)
     // A filled-in contact must be an email address (it becomes a mailto: link).
     if (operator.contactEmail) expect(operator.contactEmail).toMatch(/^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/)
   })
@@ -160,15 +162,15 @@ describe('H14 sign-up consent', () => {
     })
     expect(r.ok).toBe(true)
     // Audit Nov 2026 (S8): in step with the notice's "last updated" date.
-    expect(PRIVACY_NOTICE_VERSION).toBe('2026-10-17')
-    expect(PRIVACY_NOTICE_UPDATED).toBe('October 17, 2026')
+    expect(PRIVACY_NOTICE_VERSION).toBe('2026-11-12')
+    expect(PRIVACY_NOTICE_UPDATED).toBe('November 12, 2026')
     expect(client.auth.signUp).toHaveBeenCalledTimes(1)
     expect(client.auth.signUp).toHaveBeenCalledWith({
       email: 'ana@example.com',
       password: 'longenough',
       options: {
         emailRedirectTo: 'https://example.ph/tax/',
-        data: { privacy_notice_version: '2026-10-17', privacy_consent_at: '2026-10-07T03:15:00.000Z' },
+        data: { privacy_notice_version: '2026-11-12', privacy_consent_at: '2026-10-07T03:15:00.000Z' },
       },
     })
   })

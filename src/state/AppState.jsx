@@ -8,9 +8,10 @@ import {
   hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
   localLeftovers, importLocalProfiles, eraseLocalLeftovers, openedFromRecoveryLink, emailLinkError,
   updateProfile as updateStoredProfile, watchProfileChanges, stashFigures, clearStashedFigures, replayStashedFigures,
-  importProfiles, lastBackupDate, noteBackup,
+  importProfiles, lastBackupDate, noteBackup, profileStamps, restoreUndoInfo, undoRestore, recoveryEventSeen,
 } from '../lib/backend.js'
-import { figuresNotSaved } from '../lib/inputSaver.js'
+import { figuresNotSaved, flushPendingSaves } from '../lib/inputSaver.js'
+import { sessionFromRecovery } from '../lib/auth.js'
 
 const Ctx = createContext(null)
 
@@ -36,7 +37,13 @@ export function AppStateProvider({ children }) {
   // M28: true while the user, back from a "reset your password" email link,
   // still has to choose a new password.
   const [recovery, setRecovery] = useState(openedFromRecoveryLink)
+  // True once Supabase itself reported a password-reset sign-in.
+  const [recoveryEvent, setRecoveryEvent] = useState(() => recoveryEventSeen())
   const [backupDate, setBackupDate] = useState(() => lastBackupDate())
+  // Audit Nov 12, 2026 (X12): when each profile was last changed, { id: ISO }.
+  const [lastChanged, setLastChanged] = useState({})
+  // X5: a restore that replaced profiles can be undone (local mode).
+  const [undoInfo, setUndoInfo] = useState(() => restoreUndoInfo())
   const [activeId, setActiveId] = useState(() => {
     try { return localStorage.getItem(ACTIVE_KEY) || null } catch { return null }
   })
@@ -46,11 +53,14 @@ export function AppStateProvider({ children }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setAuthReady(true)
+    }).catch(() => {
+      // X19: never leave a blank screen; the sign-in page is shown instead.
+      setAuthReady(true)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s)
-      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
-      if (event === 'SIGNED_OUT') setRecovery(false)
+      if (event === 'PASSWORD_RECOVERY') { setRecovery(true); setRecoveryEvent(true) }
+      if (event === 'SIGNED_OUT') { setRecovery(false); setRecoveryEvent(false) }
     })
     return () => sub.subscription.unsubscribe()
   }, [])
@@ -79,6 +89,7 @@ export function AppStateProvider({ children }) {
       const list = await listProfiles(forUser)
       if (token !== reqToken.current) return
       setProfiles(list)
+      setLastChanged(profileStamps())
       setLoadError(null)
       loadedFor.current = forUser
     } catch (e) {
@@ -164,6 +175,14 @@ export function AppStateProvider({ children }) {
     },
     async save(profile) {
       const saved = await saveProfile(userId, profile)
+      // X2 (local mode): ask the browser not to clear this site's storage on
+      // its own (some browsers drop it after a period without visits). The
+      // answer is up to the browser; backups remain the real protection.
+      if (!hasCloud) {
+        try {
+          if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {})
+        } catch { /* not supported: nothing to do */ }
+      }
       await refreshProfiles()
       if (!profile.id) {
         setActiveId(saved.id)
@@ -177,10 +196,26 @@ export function AppStateProvider({ children }) {
     // "This profile was deleted in another window." The list is reloaded
     // either way.
     async updateProfile(id, change) {
+      // X16: in accounts mode a saved figure used to reload every profile of
+      // the account (up to 500) after each pause in typing. The one profile
+      // is replaced on screen instead; a failure still reloads the list (the
+      // profile may have been deleted or changed elsewhere). Local mode keeps
+      // the reload: it is a read of this browser's storage.
+      if (!hasCloud) {
+        try {
+          return await updateStoredProfile(userId, id, change)
+        } finally {
+          await refreshProfiles({ background: true })
+        }
+      }
       try {
-        return await updateStoredProfile(userId, id, change)
-      } finally {
+        const next = await updateStoredProfile(userId, id, change)
+        setProfiles(list => list.map(p => (p.id === id ? next : p)))
+        setLastChanged(m => ({ ...m, [id]: new Date().toISOString() }))
+        return next
+      } catch (e) {
         await refreshProfiles({ background: true })
+        throw e
       }
     },
     // M06 (accounts mode): a browser copy of figures not yet saved, taken when
@@ -206,36 +241,73 @@ export function AppStateProvider({ children }) {
       }
     },
     async signOut() {
-      if (hasCloud) await supabase.auth.signOut()
+      if (!hasCloud) return
+      // X14: figures typed in the last moment are saved while still signed in.
+      try { await flushPendingSaves() } catch { /* a failed save is reported by its own notice */ }
+      await supabase.auth.signOut()
     },
     userEmail: session?.user?.email || null,
-    recovery: recovery && Boolean(session),
-    endRecovery() { setRecovery(false) },
+    // X8: a hand-typed "?type=recovery" address used to open "Set a new
+    // password" for anyone at a signed-in computer, with no current password
+    // asked. The screen now needs the reset event from Supabase, or a session
+    // that itself came from an emailed link.
+    recovery: Boolean(session) && (recoveryEvent || (recovery && sessionFromRecovery(session))),
+    endRecovery() { setRecovery(false); setRecoveryEvent(false) },
     linkError: emailLinkError,
     notice,
     clearNotice() { setNotice(null) },
     // M25 "Download my data": every profile and saved figure as one object.
     async exportData() {
       const data = await exportData({ userId, email: session?.user?.email || null })
-      // Audit Nov 11, 2026: remember the date of this backup (local mode).
-      noteBackup()
-      setBackupDate(lastBackupDate())
+      // Remember the date of this backup (local mode), unless the stored data
+      // could not be read: that file is a rescue copy, not a backup.
+      if (!data.unreadable) {
+        noteBackup()
+        setBackupDate(lastBackupDate())
+      }
       return data
     },
     // Audit Nov 11, 2026: "Restore from a backup file" (see src/lib/backup.js).
-    async restoreBackup(profilesFromFile, opts) {
+    // opts: { replaceExisting, exportedAt, activeProfileId } (the last two from the file).
+    async restoreBackup(profilesFromFile, opts = {}) {
       try {
-        return await importProfiles(userId, profilesFromFile, opts)
+        const r = await importProfiles(userId, profilesFromFile, opts)
+        // U7: the file just restored is itself a backup, so the reminder does
+        // not say "No backup yet" straight after it.
+        if ((r.added || r.replaced || r.kept) && opts.exportedAt && !Number.isNaN(Date.parse(opts.exportedAt))) {
+          noteBackup(new Date(opts.exportedAt), { onlyIfLater: true })
+          setBackupDate(lastBackupDate())
+        }
+        return r
       } finally {
+        setUndoInfo(restoreUndoInfo())
+        await refreshProfiles()
+        // U7: with no profile selected, the one that was selected in the backup is.
+        if (!activeId && opts.activeProfileId) {
+          setActiveId(opts.activeProfileId)
+          try { localStorage.setItem(ACTIVE_KEY, opts.activeProfileId) } catch { /* ignore */ }
+        }
+      }
+    },
+    // X5: put back the profiles as they were before the last restore that replaced any.
+    undoInfo,
+    async undoRestore() {
+      try {
+        return undoRestore()
+      } finally {
+        setUndoInfo(restoreUndoInfo())
         await refreshProfiles()
       }
     },
+    // X12: { [profile id]: ISO time it was last changed }.
+    lastChanged,
     // 'YYYY-MM-DD' of the last "Download my data" in this browser (local mode), or null.
     lastBackup: backupDate,
     // M25 "Erase all data on this device" (local mode).
     async eraseAllData() {
       eraseLocalData()
       setBackupDate(null)
+      setUndoInfo(null)
       setActiveId(null)
       await refreshProfiles()
     },
@@ -259,7 +331,7 @@ export function AppStateProvider({ children }) {
       setNotice('Your account and every profile saved in it were deleted.')
       setSession(null)
     },
-  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers, recovery, saveProblem, backupDate])
+  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers, recovery, recoveryEvent, saveProblem, backupDate, lastChanged, undoInfo])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

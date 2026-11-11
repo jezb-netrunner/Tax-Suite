@@ -15,6 +15,8 @@ import { ItemBadge, DeadlineDetails } from '../components/Confidence.jsx'
 import { FormCode } from '../components/FormCode.jsx'
 import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
 import { deadlineCsv, deadlineCsvFileName, downloadText } from '../lib/exports.js'
+import { backupReminder } from './Profiles.jsx'
+import { deadlineIcs, deadlineIcsFileName, REMINDER_DAYS_BEFORE } from '../lib/ics.js'
 import { formGuideCode, formGuidePath } from '../lib/formGuide.js'
 
 function NoProfile() {
@@ -59,6 +61,9 @@ export default function Dashboard() {
   const gapNote = holidayGapNote(gapYears)
   // Holidays proclaimed separately, closer to the date (D9).
   const pendingNotes = pendingHolidayNotes(t, windowEnd)
+  // X2: local data can be lost with the browser's storage, so the backup
+  // reminder is on the calendar too, not only on the Profiles page.
+  const backupNote = backupReminder({ hasCloud: app.hasCloud, profileCount: app.profiles.length, lastBackup: app.lastBackup, today: t })
 
   // Due dates of the last 60 days. The calendar is a reference, not a
   // tracker: it does not know what was filed, so these are "recently passed".
@@ -81,14 +86,28 @@ export default function Dashboard() {
     downloadText(deadlineCsvFileName(p.name, t, { filtered }), deadlineCsv({ recent: recentShown, upcoming: shown, today: t, profileName: p.name }))
   }
 
+  // U12: the upcoming dates as a file a calendar app can import, with reminders.
+  function downloadIcs() {
+    downloadText(deadlineIcsFileName(deadlineCsvFileName(p.name, t, { filtered })), deadlineIcs({ upcoming: shown, today: t, profileName: p.name }), 'text/calendar;charset=utf-8', { bom: false })
+  }
+
   if (!app.profilesReady) return null
   if (!p && app.loadError) {
     return (
       <div className="page wrap" style={{ paddingTop: '40px', paddingBottom: '64px', maxWidth: '620px' }}>
         <div className="card pad">
           <h1 className="pg-h1">Couldn’t load your profiles</h1>
-          <p className="pg-sub">This is a connection problem, not lost data. Your saved taxpayers are still there.</p>
-          <button className="btn" style={{ marginTop: '16px' }} onClick={() => app.retryLoad()}>Try again</button>
+          {app.loadError.code === 'damaged-data' ? (
+            <>
+              <p className="pg-sub">The profiles saved in this browser could not be read. Nothing was deleted.</p>
+              <button className="btn" style={{ marginTop: '16px' }} onClick={() => nav('/profiles')}>See what to do</button>
+            </>
+          ) : (
+            <>
+              <p className="pg-sub">This is a loading problem, not lost data. Your saved taxpayers are still there.</p>
+              <button className="btn" style={{ marginTop: '16px' }} onClick={() => app.retryLoad()}>Try again</button>
+            </>
+          )}
         </div>
       </div>
     )
@@ -166,6 +185,17 @@ export default function Dashboard() {
                 (such as {fixedHolidayExamples()}) only; check the official list once it is out.
               </p>
             )}
+            {backupNote && (
+              <p className="mini-warn no-print" role="note" style={{ maxWidth: '640px' }}>
+                {app.lastBackup ? 'Your backup is more than a month old.' : 'You have no backup yet.'} These profiles exist only in this browser.{' '}
+                <Link to="/profiles" style={{ color: 'inherit', fontWeight: 700 }}>Download a backup on the Profiles page</Link>.
+              </p>
+            )}
+            {view === 'feed' && (
+              <p className="print-only" style={{ fontSize: '10pt', marginTop: '6px' }}>
+                This printout lists the next date of each obligation. For every date in the period, print the Table view.
+              </p>
+            )}
             {pendingNotes.map(n => (
               <p key={n.year} className="mini-warn" role="note" style={{ maxWidth: '640px' }}>{n.note}</p>
             ))}
@@ -178,6 +208,8 @@ export default function Dashboard() {
             </div>
             <PrintButton />
             <button type="button" className="btn sm ghost" onClick={downloadCsv}>Download as spreadsheet (CSV)</button>
+            <button type="button" className="btn sm ghost" onClick={downloadIcs}
+              title={`A file your phone or computer calendar can open, with a reminder ${REMINDER_DAYS_BEFORE} days before each date and on the day`}>Add to my calendar app (.ics)</button>
           </div>
         </div>
 

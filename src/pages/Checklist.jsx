@@ -6,6 +6,7 @@ import { generateChecklist, isUnconfirmed } from '../engine/deadlines.js'
 import { AgencyTag, Disclaimer } from '../components/ui.jsx'
 import { ItemBadge } from '../components/Confidence.jsx'
 import { useManilaToday } from '../lib/useManilaToday.js'
+import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
 
 // Recurring, no-fixed-date obligations + the dated "upkeep" items grouped by
 // theme — the stuff that keeps a registration healthy between filings. A
@@ -40,7 +41,11 @@ export default function Checklist() {
 
   return (
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px', maxWidth: '860px' }}>
-      <h1 className="pg-h1">Compliance checklist</h1>
+      <PrintHeader profileName={p.name} periodText="Compliance checklist" />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <h1 className="pg-h1">Compliance checklist</h1>
+        <PrintButton />
+      </div>
       <p className="pg-sub">
         The obligations with no countdown clock: recurring habits and registration upkeep for <b>{p.name}</b>.
         Dated deadlines live on the <Link to="/" style={{ color: 'var(--accInk)', fontWeight: 600 }}>calendar</Link>.

@@ -259,7 +259,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
   .hero-side { border-color: #999 !important; }
   .card, .list-card { box-shadow: none !important; }
   .list-card { overflow: visible; }
-  .card, .hero, .summary-banner, .frow, .check-row, .disclaimer, .mini-warn, .form-row-head, li, tr, .opt-card {
+  .card, .hero, .summary-banner, .frow, .check-row, .disclaimer, .mini-warn, .form-row-head, li, tr, .opt-card, .print-keep {
     break-inside: avoid; page-break-inside: avoid;
   }
   h1, h2, h3 { break-after: avoid; page-break-after: avoid; }

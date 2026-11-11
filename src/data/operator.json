@@ -1,6 +1,7 @@
 {
-  "$comment": "Who runs this copy of JEZ Tax Suite. OWNER: type your details between the quotes and rebuild (npm run build). The Privacy Notice shows a highlighted [PLACEHOLDER] for each one left empty. contactEmail: where users write about their data. dpoName: your Data Protection Officer (it may be you). region: where the Supabase database is hosted, only needed once accounts are switched on.",
+  "$comment": "Who runs this copy of JEZ Tax Suite. OWNER: type your details between the quotes and rebuild (npm run build). The Privacy Notice shows a highlighted [PLACEHOLDER] for each of the first three left empty. contactEmail: where users write about their data. dpoName: your Data Protection Officer (it may be you). region: where the Supabase database is hosted, only needed once accounts are switched on. siteUrl: the web address where the newest copy of the app is published; old copies name it when they tell their users the rules may be out of date (change it if the site moves).",
   "contactEmail": "",
   "dpoName": "",
-  "region": ""
+  "region": "",
+  "siteUrl": "https://jezb-netrunner.github.io/Tax-Suite/"
 }

@@ -14,6 +14,13 @@ import './styles/app.css'
 // React Router 7.18+ small.
 const ROUTER_FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true }
 
+// Audit Nov 12, 2026 (X19): a failure outside drawing (a download, a sign-out)
+// used to vanish. It is logged with a plain line the user can report; the
+// app's own save failures already show their own notice.
+window.addEventListener('unhandledrejection', e => {
+  console.error('JEZ Tax Suite: an action did not finish.', e.reason)
+})
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>

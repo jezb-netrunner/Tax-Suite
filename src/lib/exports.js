@@ -84,8 +84,9 @@ export function printHeaderText({ profileName, taxYear, printedOn, periodText = 
 
 // Browser only: save text as a file. The byte-order mark lets Excel read the
 // file as UTF-8 (₱, ñ and the · separator).
-export function downloadText(name, text, type = 'text/csv;charset=utf-8') {
-  const blob = new Blob(['﻿', text], { type })
+export function downloadText(name, text, type = 'text/csv;charset=utf-8', { bom = true } = {}) {
+  // The byte-order mark is for spreadsheets; a calendar file must not have one.
+  const blob = new Blob(bom ? ['﻿', text] : [text], { type })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

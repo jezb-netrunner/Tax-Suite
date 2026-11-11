@@ -26,7 +26,7 @@ export function operatorDetails(op = operator) {
 }
 
 // Keep in step with PRIVACY_NOTICE_VERSION in src/lib/auth.js.
-export const PRIVACY_NOTICE_UPDATED = 'October 17, 2026'
+export const PRIVACY_NOTICE_UPDATED = 'November 12, 2026'
 
 function Placeholder({ children }) {
   return (
@@ -128,7 +128,10 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local', detail
       <Section title="Where it is stored and who receives it">
         <ul style={LIST}>
           <li><b>This browser (local mode).</b> Profiles and figures are kept in this browser's storage on this device. They are not encrypted, and anyone who uses this browser can see them.</li>
-          <li><b>Supabase (accounts only).</b> {mode === 'local' && details.region.missing ? 'Accounts are not switched on for this site, so nothing is stored there. When they are, our' : 'Our'} database provider stores your email, hashed password and profiles in {mode === 'local' && details.region.missing ? 'the region named here' : region}. Each account can read only its own profiles. If you reload or close the page before figures you typed reach your account, they are kept in this browser until you next sign in here, then saved to your account.</li>
+          <li><b>Supabase (accounts only).</b> {mode === 'local' && details.region.missing
+            ? 'Accounts are not switched on for this site, so nothing is stored there. If they are switched on later, this notice will name where our database provider keeps your email, hashed password and profiles. Each account'
+            : <>Our database provider stores your email, hashed password and profiles in {region}. Each account</>} can read only its own profiles. If you reload or close the page before figures you typed reach your account, they are kept in this browser until you next sign in here, then saved to your account.</li>
+          <li><b>Backup files you download.</b> "Download my data" saves a file to your device with every profile name and figure in readable form. It stays wherever you keep it: erasing data in the app, or deleting your account, does not delete that file. Keep it private and delete it yourself when you no longer need it.</li>
           <li><b>GitHub Pages (hosting).</b> GitHub, which hosts this site, receives your IP address and browser details when you open the site and keeps them in its server logs.</li>
         </ul>
         <p style={{ marginTop: '10px' }}>
@@ -166,7 +169,8 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local', detail
         <p>
           The site is served over an encrypted connection (HTTPS). With an account, the database lets each
           account read and change only its own profiles. If this notice changes, the date at the top changes
-          too; with an account we will ask you to agree again to any change in how your data is used.
+          too, so check it from time to time. The notice version you agreed to when you signed up is kept
+          with your account.
         </p>
       </Section>
     </div>

@@ -33,7 +33,17 @@ export function figuresNotSaved(cause) {
   return err
 }
 
+// Audit Nov 12, 2026 (X14): the savers that are alive, so "Sign out" can wait
+// for figures typed a moment ago to reach the account before the session ends.
+const liveSavers = new Set()
+
+// Saves every pending figure now and waits for the saves to finish (ok or not).
+export async function flushPendingSaves() {
+  await Promise.all([...liveSavers].map(s => s.flushAndWait()))
+}
+
 export function createInputSaver({ save, onError, onSettled, stash, delay = SAVE_DELAY_MS, win = globalThis.window, doc = globalThis.document }) {
+  const running = new Set() // promises of saves in flight
   let pending = null // { values }: the fields changed since the last save
   let timer = null
   let inFlight = 0 // saves started and not finished
@@ -90,7 +100,9 @@ export function createInputSaver({ save, onError, onSettled, stash, delay = SAVE
       report(e)
       return
     }
-    Promise.resolve(result).then(() => settle(true), e => { settle(false); report(e) })
+    const done = Promise.resolve(result).then(() => settle(true), e => { settle(false); report(e) })
+    running.add(done)
+    done.then(() => running.delete(done))
   }
 
   // The page is being hidden, reloaded or closed: keep a browser copy of the
@@ -115,6 +127,14 @@ export function createInputSaver({ save, onError, onSettled, stash, delay = SAVE
   if (listening.win) win.addEventListener('pagehide', onPageHide)
   if (listening.doc) doc.addEventListener('visibilitychange', onVisibility)
 
+  const registered = {
+    flushAndWait() {
+      flush()
+      return Promise.all([...running])
+    },
+  }
+  liveSavers.add(registered)
+
   return {
     schedule(changes) {
       pending = { values: { ...(failedValues || {}), ...(pending ? pending.values : {}), ...changes } }
@@ -126,6 +146,7 @@ export function createInputSaver({ save, onError, onSettled, stash, delay = SAVE
     unsaved: () => (failedValues ? { ...failedValues } : null),
     dispose() {
       flush()
+      liveSavers.delete(registered)
       if (listening.win) win.removeEventListener('pagehide', onPageHide)
       if (listening.doc) doc.removeEventListener('visibilitychange', onVisibility)
     },

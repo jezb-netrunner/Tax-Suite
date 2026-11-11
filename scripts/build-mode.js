@@ -15,9 +15,12 @@ export function accountsEnabled({ command, env = {}, optIn } = {}) {
 }
 
 // L18: what the Content-Security-Policy must let the app connect to in an
-// accounts build: the Supabase project over HTTPS and its realtime socket.
+// accounts build: the Supabase project over HTTPS.
 export function supabaseConnectSources(url) {
   if (!url) return []
   const u = new URL(url)
-  return [u.origin, `${u.protocol === 'http:' ? 'ws:' : 'wss:'}//${u.host}`]
+  // Audit Nov 12, 2026 (X17): the app opens no realtime (websocket) channel,
+  // so only the project's https origin is allowed. Add the wss:// origin here
+  // if realtime is ever used.
+  return [u.origin]
 }

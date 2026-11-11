@@ -117,6 +117,28 @@ export function formatMoneyInput(value) {
   return (n < 0 ? '-' : '') + groupDigits(pesos) + (cents ? '.' + String(cents).padStart(2, '0') : '')
 }
 
+// Audit Nov 12, 2026 (U1, U9): the two decisions an amount box makes, as pure
+// functions so they can be tested without a browser.
+//
+// valueForText: the value the box reports for its current text. Valid text
+// gives its amount (an empty box gives emptyValue). Text that is not a valid
+// amount gives the value the box held when the user started editing it, never
+// a half-typed one ("13" in a 1-12 box used to leave 1 in use; "1e6" left ₱1).
+export function valueForText(parsed, { atFocus, emptyValue = 0 }) {
+  if (!parsed.ok) return atFocus
+  return parsed.empty ? emptyValue : parsed.value
+}
+
+// textOnBlur: the text the box shows after it loses focus. Valid text gets its
+// thousands separators. Text with an error showing is left exactly as typed:
+// it used to be re-read leniently and rewritten ("480000,50" became
+// "48,000,050") while the estimate went on using another figure.
+export function textOnBlur({ text, error, parse, format }) {
+  if (error) return text
+  const r = parse(text, { allowShortGroups: true })
+  return r.ok && !r.empty ? format(r.value) : text
+}
+
 export function formatIntegerInput(value) {
   if (value === null || value === undefined || value === '') return ''
   const n = Number(value)
