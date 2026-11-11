@@ -139,10 +139,17 @@ function canonical(x) {
   }
   return x
 }
+// A stored profile is compared in the same cleaned form a restore would give
+// it (defaults filled in, old tracking marks dropped), so a profile and its
+// own backup copy always count as the same.
 function contentKey(profile) {
-  const rest = { ...profile }
+  const rest = { ...(cleanProfile(profile) || profile) }
   delete rest.id
   return JSON.stringify(canonical(rest))
+}
+// True when two profiles hold the same answers and figures (ids aside).
+export function sameContent(a, b) {
+  return contentKey(a) === contentKey(b)
 }
 
 function conflictError() {

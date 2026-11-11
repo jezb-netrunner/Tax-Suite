@@ -1451,7 +1451,7 @@
       "desc": "A business that buys digital services from a provider outside the Philippines (online ads, software subscriptions, cloud hosting, marketplace fees) withholds the 12% VAT and remits it itself on BIR Form 1600-VT, by the 10th of the following month, whether it is VAT-registered or not. Skip this if you buy none.",
       "form": "1600-VT",
       "agency": "BIR",
-      "category": "business",
+      "category": "admin",
       "appliesTo": {
         "allOf": [
           "business"

@@ -159,8 +159,9 @@ describe('X5: replacing shows what is replaced, and can be undone once', () => {
     const fileProfiles = [{ ...ana, name: 'Totally different person', type: 'employee' }, ben, { ...ben, id: 'p-new' }]
     const list = replacementList(fileProfiles, [ana, ben], { 'p-ana': '2026-10-01T02:00:00Z' }, { 'p-ana': '2026-11-11T17:00:00Z' })
     expect(list).toEqual([
-      { id: 'p-ana', here: 'Ana Santos (Self-employed / Sole prop)', hereChanged: 'Nov 12, 2026', backup: 'Totally different person (Employee)', backupChanged: 'Oct 1, 2026', differs: true },
-      { id: 'p-ben', here: 'Ben Cruz (Employee)', hereChanged: '', backup: 'Ben Cruz (Employee)', backupChanged: '', differs: false },
+      { id: 'p-ana', here: 'Ana Santos (Self-employed / Sole prop)', hereChanged: 'Nov 12, 2026', backup: 'Totally different person (Employee)', backupChanged: 'Oct 1, 2026', differs: true, same: false },
+      // Ben is the same here and in the file: listed as already here, not offered for replacing.
+      { id: 'p-ben', here: 'Ben Cruz (Employee)', hereChanged: '', backup: 'Ben Cruz (Employee)', backupChanged: '', differs: false, same: true },
     ])
   })
   it('"Undo this restore" puts back the list as it was just before the replace', async () => {

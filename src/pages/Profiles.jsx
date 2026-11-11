@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES, profileInitial } from '../engine/profile.js'
-import { exportFileName, BACKUP_REMINDER_DAYS } from '../lib/backend.js'
+import { exportFileName, BACKUP_REMINDER_DAYS, sameContent } from '../lib/backend.js'
 import { parseBackup, BACKUP_MAX_BYTES } from '../lib/backup.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { fromISO, daysBetween, fmtDate, manilaToday } from '../engine/dates.js'
@@ -223,6 +223,8 @@ export function replacementList(fileProfiles, storedProfiles, fileStamps = {}, s
       backup: `${p.name || 'Unnamed'} (${typeName(p)})`,
       backupChanged: manilaDay(fileStamps[p.id]),
       differs: here.name !== p.name || here.type !== p.type,
+      // The copy here already equals the one in the file: nothing to replace.
+      same: sameContent(here, p),
     }
   })
 }
@@ -232,6 +234,9 @@ function RestoreSummary({ app, r }) {
   if (!found && !r.err) return null
   const matches = found ? replacementList(found.profiles, app.profiles, found.stamps, app.lastChanged) : []
   const matching = matches.length
+  // Only the ones that differ from the backup copy can be replaced.
+  const changed = matches.filter(m => !m.same)
+  const nothingToDo = Boolean(found) && matching > 0 && changed.length === 0 && found.profiles.length === matching
   const fresh = found ? found.profiles.length - matching : 0
   const madeOn = found ? manilaDay(found.exportedAt) : ''
   return (
@@ -248,21 +253,22 @@ function RestoreSummary({ app, r }) {
             {matching === 0 && `${fresh === 1 ? 'It is' : 'They are'} not here yet and will be added. Nothing already here is changed.`}
             {matching > 0 && fresh > 0 && `${countText(matching)} ${matching === 1 ? 'is' : 'are'} already here; ${countText(fresh)} ${fresh === 1 ? 'is' : 'are'} not.`}
             {matching > 0 && fresh === 0 && `${matching === 1 ? 'It is' : 'They are all'} already here.`}
+            {matching > 0 && changed.length < matching && ` ${changed.length === 0 ? (matching === 1 ? 'The copy here is the same as the one in the file' : 'The copies here are the same as the ones in the file') : `${countText(matching - changed.length)} here ${matching - changed.length === 1 ? 'is' : 'are'} the same as in the file`}${nothingToDo ? ': there is nothing to restore.' : '.'}`}
             {found.skipped > 0 && ` ${found.skipped === 1 ? '1 entry in the file is not a profile and is' : `${found.skipped} entries in the file are not profiles and are`} ignored.`}
           </p>
-          {matching > 0 && (
+          {changed.length > 0 && (
             <>
               <p style={{ marginTop: '8px', fontWeight: 600 }}>
                 Replacing puts the backup copy, with its saved figures, in place of what is here now:
               </p>
               <ul style={{ margin: '4px 0 0', paddingLeft: '18px', overflowWrap: 'anywhere' }}>
-                {matches.slice(0, 20).map(m => (
+                {changed.slice(0, 20).map(m => (
                   <li key={m.id}>
                     Here now: {m.here}{m.hereChanged ? `, last changed ${m.hereChanged}` : ''}. In the backup: {m.backup}{m.backupChanged ? `, last changed ${m.backupChanged}` : ''}.
                     {m.differs && <b> The name or type is different: check that this is the same taxpayer.</b>}
                   </li>
                 ))}
-                {matching > 20 && <li>and {matching - 20} more.</li>}
+                {changed.length > 20 && <li>and {changed.length - 20} more.</li>}
               </ul>
               <p style={{ marginTop: '6px' }}>
                 {app.hasCloud
@@ -277,12 +283,12 @@ function RestoreSummary({ app, r }) {
                 {r.busy ? 'Restoring…' : matching > 0 ? `Add the ${countText(fresh)} not here` : `Restore ${countText(fresh)}`}
               </button>
             )}
-            {matching > 0 && (
+            {changed.length > 0 && (
               <button className="btn sm danger" type="button" disabled={r.busy} onClick={() => r.restore(true)}>
-                {fresh > 0 ? 'Add those and replace the ones here' : `Replace ${countText(matching)} with the backup copy`}
+                {fresh > 0 ? `Add those and replace ${countText(changed.length)} here` : `Replace ${countText(changed.length)} with the backup copy`}
               </button>
             )}
-            <button className="btn sm ghost" type="button" disabled={r.busy} onClick={r.cancel}>Cancel</button>
+            <button className="btn sm ghost" type="button" disabled={r.busy} onClick={r.cancel}>{nothingToDo ? 'Close' : 'Cancel'}</button>
           </div>
         </div>
       )}

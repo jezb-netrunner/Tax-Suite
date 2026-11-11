@@ -105,6 +105,11 @@ describe('D4, L11: new checklist items', () => {
     expect(checklist(corp)).toContain('bir-1600vt-digital')
     expect(checklist(defaultProfile('employee'))).not.toContain('bir-1600vt-digital')
     expect(businessTax.digitalServicesVat.value).toContain('whether VAT-registered or not')
+    // Every checklist item sits in a group the Checklist page draws.
+    const drawn = ['admin', 'registration', 'income']
+    for (const o of obligationsData.obligations.filter(x => x.schedule.kind === 'ongoing' || x.schedule.kind === 'info')) {
+      expect(drawn, o.id).toContain(o.category)
+    }
   })
 })
 

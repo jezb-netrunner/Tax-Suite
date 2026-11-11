@@ -21,14 +21,21 @@ import { profileInitial } from './engine/profile.js'
 
 // M21: after a page change, focus the new page's main heading so screen
 // readers announce it (the heading gets tabindex -1 so it can take focus).
-function focusMainHeading() {
+// U5: the old-rules notice sits above the heading, where a screen-reader
+// user who starts reading at the heading would never meet it, so the heading
+// is described by it.
+function describeMainHeading() {
   const h = document.querySelector('main h1')
-  if (!h) return false
-  if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1')
-  // U5: the old-rules notice sits above the heading, where a screen-reader
-  // user who starts reading at the heading would never meet it.
+  if (!h) return null
   if (document.getElementById('stale-rules')) h.setAttribute('aria-describedby', 'stale-rules')
   else h.removeAttribute('aria-describedby')
+  return h
+}
+
+function focusMainHeading() {
+  const h = describeMainHeading()
+  if (!h) return false
+  if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1')
   h.focus({ preventScroll: true })
   return true
 }
@@ -183,7 +190,11 @@ export default function App() {
   const shownPath = useRef(location.pathname)
   useEffect(() => {
     window.scrollTo(0, 0)
-    if (shownPath.current === location.pathname) return undefined
+    if (shownPath.current === location.pathname) {
+      // First load: no focus change, but the heading still gets its description.
+      const first = requestAnimationFrame(() => { describeMainHeading() })
+      return () => cancelAnimationFrame(first)
+    }
     shownPath.current = location.pathname
     if (focusMainHeading()) return undefined
     // A page that waits for data renders its heading a moment later.
