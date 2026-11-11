@@ -126,6 +126,9 @@ function useInputs(app, key) {
   return [vals, update]
 }
 
+// The estimator option that matches a profile's regime.
+const REGIME_OPTION = { '8pct': '8pct', graduated_osd: 'osd', graduated_itemized: 'itemized' }
+
 function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
   const p = app.active
   // M05: no sample figures; boxes start empty.
@@ -158,6 +161,20 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
     nolcoPrior: v.nolcoPrior,
   }), [v, comp, p.vatRegistered, mixed, taxYear])
 
+  // Audit Nov 11, 2026: the breakdown and the return preview follow the regime
+  // on the profile (the election is locked for the year once the first
+  // quarterly return is filed), not simply the cheapest option, which may be
+  // one the taxpayer can no longer use this year. Tapping "Show this
+  // breakdown" on another card switches to that option. When the profile's
+  // regime is not available with these figures, the cheapest one is shown.
+  const [picked, setPicked] = useState(null)
+  const profileOpt = r.options.find(o => o.key === REGIME_OPTION[p.regime])
+  const pickedOpt = r.options.find(o => o.key === picked && o.eligible)
+  const usesProfileRegime = Boolean(profileOpt && profileOpt.eligible)
+  const shown = pickedOpt || (usesProfileRegime ? profileOpt : r.best)
+  const shownIsProfile = usesProfileRegime && shown === profileOpt
+  const extraOverBest = usesProfileRegime ? profileOpt.total - r.best.total : 0
+
   // The profile's regime, unless the figures override it.
   const opt8 = r.options.find(o => o.key === '8pct')
   const regimeNote = p.regime === '8pct' && r.crossing
@@ -166,7 +183,9 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
       ? `Your profile says the ${RT.eightRate} option, but it is not available to VAT-registered taxpayers.`
       : p.regime === '8pct' && !opt8.eligible
         ? `Your profile says the ${RT.eightRate} option, but it is not available with these figures: ${opt8.reason.replace(/^Not available: /, '')}`
-        : `Note: the regime on this profile is ${p.regime === '8pct' ? `the ${RT.eightRate} option` : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
+        : extraOverBest > 0
+          ? `This profile is on ${profileOpt.name}: ${money(profileOpt.total)} this year, ${money(extraOverBest)} more than the cheapest option. The election locks for the year on the first quarterly return, so a change takes effect next year.`
+          : `Note: the regime on this profile is ${p.regime === '8pct' ? `the ${RT.eightRate} option` : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
 
   return (
     <>
@@ -299,6 +318,14 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
                     )}
                   </div>
                   <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--dim)' }}>Files: {c.forms}</div>
+                  {c.eligible && (
+                    <div style={{ marginTop: '10px', fontSize: '12px', minHeight: '24px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      {usesProfileRegime && c === profileOpt && <span className="tag" style={{ background: '#eef3f8', color: 'var(--ink)' }}>On this profile</span>}
+                      {c === shown
+                        ? <span style={{ fontWeight: 600 }}>Breakdown shown below</span>
+                        : <button type="button" className="linkbtn no-print" style={{ minHeight: '24px' }} aria-label={`Show the breakdown for ${c.name}`} onClick={() => setPicked(c.key)}>Show this breakdown</button>}
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -317,11 +344,14 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
             <div className="card pad">
-              <h2 className="sec-h">How we got there: {r.best.name}</h2>
-              <Rows rows={r.rows} />
+              <h2 className="sec-h">How we got there: {shown.name}</h2>
+              <p className="cite" style={{ marginTop: '4px' }} role="status">
+                {shownIsProfile ? 'The regime on this profile.' : shown === r.best ? (r.tie ? 'Tied for the lowest tax.' : 'The cheapest option with these figures.') : 'The option you chose to view.'}
+              </p>
+              <Rows rows={r.rowsFor(shown)} />
               <BasisNote refs={r.references} />
             </div>
-            <FormPreview r={r} />
+            <FormPreview r={r} opt={shown} />
           </div>
           <SelfContributionsCard v={v} set={set} />
         </>
@@ -362,9 +392,9 @@ function CrossingCard({ crossing, v, set, monthOptions, extraFields, children })
 // The annual return (1701 / 1701A) carries income tax only: income tax due
 // less income-tax credits. Percentage tax is paid on the quarterly 2551Q and
 // is shown below the return lines, never netted against the credits.
-function FormPreview({ r }) {
-  const best = r.best
-  const ar = r.annualReturn
+function FormPreview({ r, opt = r.best }) {
+  const best = opt
+  const ar = r.annualReturnFor(opt)
   const rows = [
     ...ar.taxable.map(t => ({ label: t.label, value: money(t.value) })),
     { label: 'Income tax due', value: money(ar.incomeTaxDue) },

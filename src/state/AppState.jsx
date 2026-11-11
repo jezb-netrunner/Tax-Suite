@@ -8,6 +8,7 @@ import {
   hasCloud, supabase, listProfiles, saveProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
   localLeftovers, importLocalProfiles, eraseLocalLeftovers, openedFromRecoveryLink, emailLinkError,
   updateProfile as updateStoredProfile, watchProfileChanges, stashFigures, clearStashedFigures, replayStashedFigures,
+  importProfiles, lastBackupDate, noteBackup,
 } from '../lib/backend.js'
 import { figuresNotSaved } from '../lib/inputSaver.js'
 
@@ -35,6 +36,7 @@ export function AppStateProvider({ children }) {
   // M28: true while the user, back from a "reset your password" email link,
   // still has to choose a new password.
   const [recovery, setRecovery] = useState(openedFromRecoveryLink)
+  const [backupDate, setBackupDate] = useState(() => lastBackupDate())
   const [activeId, setActiveId] = useState(() => {
     try { return localStorage.getItem(ACTIVE_KEY) || null } catch { return null }
   })
@@ -213,12 +215,27 @@ export function AppStateProvider({ children }) {
     notice,
     clearNotice() { setNotice(null) },
     // M25 "Download my data": every profile and saved figure as one object.
-    exportData() {
-      return exportData({ userId, email: session?.user?.email || null })
+    async exportData() {
+      const data = await exportData({ userId, email: session?.user?.email || null })
+      // Audit Nov 11, 2026: remember the date of this backup (local mode).
+      noteBackup()
+      setBackupDate(lastBackupDate())
+      return data
     },
+    // Audit Nov 11, 2026: "Restore from a backup file" (see src/lib/backup.js).
+    async restoreBackup(profilesFromFile, opts) {
+      try {
+        return await importProfiles(userId, profilesFromFile, opts)
+      } finally {
+        await refreshProfiles()
+      }
+    },
+    // 'YYYY-MM-DD' of the last "Download my data" in this browser (local mode), or null.
+    lastBackup: backupDate,
     // M25 "Erase all data on this device" (local mode).
     async eraseAllData() {
       eraseLocalData()
+      setBackupDate(null)
       setActiveId(null)
       await refreshProfiles()
     },
@@ -242,7 +259,7 @@ export function AppStateProvider({ children }) {
       setNotice('Your account and every profile saved in it were deleted.')
       setSession(null)
     },
-  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers, recovery, saveProblem])
+  }), [session, authReady, signedIn, profiles, profilesReady, loadError, active, userId, activeId, refreshProfiles, notice, leftovers, recovery, saveProblem, backupDate])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

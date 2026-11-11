@@ -8,6 +8,7 @@ import { registrationYearOptions, registrationYearChoice } from '../engine/estim
 import { regimeCardText, booksCardText } from '../engine/wizardText.js'
 import { OBLIGATIONS } from '../lib/deadlineData.js'
 import { RT, dueDayText, daysAfterEnd } from '../engine/ruleText.js'
+import { NAME_MAX_LENGTH } from '../lib/backup.js'
 
 // C08: asked before the type of a saved profile changes.
 export const TYPE_CHANGE_CONFIRM =
@@ -170,7 +171,7 @@ function WizardForm({ app, editing }) {
             {stepHead('Who is this profile for?')}
             <div className="field" style={{ marginTop: '14px' }}>
               <label className="lbl" htmlFor="pf-name">Profile name</label>
-              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} onChange={e => set('name', e.target.value)} aria-required="true" aria-describedby="pf-name-req pf-name-privacy" />
+              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} maxLength={NAME_MAX_LENGTH} onChange={e => set('name', e.target.value)} aria-required="true" aria-describedby="pf-name-req pf-name-privacy" />
               <p id="pf-name-req" className="field-note">Required. Type a name for this profile to continue.</p>
               <p id="pf-name-privacy" style={{ fontSize: '12.5px', color: 'var(--ink)', marginTop: '6px', lineHeight: 1.5 }}>
                 {app.hasCloud ? 'Saved to your account.' : 'Saved in this browser only.'} See the <Link to="/privacy" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Privacy Notice</Link> for what is kept and how to erase it.

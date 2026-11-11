@@ -13,6 +13,7 @@ import ProfileWizard from './pages/ProfileWizard.jsx'
 import ProfilesPage, { LocalLeftovers, SHARED_COMPUTER_WARNING } from './pages/Profiles.jsx'
 import Privacy from './pages/Privacy.jsx'
 import SaveNotice from './components/SaveNotice.jsx'
+import StaleRulesNotice from './components/StaleRulesNotice.jsx'
 import meta from './data/rules/meta.json'
 import { statuteListText } from './data/statutes.js'
 import { pageTitle } from './lib/pageTitle.js'
@@ -233,6 +234,7 @@ export default function App() {
       </header>
 
       <main style={{ flex: 1 }}>
+        <StaleRulesNotice />
         <LocalLeftovers />
         <SaveNotice />
         <Routes>

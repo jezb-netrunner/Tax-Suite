@@ -7,7 +7,8 @@ import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { StaticRouter } from 'react-router-dom/server'
-import Privacy, { PRIVACY_PLACEHOLDERS, PRIVACY_NOTICE_UPDATED } from '../../src/pages/Privacy.jsx'
+import Privacy, { PRIVACY_PLACEHOLDERS, PRIVACY_NOTICE_UPDATED, operatorDetails } from '../../src/pages/Privacy.jsx'
+import operator from '../../src/data/operator.json'
 import { signUp, PRIVACY_NOTICE_VERSION } from '../../src/lib/auth.js'
 
 function render(mode) {
@@ -28,22 +29,45 @@ describe('H14 Privacy Notice page', () => {
     expect(local).toContain('Last updated October 17, 2026')
   })
 
-  it('shows the owner placeholders, clearly marked, for contact, DPO and server region', () => {
+  it('shows the owner placeholders, clearly marked, while operator.json is not filled in', () => {
     expect(PRIVACY_PLACEHOLDERS).toEqual({
       contactEmail: '[CONTACT EMAIL]',
       dpoName: '[DPO NAME]',
       region: '[REGION]',
     })
-    for (const text of [local, accounts]) {
-      expect(text).toContain('[CONTACT EMAIL]')
-      expect(text).toContain('[DPO NAME]')
-      expect(text).toContain('[REGION]')
+    const blank = operatorDetails({ contactEmail: '', dpoName: '  ', region: '' })
+    const html = mode => renderToStaticMarkup(React.createElement(StaticRouter, { location: '/privacy' }, React.createElement(Privacy, { mode, details: blank })))
+    for (const mode of ['local', 'accounts']) {
+      // Every placeholder is wrapped in a highlighted marker the owner can spot.
+      expect(html(mode).match(/<mark[^>]*data-placeholder="true"[^>]*>\[CONTACT EMAIL\]<\/mark>/g).length).toBeGreaterThan(0)
+      expect(html(mode)).toMatch(/<mark[^>]*data-placeholder="true"[^>]*>\[DPO NAME\]<\/mark>/)
     }
-    const html = renderToStaticMarkup(React.createElement(StaticRouter, { location: '/privacy' }, React.createElement(Privacy, { mode: 'local' })))
-    // Every placeholder is wrapped in a highlighted marker the owner can spot.
-    expect(html.match(/<mark[^>]*data-placeholder="true"[^>]*>\[CONTACT EMAIL\]<\/mark>/g).length).toBeGreaterThan(0)
-    expect(html).toMatch(/<mark[^>]*data-placeholder="true"[^>]*>\[DPO NAME\]<\/mark>/)
-    expect(html).toMatch(/<mark[^>]*data-placeholder="true"[^>]*>\[REGION\]<\/mark>/)
+    // The server region matters only once accounts are switched on.
+    expect(html('accounts')).toMatch(/<mark[^>]*data-placeholder="true"[^>]*>\[REGION\]<\/mark>/)
+    expect(html('local')).not.toContain('[REGION]')
+    expect(html('local')).toContain('Accounts are not switched on for this site, so nothing is stored there.')
+  })
+
+  // Audit Nov 11, 2026: the operator's details come from one file.
+  it('shows the details from src/data/operator.json once they are filled in, with no placeholder left', () => {
+    const filled = operatorDetails({ contactEmail: ' privacy@example.ph ', dpoName: 'Juan Dela Cruz', region: 'Singapore' })
+    expect(filled.contactEmail).toEqual({ text: 'privacy@example.ph', missing: false })
+    for (const mode of ['local', 'accounts']) {
+      const html = renderToStaticMarkup(React.createElement(StaticRouter, { location: '/privacy' }, React.createElement(Privacy, { mode, details: filled })))
+      expect(html).not.toContain('data-placeholder')
+      expect(html).not.toMatch(/\[CONTACT EMAIL\]|\[DPO NAME\]|\[REGION\]/)
+      expect(html).toContain('<a href="mailto:privacy@example.ph"')
+      expect(html).toContain('Juan Dela Cruz')
+    }
+    const accounts = renderToStaticMarkup(React.createElement(StaticRouter, { location: '/privacy' }, React.createElement(Privacy, { mode: 'accounts', details: filled })))
+    expect(accounts).toContain('Singapore')
+  })
+
+  it('operator.json has exactly the three details, as text', () => {
+    expect(Object.keys(operator).filter(k => !k.startsWith('$')).sort()).toEqual(['contactEmail', 'dpoName', 'region'])
+    for (const k of ['contactEmail', 'dpoName', 'region']) expect(typeof operator[k]).toBe('string')
+    // A filled-in contact must be an email address (it becomes a mailto: link).
+    if (operator.contactEmail) expect(operator.contactEmail).toMatch(/^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/)
   })
 
   it('lists what is collected: profile names, taxpayer type, registration answers, estimator figures; email and password only in accounts mode', () => {

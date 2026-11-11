@@ -1,16 +1,28 @@
 import { Link } from 'react-router-dom'
 import { hasCloud } from '../lib/backend.js'
+import operator from '../data/operator.json'
 
 // Privacy Notice under the Data Privacy Act of 2012 (RA 10173).
 //
-// OWNER: fill in the three bracketed placeholders below before publishing
-// (REVIEW.md 4.3, decision 18). They are shown highlighted on the page until
-// then. The region is the Supabase project's region and only matters once
-// accounts mode is switched on.
+// OWNER: the operator's details live in one file, src/data/operator.json
+// (contact email, Data Protection Officer, and the Supabase region once
+// accounts mode is switched on). Each one left empty shows as a highlighted
+// placeholder on the page (REVIEW.md 4.3, decision 18).
 export const PRIVACY_PLACEHOLDERS = {
   contactEmail: '[CONTACT EMAIL]',
   dpoName: '[DPO NAME]',
   region: '[REGION]',
+}
+
+// The operator's details as shown: the value from operator.json, or the
+// placeholder when it is empty. { contactEmail: { text, missing }, ... }
+export function operatorDetails(op = operator) {
+  const out = {}
+  for (const k of Object.keys(PRIVACY_PLACEHOLDERS)) {
+    const v = typeof op[k] === 'string' ? op[k].trim() : ''
+    out[k] = v ? { text: v, missing: false } : { text: PRIVACY_PLACEHOLDERS[k], missing: true }
+  }
+  return out
 }
 
 // Keep in step with PRIVACY_NOTICE_VERSION in src/lib/auth.js.
@@ -37,9 +49,22 @@ function Section({ title, children }) {
   )
 }
 
-export default function Privacy({ mode = hasCloud ? 'accounts' : 'local' }) {
-  const { contactEmail, dpoName, region } = PRIVACY_PLACEHOLDERS
-  const contact = <Placeholder>{contactEmail}</Placeholder>
+const EMAIL_SHAPE = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/
+
+// A detail from operator.json, or its highlighted placeholder.
+function Detail({ d }) {
+  return d.missing ? <Placeholder>{d.text}</Placeholder> : <b style={{ overflowWrap: 'anywhere' }}>{d.text}</b>
+}
+
+export default function Privacy({ mode = hasCloud ? 'accounts' : 'local', details = operatorDetails() }) {
+  // Only a plain email address becomes a mailto: link; anything else is shown as text.
+  const contact = details.contactEmail.missing
+    ? <Placeholder>{details.contactEmail.text}</Placeholder>
+    : !EMAIL_SHAPE.test(details.contactEmail.text)
+      ? <Detail d={details.contactEmail} />
+      : <a href={`mailto:${details.contactEmail.text}`} style={{ color: 'var(--accInk)', fontWeight: 600, overflowWrap: 'anywhere' }}>{details.contactEmail.text}</a>
+  const dpo = <Detail d={details.dpoName} />
+  const region = <Detail d={details.region} />
 
   return (
     <div className="page wrap" style={{ paddingTop: '26px', paddingBottom: '64px', maxWidth: '820px' }}>
@@ -60,7 +85,7 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local' }) {
         ) : (
           <p style={{ ...BODY, marginTop: '8px' }}>
             <b>This site uses accounts.</b> Your profiles and the figures you type are stored with our
-            database provider, Supabase, on servers in <Placeholder>{region}</Placeholder>, so you can see them
+            database provider, Supabase, on servers in {region}, so you can see them
             on any device after signing in.
           </p>
         )}
@@ -69,7 +94,7 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local' }) {
       <Section title="Who is responsible">
         <p>
           The operator of JEZ Tax Suite decides how the data described here is handled (the personal
-          information controller). Contact: {contact}. Data Protection Officer: <Placeholder>{dpoName}</Placeholder>,
+          information controller). Contact: {contact}. Data Protection Officer: {dpo},
           reachable at the same address.
         </p>
       </Section>
@@ -79,7 +104,7 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local' }) {
           <li><b>Profile names</b> you choose, which are often a person's or a business's name.</li>
           <li><b>Taxpayer type</b> (employee, self-employed, mixed income or corporation) and your registration answers: VAT registration, tax regime, employees, books of accounts, fiscal year, business permit and similar facts.</li>
           <li><b>The figures you type into the Estimator</b>: income, expenses, tax withheld, salaries, bonuses, and corporate sales, costs and assets. They are saved to the selected profile as you type.</li>
-          <li><b>Which profile you last used.</b> (Deadlines marked as filed and checklist items ticked in an earlier version of the app stay saved in the profile, unused, until you delete it.)</li>
+          <li><b>Which profile you last used</b>, and in local mode the date you last used "Download my data" (for the backup reminder). (Deadlines marked as filed and checklist items ticked in an earlier version of the app stay saved in the profile, unused, until you delete it.)</li>
           <li><b>Email address and password (accounts only).</b> The password is stored by Supabase in scrambled (hashed) form; we never see it. We also keep the date you agreed to this notice.</li>
         </ul>
         <p style={{ marginTop: '10px' }}>
@@ -103,7 +128,7 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local' }) {
       <Section title="Where it is stored and who receives it">
         <ul style={LIST}>
           <li><b>This browser (local mode).</b> Profiles and figures are kept in this browser's storage on this device. They are not encrypted, and anyone who uses this browser can see them.</li>
-          <li><b>Supabase (accounts only).</b> Our database provider stores your email, hashed password and profiles in <Placeholder>{region}</Placeholder>. Each account can read only its own profiles. If you reload or close the page before figures you typed reach your account, they are kept in this browser until you next sign in here, then saved to your account.</li>
+          <li><b>Supabase (accounts only).</b> {mode === 'local' && details.region.missing ? 'Accounts are not switched on for this site, so nothing is stored there. When they are, our' : 'Our'} database provider stores your email, hashed password and profiles in {mode === 'local' && details.region.missing ? 'the region named here' : region}. Each account can read only its own profiles. If you reload or close the page before figures you typed reach your account, they are kept in this browser until you next sign in here, then saved to your account.</li>
           <li><b>GitHub Pages (hosting).</b> GitHub, which hosts this site, receives your IP address and browser details when you open the site and keeps them in its server logs.</li>
         </ul>
         <p style={{ marginTop: '10px' }}>
@@ -127,7 +152,7 @@ export default function Privacy({ mode = hasCloud ? 'accounts' : 'local' }) {
           <li><b>Access</b> your data: use "Download my data" on the <Link to="/profiles">Profiles page</Link>.</li>
           <li><b>Correct</b> it: open a profile with "Edit", or change the figures in the Estimator.</li>
           <li><b>Erase or block</b> it: "Delete" a profile, "Erase all data on this device" (local mode), or "Delete my account" (accounts), all on the Profiles page.</li>
-          <li><b>Data portability</b>: "Download my data" gives you every profile and figure as a JSON file you can keep or move.</li>
+          <li><b>Data portability</b>: "Download my data" gives you every profile and figure as a JSON file you can keep or move. "Restore from a backup file" on the same page puts such a file back; the file is read by your browser and is not uploaded anywhere{mode === 'local' ? '' : ' except, with an account, to your own account'}.</li>
           <li><b>Object</b> to the processing: stop using the app and erase your data, or write to us.</li>
           <li><b>Claim damages</b> if you are harmed by a breach of these rights.</li>
           <li><b>File a complaint with the National Privacy Commission</b> (privacy.gov.ph).</li>

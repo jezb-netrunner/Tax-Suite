@@ -187,6 +187,35 @@ Users can download all their data as JSON and erase it ("Erase all data on
 this device" in local mode, "Delete my account" in accounts mode) from the
 Profiles page.
 
+### Backup and restore
+
+In local mode everything lives in one browser. Clearing the browsing data,
+changing computers or moving the site to a new address loses it, so the
+Profiles page ("Your data") has both halves of a backup:
+
+- **Download my data** saves every profile and its figures as
+  `jez-tax-suite-data-<date>.json`. In local mode the page reminds the user
+  when no backup was ever downloaded, or the last one is more than 30 days old.
+- **Restore from a backup file** reads such a file back in. The file is read
+  in the browser (nothing is uploaded), checked and cleaned
+  ([`src/lib/backup.js`](src/lib/backup.js)): only real profile fields of the
+  right kind are kept, so an edited or foreign file cannot inject anything.
+  The page lists what the file holds before saving. Profiles already present
+  are kept as they are unless the user chooses to replace them with the backup
+  copy; a restore never deletes a profile and never passes the 500-profile
+  limit. The copy offered by the error screen ("Download a copy of my data")
+  restores too.
+
+### Old copies say so
+
+`index.html` is a single file that people keep and pass around, so a copy may
+be opened long after its rules were last checked. When the device date is more
+than 90 days past `verifiedISO` in `src/data/rules/meta.json`, every page and
+every printout carries a notice that the rules may be out of date
+([`src/lib/rulesAge.js`](src/lib/rulesAge.js)). **Each time the rulebook is
+re-checked, update both `verifiedDate` and `verifiedISO`** (a test fails if
+they disagree).
+
 ### Supabase Auth settings checklist (before switching accounts mode on)
 
 These settings live only in the Supabase dashboard (Authentication section),
@@ -228,10 +257,13 @@ the footer, the sign-up form (a required consent checkbox; the consent time and
 notice version are stored with the account) and profile setup, and the Estimator
 says that typed figures are saved to the profile.
 
-**Before publishing, fill in the placeholders** at the top of `Privacy.jsx`:
-`[CONTACT EMAIL]`, `[DPO NAME]` and, once accounts mode is on, the Supabase
-`[REGION]`. They show highlighted on the page until then. When the notice
-changes, update `PRIVACY_NOTICE_UPDATED` there and `PRIVACY_NOTICE_VERSION` in
+**Before publishing, fill in the operator's details** in
+[`src/data/operator.json`](src/data/operator.json): `contactEmail`, `dpoName`
+and, once accounts mode is on, the Supabase `region`. Type the value between
+the quotes and run `npm run build`. Each detail left empty shows on the page as
+a highlighted placeholder (`[CONTACT EMAIL]`, `[DPO NAME]`; `[REGION]` only in
+accounts mode). When the notice changes, update `PRIVACY_NOTICE_UPDATED` in
+`Privacy.jsx` and `PRIVACY_NOTICE_VERSION` in
 [`src/lib/auth.js`](src/lib/auth.js).
 
 ## Repository layout

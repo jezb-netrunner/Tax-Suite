@@ -37,6 +37,11 @@ export const ACTIVE_KEY = 'pv.activeProfile.v1'
 // M06 (accounts mode): estimator figures not yet saved to the account when the
 // page was hidden or closed, kept here until the next load after sign-in.
 export const PENDING_FIGURES_KEY = 'pv.pendingFigures.v1'
+// Audit Nov 11, 2026: the Manila date of the last "Download my data" in this
+// browser (local mode), for the backup reminder on the Profiles page.
+export const LAST_BACKUP_KEY = 'pv.lastBackup.v1'
+// Remind when the newest backup is older than this many days.
+export const BACKUP_REMINDER_DAYS = 30
 
 // "Download my data" file name, dated in Manila.
 export function exportFileName(now = new Date()) {
@@ -349,6 +354,71 @@ export function createBackend({ client = null, storage } = {}) {
     }
   }
 
+  // Audit Nov 11, 2026: "Restore from a backup file". `incoming` are clean
+  // profiles from parseBackup (src/lib/backup.js). A profile whose id is
+  // already stored is left as it is unless replaceExisting is true; one with
+  // a new id (or none) is added. Nothing is ever deleted, and the account
+  // limit (PROFILE_LIMIT) holds. Local mode writes once, so a failed write
+  // changes nothing. Returns { added, replaced, kept, overLimit, failed }.
+  async function importProfiles(userId, incoming, { replaceExisting = false } = {}) {
+    const result = { added: 0, replaced: 0, kept: 0, overLimit: 0, failed: 0 }
+    const list = Array.isArray(incoming) ? incoming.filter(p => p && typeof p === 'object') : []
+    if (!cloud) {
+      const all = localLoad()
+      for (const p of list) {
+        const i = p.id ? all.findIndex(x => x && x.id === p.id) : -1
+        if (i >= 0) {
+          if (replaceExisting) { all[i] = { ...p }; result.replaced++ } else result.kept++
+        } else if (all.length >= PROFILE_LIMIT) {
+          result.overLimit++
+        } else {
+          all.push({ ...p, id: p.id || newId() })
+          result.added++
+        }
+      }
+      if (result.added || result.replaced) localSave(all)
+      return result
+    }
+    if (!userId) throw new Error('Sign in before restoring a backup.')
+    const stored = await listProfiles(userId)
+    const ids = new Set(stored.map(p => p.id))
+    let count = stored.length
+    for (const p of list) {
+      const exists = Boolean(p.id) && ids.has(p.id)
+      try {
+        if (exists) {
+          if (!replaceExisting) { result.kept++; continue }
+          await saveProfile(userId, p)
+          result.replaced++
+        } else if (count >= PROFILE_LIMIT) {
+          result.overLimit++
+        } else {
+          await saveProfile(userId, { ...p, id: null })
+          count++
+          result.added++
+        }
+      } catch {
+        result.failed++
+      }
+    }
+    return result
+  }
+
+  // The Manila date ('YYYY-MM-DD') of the last "Download my data" in this
+  // browser, or null. Local mode only: an account's data is not lost with the
+  // browser's storage.
+  function lastBackupDate() {
+    if (cloud) return null
+    try {
+      const v = store().getItem(LAST_BACKUP_KEY)
+      return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null
+    } catch { return null }
+  }
+  function noteBackup(now = new Date()) {
+    if (cloud) return
+    try { store().setItem(LAST_BACKUP_KEY, iso(manilaToday(now))) } catch { /* the reminder simply stays */ }
+  }
+
   // M25 / M27 "Erase all data on this device": removes every key this app
   // wrote (all start with "pv."), and nothing belonging to other sites or to
   // the sign-in session. Returns how many keys were removed.
@@ -417,6 +487,7 @@ export function createBackend({ client = null, storage } = {}) {
   return {
     hasCloud: cloud, listProfiles, saveProfile, updateProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
     localLeftovers, importLocalProfiles, eraseLocalLeftovers, stashFigures, clearStashedFigures, replayStashedFigures,
+    importProfiles, lastBackupDate, noteBackup,
   }
 }
 
@@ -435,3 +506,6 @@ export const eraseLocalLeftovers = (...a) => app.eraseLocalLeftovers(...a)
 export const stashFigures = (...a) => app.stashFigures(...a)
 export const clearStashedFigures = (...a) => app.clearStashedFigures(...a)
 export const replayStashedFigures = (...a) => app.replayStashedFigures(...a)
+export const importProfiles = (...a) => app.importProfiles(...a)
+export const lastBackupDate = (...a) => app.lastBackupDate(...a)
+export const noteBackup = (...a) => app.noteBackup(...a)

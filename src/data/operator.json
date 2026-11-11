@@ -1,0 +1,6 @@
+{
+  "$comment": "Who runs this copy of JEZ Tax Suite. OWNER: type your details between the quotes and rebuild (npm run build). The Privacy Notice shows a highlighted [PLACEHOLDER] for each one left empty. contactEmail: where users write about their data. dpoName: your Data Protection Officer (it may be you). region: where the Supabase database is hosted, only needed once accounts are switched on.",
+  "contactEmail": "",
+  "dpoName": "",
+  "region": ""
+}
