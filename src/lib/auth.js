@@ -8,7 +8,7 @@
 
 // The Privacy Notice version the user agrees to at sign-up (its "last updated"
 // date). Stored with the account together with the time of consent.
-export const PRIVACY_NOTICE_VERSION = '2026-10-17'
+export const PRIVACY_NOTICE_VERSION = '2026-11-12'
 
 export const CONSENT_REQUIRED = 'Please tick the box to agree to the Privacy Notice before creating an account.'
 
@@ -140,6 +140,22 @@ function urlParams(href) {
     u.searchParams.forEach((v, k) => { out[k] = v })
   } catch { /* not a URL */ }
   return out
+}
+
+// X8: true when the session came from an emailed link (password reset or
+// one-time code), read from the "amr" list inside the session's access token.
+// A session opened with the password, or anything that cannot be read, is
+// false, so a typed address alone never opens "Set a new password".
+const LINK_METHODS = new Set(['recovery', 'otp', 'magiclink'])
+export function sessionFromRecovery(session) {
+  try {
+    const part = String(session.access_token).split('.')[1]
+    const text = atob(part.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(part.length / 4) * 4, '='))
+    const amr = JSON.parse(text).amr
+    return Array.isArray(amr) && amr.some(a => LINK_METHODS.has(typeof a === 'string' ? a : a && a.method))
+  } catch {
+    return false
+  }
 }
 
 // True when the page was opened from a "reset your password" email link.

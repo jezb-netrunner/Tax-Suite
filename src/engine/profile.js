@@ -113,8 +113,23 @@ export function changeProfileType(profile, type) {
   for (const [k, v] of Object.entries(defaultProfile(type))) {
     if (k !== 'id' && k !== 'name' && k !== 'inputs') next[k] = v
   }
+  // Audit Nov 12, 2026 (U10): an answer still at the old type's default may
+  // never have been chosen by the user. A new corporation used to lose
+  // "withholds expanded tax", and with it the 0619-E, 1601-EQ and 1604-E
+  // dates, because the wizard starts as self-employed where that switch is
+  // off. So an untouched answer takes the new type's default when the profile
+  // is new (nothing was answered yet), and on a saved profile when that
+  // default switches something ON (the wizard then shows it for review; the
+  // calendar errs toward showing an obligation). Every other shared answer is
+  // carried over as before.
+  const oldDefaults = defaultProfile(profile.type)
+  const newDefaults = defaultProfile(type)
   for (const k of sharedAnswers(profile.type, type)) {
-    if (k in profile) next[k] = profile[k]
+    if (!(k in profile)) continue
+    const untouched = JSON.stringify(profile[k]) === JSON.stringify(oldDefaults[k])
+    const turnsOn = profile[k] === false && newDefaults[k] === true
+    if (untouched && (!profile.id || turnsOn)) continue
+    next[k] = profile[k]
   }
   next.type = type
   next.inputs = profile.inputs || {}

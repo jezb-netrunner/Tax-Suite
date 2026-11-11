@@ -8,6 +8,7 @@ import { registrationYearOptions, registrationYearChoice } from '../engine/estim
 import { regimeCardText, booksCardText } from '../engine/wizardText.js'
 import { OBLIGATIONS } from '../lib/deadlineData.js'
 import { RT, dueDayText, daysAfterEnd } from '../engine/ruleText.js'
+import { NAME_MAX_LENGTH } from '../lib/backup.js'
 
 // C08: asked before the type of a saved profile changes.
 export const TYPE_CHANGE_CONFIRM =
@@ -115,6 +116,9 @@ function WizardForm({ app, editing }) {
 
   const isBiz = p.type === 'individual' || p.type === 'mixed'
   const isCorp = p.type === 'corporation'
+  // U10: two profiles with the same name are allowed, with a warning.
+  const typedName = p.name.trim().toLowerCase()
+  const sameName = typedName ? app.profiles.find(x => x.id !== p.id && String(x.name || '').trim().toLowerCase() === typedName) : null
   const steps = p.type === 'employee' ? 3 : 4
   // H08: card text depends on the profile type (mixed income files 1701).
   const regimeText = regimeCardText({ type: p.type, vatRegistered: p.vatRegistered })
@@ -170,8 +174,15 @@ function WizardForm({ app, editing }) {
             {stepHead('Who is this profile for?')}
             <div className="field" style={{ marginTop: '14px' }}>
               <label className="lbl" htmlFor="pf-name">Profile name</label>
-              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} onChange={e => set('name', e.target.value)} aria-required="true" aria-describedby="pf-name-req pf-name-privacy" />
+              <input id="pf-name" type="text" placeholder="e.g. Maria Santos, or Santos Design Studio" value={p.name} maxLength={NAME_MAX_LENGTH} onChange={e => set('name', e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && p.name.trim()) { e.preventDefault(); setStep(1) } }}
+                enterKeyHint="next" aria-required="true" aria-describedby="pf-name-req pf-name-privacy" />
               <p id="pf-name-req" className="field-note">Required. Type a name for this profile to continue.</p>
+              {sameName && (
+                <p className="mini-warn" role="status" style={{ marginTop: '8px' }}>
+                  Another profile is already named {sameName.name}. You can keep the name, but two profiles with the same name are easy to mix up.
+                </p>
+              )}
               <p id="pf-name-privacy" style={{ fontSize: '12.5px', color: 'var(--ink)', marginTop: '6px', lineHeight: 1.5 }}>
                 {app.hasCloud ? 'Saved to your account.' : 'Saved in this browser only.'} See the <Link to="/privacy" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Privacy Notice</Link> for what is kept and how to erase it.
               </p>

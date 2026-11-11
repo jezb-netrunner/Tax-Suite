@@ -5,7 +5,10 @@
 // so it gets an apostrophe in front (OWASP "CSV injection"). Cells with a
 // comma, a double quote or a line break are quoted, and quotes are doubled.
 
-const FORMULA_START = /^[=+\-@\t\r]/
+// Audit Nov 12, 2026: the profile name (typed by the user) is now a cell, so
+// the check also looks past leading spaces and covers the full-width forms of
+// the same characters, which some spreadsheets treat alike.
+const FORMULA_START = /^\s*[=+\-@\t\r\uFF1D\uFF0B\uFF0D\uFF20]/
 const NEEDS_QUOTES = /[",\r\n]/
 
 export function csvCell(value) {

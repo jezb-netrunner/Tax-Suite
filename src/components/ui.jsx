@@ -1,5 +1,5 @@
 import React from 'react'
-import { parseMoneyInput, parseIntegerInput, formatMoneyInput, formatIntegerInput } from '../lib/format.js'
+import { parseMoneyInput, parseIntegerInput, formatMoneyInput, formatIntegerInput, valueForText, textOnBlur } from '../lib/format.js'
 
 export function Seg({ options, value, onChange, ariaLabel }) {
   return (
@@ -43,9 +43,15 @@ export function NumField({ label, value, onChange, prefix, lg, hint, kind = 'mon
   const [text, setText] = React.useState(() => format(value))
   const [error, setError] = React.useState(null)
   const focused = React.useRef(false)
+  const inputRef = React.useRef(null)
   // The last value this box sent (or was given), to tell our own updates from
   // outside changes such as switching client.
   const last = React.useRef(value)
+  // Audit Nov 12, 2026 (U1, U9): the value the box held when the user started
+  // editing it. While the text is not a valid amount the box goes back to
+  // this value, never to a half-typed one ("13" months used to leave 1 in
+  // use; "1e6" left ₱1).
+  const atFocus = React.useRef(value)
 
   React.useEffect(() => {
     if (focused.current || sameValue(value, last.current)) return
@@ -62,12 +68,8 @@ export function NumField({ label, value, onChange, prefix, lg, hint, kind = 'mon
     const deleting = typeof inputType === 'string' ? inputType.startsWith('delete') : next.length < text.length
     setText(next)
     const r = parse(next, { allowShortGroups: deleting })
-    if (!r.ok) {
-      setError(r.error)
-      return
-    }
-    setError(null)
-    const v = r.empty ? emptyValue : r.value
+    setError(r.ok ? null : r.error)
+    const v = valueForText(r, { atFocus: atFocus.current, emptyValue })
     if (!sameValue(v, last.current)) {
       last.current = v
       onChange(v)
@@ -85,8 +87,9 @@ export function NumField({ label, value, onChange, prefix, lg, hint, kind = 'mon
       setError(null)
       return
     }
-    const r = parse(text, { allowShortGroups: true })
-    if (r.ok && !r.empty) setText(format(r.value))
+    // U1: text with an error showing is left exactly as typed (see textOnBlur).
+    const shown = textOnBlur({ text, error, parse, format })
+    if (shown !== text) setText(shown)
   }
 
   const still = last.current == null || last.current === ''
@@ -97,9 +100,11 @@ export function NumField({ label, value, onChange, prefix, lg, hint, kind = 'mon
   return (
     <div>
       <label className="lbl" htmlFor={id}>{label}</label>
-      <div className={'input-w' + (lg ? ' lg' : '')} style={error ? { borderColor: 'var(--bad)' } : undefined}>
+      <div className={'input-w' + (lg ? ' lg' : '')} style={error ? { borderColor: 'var(--bad)' } : undefined}
+        onClick={e => { if (e.target !== inputRef.current && inputRef.current) inputRef.current.focus() }}>
         {prefix && <span className="pre" aria-hidden="true">{prefix}</span>}
         <input
+          ref={inputRef}
           id={id}
           type="text"
           inputMode={isMoney ? 'decimal' : 'numeric'}
@@ -108,7 +113,7 @@ export function NumField({ label, value, onChange, prefix, lg, hint, kind = 'mon
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           value={text}
-          onFocus={() => { focused.current = true }}
+          onFocus={() => { focused.current = true; atFocus.current = last.current }}
           onChange={handleChange}
           onBlur={handleBlur}
         />
@@ -163,6 +168,18 @@ export function Switch({ on, onChange, title, desc }) {
       </div>
     </div>
   )
+}
+
+// Audit Nov 12, 2026 (U4): a calculator's result, read out by screen readers
+// once typing pauses. The figures on screen change silently otherwise. The
+// text is hidden visually (the cards show the same figures).
+export function ResultStatus({ text, delay = 900 }) {
+  const [said, setSaid] = React.useState('')
+  React.useEffect(() => {
+    const t = setTimeout(() => setSaid(text || ''), delay)
+    return () => clearTimeout(t)
+  }, [text, delay])
+  return <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{said}</p>
 }
 
 // Statutory-estimate disclaimer required under every computed figure.

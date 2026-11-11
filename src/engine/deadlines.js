@@ -57,6 +57,18 @@ export function regionalHolidayOn(date) {
   return REGIONAL.get(typeof date === 'string' ? date : iso(date)) || null
 }
 
+// Audit Nov 12, 2026: an agency's extension for one region only (holidays.json
+// regionalExtensions, e.g. the BIR tax advisory that lets taxpayers of the
+// listed Metro Manila offices file and pay returns due Nov 16-18, 2026 until
+// Nov 19). The profile does not say where the taxpayer is registered, so the
+// calendar keeps the national date and names the later date in a note.
+export const REGIONAL_EXTENSIONS = holidayRules.regionalExtensions ? holidayRules.regionalExtensions.value : []
+
+export function regionalExtensionFor(date, agency) {
+  const d = typeof date === 'string' ? date : iso(date)
+  return REGIONAL_EXTENSIONS.find(x => x.agency === agency && x.dates.includes(d)) || null
+}
+
 // ---------------------------------------------------------------------------
 // Confidence (H07, owner decision 8). Every rule in the rulebook carries
 // confidence 'verified' or 'needs_review'; needs_review rules are shown with an
@@ -72,6 +84,11 @@ export const UNCONFIRMED_RULE = 'This rule is not yet confirmed from an official
 
 export function unconfirmedHolidaysReason(year) {
   return `The ${year} holiday list is not confirmed, and this date was moved past a weekend or holiday.`
+}
+
+// An extension whose list of returns was not confirmed (override.coverageConfirmed false).
+export function unconfirmedExtensionReason(basis) {
+  return `Whether ${basis} covers this return was not confirmed: check the issuance.`
 }
 
 export function unconfirmedRollOverReason(agency) {
@@ -97,9 +114,10 @@ export function confidenceReasons(x) {
   return isUnconfirmed(x) ? [UNCONFIRMED_RULE] : []
 }
 
-function deadlineConfidence(ob, { rawDate, dueDate, shifted, nonWorkingDay, policy, agencyRule }) {
+function deadlineConfidence(ob, { rawDate, dueDate, shifted, nonWorkingDay, policy, agencyRule, override }) {
   const reasons = []
   if (isUnconfirmed(ob)) reasons.push(UNCONFIRMED_RULE)
+  if (override && override.coverageConfirmed === false) reasons.push(unconfirmedExtensionReason(override.basis))
   if (shifted) {
     const years = [...new Set([rawDate.getFullYear(), dueDate.getFullYear()])]
     for (const y of years) {
@@ -288,9 +306,10 @@ export function generateDeadlines(obligations, profile, { from, to, holidays, re
         nonWorkingDay,
         lastWorkingDayBefore: nonWorkingDay ? previousBusinessDay(dueDate, holidays) : null,
         rollNote,
-        extended: ov ? { basis: ov.basis, from: usualDate, notes: ov.notes || null } : null,
+        extended: ov ? { basis: ov.basis, from: usualDate, notes: ov.notes || null, scope: ov.scope || null } : null,
         regionalHoliday: regionalHolidayOn(dueDate),
-        ...deadlineConfidence(ob, { rawDate: occ.date, dueDate, shifted, nonWorkingDay, policy, agencyRule }),
+        regionalExtension: regionalExtensionFor(dueDate, ob.agency),
+        ...deadlineConfidence(ob, { rawDate: occ.date, dueDate, shifted, nonWorkingDay, policy, agencyRule, override: ov }),
       })
     }
   }
@@ -396,6 +415,18 @@ export function unproclaimedYears(calendar, from, to) {
   const out = []
   for (let y = from.getFullYear(); y <= to.getFullYear(); y++) {
     if (!calendar.isProclaimed(y)) out.push(y)
+  }
+  return out
+}
+
+// Audit Nov 12, 2026 (D9): a year whose list is proclaimed can still lack
+// holidays that are proclaimed separately, closer to the date (Eid'l Fitr and
+// Eid'l Adha). holidays.json pendingHolidays names them; the calendar says so
+// while the year is in its window. [{ year, note }]
+export function pendingHolidayNotes(from, to, rules = holidayRules) {
+  const out = []
+  for (const p of rules.pendingHolidays || []) {
+    if (p.year >= from.getFullYear() && p.year <= to.getFullYear() && iso(from) <= p.until) out.push(p)
   }
   return out
 }

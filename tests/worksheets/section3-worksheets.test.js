@@ -91,8 +91,11 @@ describe('3.2 Percentage tax', () => {
 })
 
 describe('3.3 Deadlines', () => {
-  it('DL:WS-02 2550Q Q3 2026 (VAT sole prop): due Mon Oct 26, 2026 (Oct 25 is a Sunday)', () => {
-    expect(due(individual({ vatRegistered: true, regime: 'graduated_osd' }), 'bir-2550q', '2026-07-01', '2026-12-31', '2026-10-25')).toBe('2026-10-26')
+  // Audit Nov 12, 2026: the worksheet's Mon Oct 26 (Oct 25 is a Sunday) was later extended to Thu Oct 29 by RMC 115-2026.
+  it('DL:WS-02 2550Q Q3 2026 (VAT sole prop): Oct 25 is a Sunday, so Mon Oct 26; extended to Thu Oct 29, 2026 by RMC 115-2026', () => {
+    expect(due(individual({ vatRegistered: true, regime: 'graduated_osd' }), 'bir-2550q', '2026-07-01', '2026-12-31', '2026-10-25')).toBe('2026-10-29')
+    // The same rule a year later, with no extension: Oct 25, 2027 is a Monday.
+    expect(due(individual({ vatRegistered: true, regime: 'graduated_osd' }), 'bir-2550q', '2027-07-01', '2027-12-31', '2027-10-25')).toBe('2027-10-25')
   })
   it('DL:WS-06 1601-C December 2026: due Fri Jan 15, 2027', () => {
     expect(due(individual({ hasEmployees: true }), 'bir-1601c', '2026-12-01', '2027-02-28', '2027-01-15')).toBe('2027-01-15')

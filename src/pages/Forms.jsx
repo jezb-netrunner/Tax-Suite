@@ -29,6 +29,17 @@ export default function FormsPage() {
     })
     return () => cancelAnimationFrame(id)
   }, [requested])
+  // Audit Nov 12, 2026 (U2): only one form is open at a time, so opening one
+  // below the open one made the page jump and the tapped form left the screen
+  // on phones. The form just opened is brought back into view.
+  function toggleForm(code, isOpen) {
+    setOpenForm(isOpen ? null : code)
+    if (isOpen) return
+    requestAnimationFrame(() => {
+      const el = rowRefs.current[code]
+      if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'nearest' })
+    })
+  }
   const [showEafs, setShowEafs] = useState(false)
   const q = formQuery.toLowerCase()
 
@@ -88,6 +99,7 @@ export default function FormsPage() {
         </div>
         <Seg options={FORM_CATS} value={formCat} onChange={setFormCat} ariaLabel="Form category" />
       </div>
+      <p className="sr-only" role="status" aria-live="polite">{filtered.length === 0 ? 'No forms match.' : `${filtered.length} ${filtered.length === 1 ? 'form' : 'forms'} shown.`}</p>
       {filtered.length === 0 && (
         <div className="card pad" style={{ textAlign: 'center', color: 'var(--mut)' }}>No forms match “{formQuery}”. Try a code like 1701Q or a word like “withholding”.</div>
       )}
@@ -99,8 +111,8 @@ export default function FormsPage() {
               {/* H15: below 720 px the code and the +/– sit on top, then the
                   name and who files it, then the due-date text (it wraps). */}
               <div role="button" tabIndex={0} aria-expanded={isOpen} className="form-row-head" ref={el => { rowRefs.current[f.code] = el }}
-                onClick={() => setOpenForm(isOpen ? null : f.code)}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenForm(isOpen ? null : f.code) } }}>
+                onClick={() => toggleForm(f.code, isOpen)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleForm(f.code, isOpen) } }}>
                 <span className="formcode">{f.code}</span>
                 <div className="form-row-body">
                   <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{f.name}</div>

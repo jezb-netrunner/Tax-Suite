@@ -81,10 +81,12 @@ describe('Content-Security-Policy (L18)', () => {
   })
 
   it('the Supabase project is allowed only in an accounts build', () => {
-    expect(supabaseConnectSources('https://abc.supabase.co')).toEqual(['https://abc.supabase.co', 'wss://abc.supabase.co'])
+    // Audit Nov 12, 2026 (X17): no websocket source; the app opens no realtime channel.
+    expect(supabaseConnectSources('https://abc.supabase.co')).toEqual(['https://abc.supabase.co'])
     expect(supabaseConnectSources('')).toEqual([])
     const csp = cspOf(singleFileHtml(SHELL, read, { connect: supabaseConnectSources('https://abc.supabase.co') }))
-    expect(csp).toContain("connect-src 'self' https://abc.supabase.co wss://abc.supabase.co;")
+    expect(csp).toContain("connect-src 'self' https://abc.supabase.co;")
+    expect(csp).not.toContain('wss:')
   })
 
   it('the real app.html gets a hash for its loading style', () => {
@@ -101,7 +103,7 @@ describe('Content-Security-Policy (L18)', () => {
       const api = cfg => cfg.plugins.flat().find(p => p && p.name === 'present-value-standalone-html').api
       expect(api(viteConfig({ command: 'build', mode: 'production' })).connect).toEqual([])
       process.env.JEZ_ENABLE_ACCOUNTS = '1'
-      expect(api(viteConfig({ command: 'build', mode: 'production' })).connect).toEqual(['https://abc.supabase.co', 'wss://abc.supabase.co'])
+      expect(api(viteConfig({ command: 'build', mode: 'production' })).connect).toEqual(['https://abc.supabase.co'])
     } finally {
       for (const k of ['JEZ_ENABLE_ACCOUNTS', 'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY']) {
         if (k in saved) process.env[k] = saved[k]

@@ -28,14 +28,14 @@ const employer = {
 }
 
 describe('C08 tapping the type that is already selected', () => {
-  it('changes nothing: the employer profile keeps its 143 dated obligations (Oct 7, 2026)', () => {
+  it('changes nothing: the employer profile keeps its 147 dated obligations (143 on Oct 7, 2026; plus the 4 quarterly installments of local business tax dated since Nov 12, 2026)', () => {
     const after = changeProfileType(employer, 'individual')
     expect(after).toBe(employer)
-    expect(datedCount(employer)).toBe(143)
-    expect(datedCount(after)).toBe(143)
+    expect(datedCount(employer)).toBe(147)
+    expect(datedCount(after)).toBe(147)
     // What the old reset produced: defaults with only id, name and inputs kept.
     const oldReset = { ...defaultProfile('individual'), id: employer.id, name: employer.name, inputs: employer.inputs }
-    expect(datedCount(oldReset)).toBe(49)
+    expect(datedCount(oldReset)).toBe(53) // 49 before the quarterly installments of local business tax were dated
   })
 
   it('works for every type', () => {

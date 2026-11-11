@@ -10,7 +10,8 @@ import { selfEmployedMonthlyContributions, selfEmployedMonthlyEarnings } from '.
 import { fromISO, taxableYearQuarters } from '../engine/dates.js'
 import { withChangedInputs } from '../engine/profile.js'
 import { createInputSaver, figuresToShow } from '../lib/inputSaver.js'
-import { NumField, SelectField, Switch, Disclaimer } from '../components/ui.jsx'
+import { NumField, SelectField, Switch, Disclaimer, ResultStatus } from '../components/ui.jsx'
+import { rulesAge } from '../lib/rulesAge.js'
 import { money, money2 } from '../lib/format.js'
 import { RT, percentText, payFactorText, dueDayText } from '../engine/ruleText.js'
 import corporateRules from '../data/rules/corporate.json'
@@ -126,6 +127,9 @@ function useInputs(app, key) {
   return [vals, update]
 }
 
+// The estimator option that matches a profile's regime.
+const REGIME_OPTION = { '8pct': '8pct', graduated_osd: 'osd', graduated_itemized: 'itemized' }
+
 function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
   const p = app.active
   // M05: no sample figures; boxes start empty.
@@ -133,6 +137,7 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
   // Audit Nov 2026 (E10): the current or the previous taxable year, starting
   // on the one whose annual return is due next (last year's until mid-April).
   const today = useManilaToday()
+  const age = rulesAge(today)
   const years = useMemo(() => individualTaxYears({ today }), [today])
   const taxYear = years.options.some(o => o.year === v.taxYear) ? v.taxYear : years.defaultYear
   const annualForm = mixed || p.regime === 'graduated_itemized' ? '1701' : '1701A'
@@ -158,6 +163,27 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
     nolcoPrior: v.nolcoPrior,
   }), [v, comp, p.vatRegistered, mixed, taxYear])
 
+  // Audit Nov 11, 2026: the breakdown and the return preview follow the regime
+  // on the profile (the election is locked for the year once the first
+  // quarterly return is filed), not simply the cheapest option, which may be
+  // one the taxpayer can no longer use this year. Tapping "Show this
+  // breakdown" on another card switches to that option. When the profile's
+  // regime is not available with these figures, the cheapest one is shown.
+  const [picked, setPicked] = useState(null)
+  // U3: after "Show this breakdown" the button is gone, so focus moves to
+  // the breakdown's heading instead of dropping to the top of the page.
+  const breakdownRef = React.useRef(null)
+  function pick(key) {
+    setPicked(key)
+    requestAnimationFrame(() => { if (breakdownRef.current) breakdownRef.current.focus() })
+  }
+  const profileOpt = r.options.find(o => o.key === REGIME_OPTION[p.regime])
+  const pickedOpt = r.options.find(o => o.key === picked && o.eligible)
+  const usesProfileRegime = Boolean(profileOpt && profileOpt.eligible)
+  const shown = pickedOpt || (usesProfileRegime ? profileOpt : r.best)
+  const shownIsProfile = usesProfileRegime && shown === profileOpt
+  const extraOverBest = usesProfileRegime ? profileOpt.total - r.best.total : 0
+
   // The profile's regime, unless the figures override it.
   const opt8 = r.options.find(o => o.key === '8pct')
   const regimeNote = p.regime === '8pct' && r.crossing
@@ -166,7 +192,9 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
       ? `Your profile says the ${RT.eightRate} option, but it is not available to VAT-registered taxpayers.`
       : p.regime === '8pct' && !opt8.eligible
         ? `Your profile says the ${RT.eightRate} option, but it is not available with these figures: ${opt8.reason.replace(/^Not available: /, '')}`
-        : `Note: the regime on this profile is ${p.regime === '8pct' ? `the ${RT.eightRate} option` : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
+        : extraOverBest > 0
+          ? `This profile is on ${profileOpt.name}: ${money(profileOpt.total)} this year, ${money(extraOverBest)} more than the cheapest option. The election locks for the year on the first quarterly return, so a change takes effect next year.`
+          : `Note: the regime on this profile is ${p.regime === '8pct' ? `the ${RT.eightRate} option` : 'graduated rates'}, and the election locks for the year on the Q1 filing.`
 
   return (
     <>
@@ -259,7 +287,9 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
           )}
 
           <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--mut)', lineHeight: 1.5 }}>
-            <b style={{ color: 'var(--ink)' }}>{r.ratesLabel}.</b> {r.ratesNote}
+            <b style={{ color: 'var(--ink)' }}>{age.stale && taxYear > Number(age.verifiedISO.slice(0, 4))
+              ? `Using the rates last checked ${age.verifiedText} (not confirmed for ${taxYear})`
+              : r.ratesLabel}.</b> {r.ratesNote}
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '14px', marginTop: '12px' }}>
@@ -267,7 +297,7 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
               // Every option in a tie for the lowest tax is marked (L01).
               const isBest = c.eligible && (c === r.best || Boolean(r.tie && r.tie.includes(c.key)))
               return (
-                <div key={c.key} style={{
+                <div key={c.key} className="print-keep" style={{
                   borderRadius: '13px', padding: '18px',
                   // M19: an option that is not available has a dashed outline instead of faded (unreadable) text.
                   border: isBest ? '1.5px solid var(--acc)' : c.eligible ? '1.5px solid var(--line)' : '1.5px dashed var(--field)',
@@ -299,11 +329,20 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
                     )}
                   </div>
                   <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--dim)' }}>Files: {c.forms}</div>
+                  {c.eligible && (
+                    <div style={{ marginTop: '10px', fontSize: '12px', minHeight: '24px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      {usesProfileRegime && c === profileOpt && <span className="tag" style={{ background: '#eef3f8', color: 'var(--ink)' }}>On this profile</span>}
+                      {c === shown
+                        ? <span style={{ fontWeight: 600 }}>Breakdown shown below</span>
+                        : <button type="button" className="linkbtn no-print" style={{ minHeight: '24px' }} aria-label={`Show the breakdown for ${c.name}`} onClick={() => pick(c.key)}>Show this breakdown</button>}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
 
+          <ResultStatus text={`Estimate updated. ${r.tie ? r.tieNote : `${r.best.name} is the cheapest option at ${money(r.best.total)}.`} Breakdown shown for ${shown.name}: ${money(shown.total)} for the year.`} />
           <div className="summary-banner" style={{ marginTop: '16px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px', display: 'flex', alignItems: 'center', gap: '13px' }}>
             <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--good)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>✓</span>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
@@ -317,11 +356,14 @@ function IndividualEstimator({ app, mixed, onOpenTab, onPrintYear }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
             <div className="card pad">
-              <h2 className="sec-h">How we got there: {r.best.name}</h2>
-              <Rows rows={r.rows} />
+              <h2 className="sec-h" ref={breakdownRef} tabIndex={-1} style={{ outline: 'none' }}>How we got there: {shown.name}</h2>
+              <p className="cite" style={{ marginTop: '4px' }} role="status">
+                {shownIsProfile ? 'The regime on this profile.' : shown === r.best ? (r.tie ? 'Tied for the lowest tax.' : 'The cheapest option with these figures.') : 'The option you chose to view.'}
+              </p>
+              <Rows rows={r.rowsFor(shown)} />
               <BasisNote refs={r.references} />
             </div>
-            <FormPreview r={r} />
+            <FormPreview r={r} opt={shown} />
           </div>
           <SelfContributionsCard v={v} set={set} />
         </>
@@ -339,9 +381,8 @@ function CrossingCard({ crossing, v, set, monthOptions, extraFields, children })
       <h2 className="sec-h">Your sales passed {RT.vatThreshold} this year</h2>
       <div className="mini-warn" role="note">
         {children}
-        {' '}<b>VAT applies from {crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
-        registration) by the end of the month after the month your sales passed {RT.vatThreshold}. This timing is not
-        confirmed from an official source: check it with your RDO.
+        {' '}<b>VAT applies from {crossing.vatFrom}: not included in this estimate.</b> Update your registration to VAT
+        (BIR Form 1905) within the month after the month your sales passed {RT.vatThreshold} (RR 8-2018).
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
         <SelectField
@@ -362,9 +403,9 @@ function CrossingCard({ crossing, v, set, monthOptions, extraFields, children })
 // The annual return (1701 / 1701A) carries income tax only: income tax due
 // less income-tax credits. Percentage tax is paid on the quarterly 2551Q and
 // is shown below the return lines, never netted against the credits.
-function FormPreview({ r }) {
-  const best = r.best
-  const ar = r.annualReturn
+function FormPreview({ r, opt = r.best }) {
+  const best = opt
+  const ar = r.annualReturnFor(opt)
   const rows = [
     ...ar.taxable.map(t => ({ label: t.label, value: money(t.value) })),
     { label: 'Income tax due', value: money(ar.incomeTaxDue) },
@@ -583,6 +624,7 @@ function EmployeeEstimator({ app }) {
           : 'Start with your monthly basic salary (more than ₱0). Your payslip and annual tax appear here as you type.'}</EnterFigures>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
+          <ResultStatus text={`Estimate updated. Withholding tax ${money2(r.monthlyWithholding)} a month; take-home ${money2(r.monthlyTakeHome)} a month; income tax for the year ${money2(r.annualTax)}.`} />
           <div className="card pad">
             <h2 className="sec-h">Your monthly payslip</h2>
             <Rows fmt="centavo" rows={r.rows} />
@@ -712,6 +754,7 @@ function CorporationEstimator({ app, onPrintYear }) {
               {p.id && <>{' '}<Link to={`/profiles/${p.id}/edit`} state={{ returnTo: '/estimator' }}>Edit the profile</Link></>}
             </div>
           )}
+          <ResultStatus text={`Estimate updated. Income tax due ${money(r.incomeTaxDue)}${r.credits > 0 ? `; after credits ${r.netPayable >= 0 ? `${money(r.netPayable)} still payable` : `an overpayment of ${money(-r.netPayable)}`}` : ''}.`} />
           <div className="summary-banner" style={{ marginTop: '10px', background: 'var(--brand)', color: '#fff', borderRadius: '13px', padding: '17px 20px' }}>
             <span style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
               {r.mcitStatus === 'unknown' && r.usesMcit
@@ -751,6 +794,8 @@ function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
     paidEarlierQuarters: quarter > 1 ? v.qPaidEarlier : 0, cwt: v.qCwt,
     deduction: v.deduction, totalAssets: v.totalAssets ?? null, registrationYear: p.registrationYear,
     taxYear, fiscalYearEndMonth: fy, priorYearCredits: v.priorYearCredits, excessMcit,
+    // Audit Nov 12, 2026 (L5): RR 14-2001 allows NOLCO on the quarterly returns too.
+    nolcoPrior: v.nolcoPrior,
   }) : null), [hasFigures, quarter, v, p.registrationYear, taxYear, fy, excessMcit])
   return (
     <div className="card pad" style={{ marginTop: '20px' }}>
@@ -783,11 +828,10 @@ function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
             <b style={{ color: 'var(--ink)' }}>{q.quarterLabel}.</b> 1702Q due {fmtISO(q.dueDate)}.
           </p>
           {!osd && Number(v.nolcoPrior) > 0 && (
-            <div className="mini-warn" role="note">
-              The NOLCO from prior years entered above is not deducted in this quarterly estimate: how NOLCO is claimed on
-              the 1702Q was not confirmed for this app. It is applied on the annual return (1702-RT) above; ask your CPA
-              before claiming it on a quarterly return.
-            </div>
+            <p className="cite" role="note" style={{ marginTop: '8px' }}>
+              The NOLCO from prior years entered above is deducted here too, up to the net income to date (RR 14-2001:
+              NOLCO is allowed on the quarterly and the annual returns; it never reduces the MCIT).
+            </p>
           )}
           <Rows rows={q.rows} />
         </>
@@ -821,6 +865,7 @@ function PayrollEstimator({ app }) {
           : 'Start with the employee\'s monthly basic pay (more than ₱0). The withholding and true cost appear here as you type.'}</EnterFigures>
       ) : (
         <div className="card pad" style={{ marginTop: '20px' }}>
+          <ResultStatus text={`Estimate updated. Withholding tax to remit ${money2(r.monthlyWithholding)} a month; total employer cost ${money2(r.totalMonthlyCost)} a month.`} />
           <h2 className="sec-h">Withholding &amp; true cost for this employee</h2>
           <Rows fmt="centavo" rows={r.rows} />
           <BasisNote refs={r.references} />

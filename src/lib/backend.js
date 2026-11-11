@@ -15,6 +15,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { iso, manilaToday } from '../engine/dates.js'
 import { withChangedInputs, PROFILE_TYPES } from '../engine/profile.js'
+import { cleanProfile } from './backup.js'
 import { isRecoveryLink, authLinkError } from './auth.js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
@@ -30,6 +31,20 @@ const startHref = hasCloud && typeof window !== 'undefined' ? window.location.hr
 export const openedFromRecoveryLink = Boolean(startHref) && isRecoveryLink(startHref)
 export const emailLinkError = startHref ? authLinkError(startHref) : null
 
+// X8: Supabase reports a password-reset sign-in with a PASSWORD_RECOVERY
+// event, which can fire before the screens are drawn. Listening from here,
+// straight after the client is created, never misses it.
+let recoveryEvent = false
+if (supabase) {
+  supabase.auth.onAuthStateChange(event => {
+    if (event === 'PASSWORD_RECOVERY') recoveryEvent = true
+    if (event === 'SIGNED_OUT') recoveryEvent = false
+  })
+}
+export function recoveryEventSeen() {
+  return recoveryEvent
+}
+
 // Every key this app writes to browser storage starts with this prefix.
 export const LOCAL_PREFIX = 'pv.'
 export const LS_KEY = 'pv.profiles.v1'
@@ -37,6 +52,21 @@ export const ACTIVE_KEY = 'pv.activeProfile.v1'
 // M06 (accounts mode): estimator figures not yet saved to the account when the
 // page was hidden or closed, kept here until the next load after sign-in.
 export const PENDING_FIGURES_KEY = 'pv.pendingFigures.v1'
+// Audit Nov 11, 2026: the Manila date of the last "Download my data" in this
+// browser (local mode), for the backup reminder on the Profiles page.
+export const LAST_BACKUP_KEY = 'pv.lastBackup.v1'
+// Remind when the newest backup is older than this many days.
+export const BACKUP_REMINDER_DAYS = 30
+// Audit Nov 12, 2026 (X12): when each local-mode profile was last changed,
+// { [profile id]: ISO time }, kept beside the profiles (never inside them).
+export const STAMPS_KEY = 'pv.profileStamps.v1'
+// X5: the profile list as it was before the last restore that replaced
+// profiles, for "Undo this restore": { savedAt, profiles, stamps }.
+export const BEFORE_RESTORE_KEY = 'pv.profiles.beforeRestore.v1'
+// X1: a copy of stored profile data that could not be read, kept untouched.
+export const DAMAGED_KEY_PREFIX = 'pv.profiles.v1.damaged.'
+// X7: figures kept in a browser for an account are dropped after this long.
+export const STASH_MAX_AGE_DAYS = 7
 
 // "Download my data" file name, dated in Manila.
 export function exportFileName(now = new Date()) {
@@ -77,6 +107,49 @@ function goneError() {
   const e = new Error(PROFILE_GONE_MESSAGE)
   e.code = 'profile-gone'
   return e
+}
+
+// X1: the stored profile list exists but cannot be read (cut short, or not a
+// list). Nothing is written while it is in that state: a write would replace
+// it, and whatever could still be recovered from it would be gone.
+export const DAMAGED_DATA_MESSAGE =
+  'The profiles saved in this browser could not be read, so nothing was changed. On the Profiles page, download a copy of the saved data, then erase the data on this device and restore your latest backup.'
+
+function damagedError() {
+  const e = new Error(DAMAGED_DATA_MESSAGE)
+  e.code = 'damaged-data'
+  return e
+}
+
+// X7: figures typed in this browser that are older than the account's copy.
+function staleFiguresError(when) {
+  const e = new Error(`Figures typed in this browser on ${when} were not saved, because this profile was changed later on another device or the figures were more than ${STASH_MAX_AGE_DAYS} days old.`)
+  e.code = 'stale-figures'
+  return e
+}
+
+// The same content whatever the order of the keys (X4: a profile that is
+// already stored, apart from its id, is not added again by a restore).
+function canonical(x) {
+  if (Array.isArray(x)) return x.map(canonical)
+  if (x && typeof x === 'object') {
+    const out = {}
+    for (const k of Object.keys(x).sort()) if (x[k] !== undefined) out[k] = canonical(x[k])
+    return out
+  }
+  return x
+}
+// A stored profile is compared in the same cleaned form a restore would give
+// it (defaults filled in, old tracking marks dropped), so a profile and its
+// own backup copy always count as the same.
+function contentKey(profile) {
+  const rest = { ...(cleanProfile(profile) || profile) }
+  delete rest.id
+  return JSON.stringify(canonical(rest))
+}
+// True when two profiles hold the same answers and figures (ids aside).
+export function sameContent(a, b) {
+  return contentKey(a) === contentKey(b)
 }
 
 function conflictError() {
@@ -121,11 +194,66 @@ export function createBackend({ client = null, storage } = {}) {
   const cloud = Boolean(client)
   const store = () => (storage !== undefined ? storage : globalThis.localStorage)
 
-  function localLoad() {
+  // X1: { list, damaged, raw }. Missing or empty storage is an empty list;
+  // text that is not a JSON list is "damaged" and is never taken for "no
+  // profiles yet".
+  function readStored() {
+    let raw
+    try { raw = store().getItem(LS_KEY) } catch { return { list: [], damaged: false, raw: null } }
+    if (raw === null || raw === '') return { list: [], damaged: false, raw }
     try {
-      const list = JSON.parse(store().getItem(LS_KEY) || '[]')
-      return Array.isArray(list) ? list : []
-    } catch { return [] }
+      const list = JSON.parse(raw)
+      if (Array.isArray(list)) return { list, damaged: false, raw }
+    } catch { /* not JSON */ }
+    return { list: [], damaged: true, raw }
+  }
+  // Keeps the unreadable text under its own key (once per day), so it survives
+  // whatever the user does next short of erasing everything.
+  function keepDamagedCopy(raw) {
+    try {
+      const key = DAMAGED_KEY_PREFIX + iso(manilaToday())
+      if (store().getItem(key) === null) store().setItem(key, raw)
+    } catch { /* storage full or blocked: the original is still in place */ }
+  }
+  // For reading in accounts mode (leftovers) and for the export.
+  function localLoad() {
+    return readStored().list
+  }
+  // For every local-mode read or write of the live list: refuses damaged data.
+  function localLoadStrict() {
+    const r = readStored()
+    if (r.damaged) {
+      keepDamagedCopy(r.raw)
+      throw damagedError()
+    }
+    return r.list
+  }
+
+  // X12: last-changed times of local-mode profiles.
+  function readStamps() {
+    try {
+      const m = JSON.parse(store().getItem(STAMPS_KEY) || '{}')
+      return m && typeof m === 'object' && !Array.isArray(m) ? m : {}
+    } catch { return {} }
+  }
+  function writeStamps(map) {
+    try { store().setItem(STAMPS_KEY, JSON.stringify(map)) } catch { /* the stamps are a convenience only */ }
+  }
+  function stamp(ids, now = new Date()) {
+    const map = readStamps()
+    const t = now.toISOString()
+    for (const id of ids) map[id] = t
+    writeStamps(map)
+  }
+  // Accounts mode: the database's updated_at of each profile, as last listed.
+  let cloudStamps = {}
+  // { [profile id]: ISO time of the last change }, for display.
+  function profileStamps() {
+    if (cloud) return { ...cloudStamps }
+    const map = readStamps()
+    const out = {}
+    for (const k of Object.keys(map)) if (typeof map[k] === 'string' && !Number.isNaN(Date.parse(map[k]))) out[k] = map[k]
+    return out
   }
   function localSave(profiles) {
     // Let the failure surface. Swallowing it told the user their client was
@@ -144,7 +272,7 @@ export function createBackend({ client = null, storage } = {}) {
   }
 
   async function listProfiles(userId) {
-    if (!cloud) return usableProfiles(localLoad())
+    if (!cloud) return usableProfiles(localLoadStrict())
     if (!userId) return []
     // Filter by the signed-in user as well as relying on row-level security.
     const { data, error } = await client
@@ -153,6 +281,7 @@ export function createBackend({ client = null, storage } = {}) {
       .eq('user_id', userId)
       .order('created_at', { ascending: true })
     if (error) throw error
+    cloudStamps = Object.fromEntries(data.filter(r => r && r.updated_at).map(r => [r.id, r.updated_at]))
     return usableProfiles(data.map(r => ({ ...r.data, id: r.id })))
   }
 
@@ -161,7 +290,7 @@ export function createBackend({ client = null, storage } = {}) {
   // starts from the newest stored copy instead of this tab's.
   async function saveProfile(userId, profile) {
     if (!cloud) {
-      const all = localLoad()
+      const all = localLoadStrict()
       if (!profile.id) {
         profile = { ...profile, id: newId() }
         all.push(profile)
@@ -172,6 +301,7 @@ export function createBackend({ client = null, storage } = {}) {
         all[i] = profile
       }
       localSave(all)
+      stamp([profile.id])
       return profile
     }
     const row = { user_id: userId, data: { ...profile, id: undefined } }
@@ -206,17 +336,20 @@ export function createBackend({ client = null, storage } = {}) {
   // made only if the row's updated_at is still the one read (optimistic
   // concurrency); otherwise the row is read again and the change re-applied,
   // and after UPDATE_ATTEMPTS tries the save is refused with a message.
-  async function updateProfile(userId, id, change) {
+  // notNewerThan (X7, accounts mode): a time in ms; the change is refused
+  // when the stored row was changed after it.
+  async function updateProfile(userId, id, change, { notNewerThan = null, when = '' } = {}) {
     if (!id) throw new Error('updateProfile needs the id of a saved profile.')
     if (!cloud) {
       // Read, change and write in one go (no await in between), so no other
       // tab can save in the middle.
-      const all = localLoad()
+      const all = localLoadStrict()
       const i = all.findIndex(p => p && p.id === id)
       if (i < 0) throw goneError()
       const next = { ...change(all[i]), id }
       all[i] = next
       localSave(all)
+      stamp([id])
       return next
     }
     for (let attempt = 0; attempt < UPDATE_ATTEMPTS; attempt++) {
@@ -228,6 +361,7 @@ export function createBackend({ client = null, storage } = {}) {
       if (error) throw saveError(error)
       if (!rows || !rows.length) throw goneError()
       const row = rows[0]
+      if (notNewerThan !== null && row.updated_at && Date.parse(row.updated_at) > notNewerThan) throw staleFiguresError(when)
       const next = { ...change({ ...row.data, id }), id }
       const { data: written, error: writeError } = await client
         .from('taxpayer_profiles')
@@ -294,18 +428,25 @@ export function createBackend({ client = null, storage } = {}) {
   // saved, or whose profile was deleted meanwhile, are removed; entries that
   // failed for another reason stay for the next load. Returns
   // { saved, problems: [Error] }.
-  async function replayStashedFigures(userId) {
+  async function replayStashedFigures(userId, { now = new Date() } = {}) {
     const result = { saved: 0, problems: [] }
     if (!cloud || !userId) return result
     for (const e of readStash().filter(x => x.userId === userId)) {
       let drop
+      // X7: the entry's stamp starts with the time it was kept. Figures kept
+      // long ago, or older than the account's copy of the profile (changed
+      // since on another device), are dropped with a notice, never applied.
+      const keptAt = Number(String(e.stamp || '').split('-')[0])
+      const known = Number.isFinite(keptAt) && keptAt > 0
+      const when = known ? iso(manilaToday(new Date(keptAt))) : 'an earlier visit'
       try {
-        await updateProfile(userId, e.profileId, p => withChangedInputs(p, e.key, e.values || {}))
+        if (known && now.getTime() - keptAt > STASH_MAX_AGE_DAYS * 86400000) throw staleFiguresError(when)
+        await updateProfile(userId, e.profileId, p => withChangedInputs(p, e.key, e.values || {}), known ? { notNewerThan: keptAt, when } : {})
         result.saved++
         drop = true
       } catch (err) {
         result.problems.push(err)
-        drop = err && err.code === 'profile-gone'
+        drop = err && (err.code === 'profile-gone' || err.code === 'stale-figures')
       }
       if (drop) clearStashedFigures(e)
     }
@@ -314,10 +455,16 @@ export function createBackend({ client = null, storage } = {}) {
 
   async function deleteProfile(userId, id) {
     if (!cloud) {
-      localSave(localLoad().filter(p => p.id !== id))
+      // Entries that are not profiles (X1) are left where they are.
+      localSave(localLoadStrict().filter(p => !(p && p.id === id)))
+      const map = readStamps()
+      if (id in map) { delete map[id]; writeStamps(map) }
       return
     }
-    const { error } = await client.from('taxpayer_profiles').delete().eq('id', id)
+    // X15: like every other call, limited to the signed-in user's own rows.
+    let q = client.from('taxpayer_profiles').delete().eq('id', id)
+    if (userId) q = q.eq('user_id', userId)
+    const { error } = await q
     if (error) throw error
   }
 
@@ -329,10 +476,20 @@ export function createBackend({ client = null, storage } = {}) {
     if (!cloud) {
       let activeProfileId = null
       try { activeProfileId = store().getItem(ACTIVE_KEY) || null } catch { /* ignore */ }
-      const profiles = localLoad()
+      const stored = readStored()
+      // X1: stored data that cannot be read is handed over as it is, clearly
+      // marked, never as an empty (and misleading) backup.
+      if (stored.damaged) {
+        keepDamagedCopy(stored.raw)
+        return { ...head, storedIn: 'this browser', activeProfileId: null, profiles: [], unreadable: true, unreadableData: stored.raw }
+      }
+      const profiles = stored.list
       // Audit Nov 2026 (S7): never name a profile that is no longer stored.
       if (!profiles.some(p => p && p.id === activeProfileId)) activeProfileId = null
-      return { ...head, storedIn: 'this browser', activeProfileId, profiles }
+      // X12: when each profile was last changed, as in an account's export.
+      const stamps = profileStamps()
+      const records = profiles.filter(p => p && stamps[p.id]).map(p => ({ id: p.id, updatedAt: stamps[p.id] }))
+      return { ...head, storedIn: 'this browser', activeProfileId, profiles, records }
     }
     const { data, error } = await client
       .from('taxpayer_profiles')
@@ -347,6 +504,133 @@ export function createBackend({ client = null, storage } = {}) {
       profiles: data.map(r => ({ ...r.data, id: r.id })),
       records: data.map(r => ({ id: r.id, createdAt: r.created_at, updatedAt: r.updated_at })),
     }
+  }
+
+  // Audit Nov 11, 2026: "Restore from a backup file". `incoming` are clean
+  // profiles from parseBackup (src/lib/backup.js). A profile whose id is
+  // already stored is left as it is unless replaceExisting is true; one with
+  // a new id (or none) is added. Nothing is ever deleted, and the account
+  // limit (PROFILE_LIMIT) holds. Local mode writes once, so a failed write
+  // changes nothing. Returns { added, replaced, kept, overLimit, failed }.
+  async function importProfiles(userId, incoming, { replaceExisting = false, now = new Date() } = {}) {
+    const result = { added: 0, replaced: 0, kept: 0, overLimit: 0, failed: 0, canUndo: false }
+    // X20: whatever is handed in is cleaned again here, so nothing unchecked
+    // can be stored even if a caller forgets to.
+    const thisYear = manilaToday(now).getFullYear()
+    const list = (Array.isArray(incoming) ? incoming : []).map(p => cleanProfile(p, { thisYear })).filter(Boolean)
+    if (!cloud) {
+      const all = localLoadStrict()
+      const before = JSON.stringify(all)
+      // X4: a profile already stored with the same content (apart from its
+      // id) is not added a second time, so a restore can be repeated safely.
+      const contents = new Set(all.filter(x => x && typeof x === 'object').map(contentKey))
+      const changed = []
+      for (const p of list) {
+        const i = p.id ? all.findIndex(x => x && x.id === p.id) : -1
+        if (i >= 0) {
+          if (replaceExisting && contentKey(all[i]) !== contentKey(p)) {
+            all[i] = { ...p }
+            changed.push(p.id)
+            result.replaced++
+          } else result.kept++
+        } else if (contents.has(contentKey(p))) {
+          result.kept++
+        } else if (all.length >= PROFILE_LIMIT) {
+          result.overLimit++
+        } else {
+          const added = { ...p, id: p.id || newId() }
+          all.push(added)
+          contents.add(contentKey(added))
+          changed.push(added.id)
+          result.added++
+        }
+      }
+      if (changed.length) {
+        // X5: what was here before a replace is kept for "Undo this restore".
+        if (result.replaced) {
+          try {
+            store().setItem(BEFORE_RESTORE_KEY, JSON.stringify({ savedAt: now.toISOString(), profiles: JSON.parse(before), stamps: readStamps() }))
+            result.canUndo = true
+          } catch { /* no room for the copy: the restore still goes ahead */ }
+        }
+        localSave(all)
+        stamp(changed, now)
+      }
+      return result
+    }
+    if (!userId) throw new Error('Sign in before restoring a backup.')
+    const stored = await listProfiles(userId)
+    const byId = new Map(stored.map(p => [p.id, p]))
+    const contents = new Set(stored.map(contentKey))
+    let count = stored.length
+    for (const p of list) {
+      const here = p.id ? byId.get(p.id) : null
+      try {
+        if (here) {
+          if (!replaceExisting || contentKey(here) === contentKey(p)) { result.kept++; continue }
+          await saveProfile(userId, p)
+          result.replaced++
+        } else if (contents.has(contentKey(p))) {
+          result.kept++
+        } else if (count >= PROFILE_LIMIT) {
+          result.overLimit++
+        } else {
+          await saveProfile(userId, { ...p, id: null })
+          contents.add(contentKey(p))
+          count++
+          result.added++
+        }
+      } catch {
+        result.failed++
+      }
+    }
+    return result
+  }
+
+  // X5 "Undo this restore" (local mode): puts back the profile list as it was
+  // before the last restore that replaced profiles. Profiles added since (by
+  // that restore or by hand) go too, which the button's text says.
+  function restoreUndoInfo() {
+    if (cloud) return null
+    try {
+      const u = JSON.parse(store().getItem(BEFORE_RESTORE_KEY) || 'null')
+      return u && Array.isArray(u.profiles) && typeof u.savedAt === 'string' ? { savedAt: u.savedAt, count: usableProfiles(u.profiles).length } : null
+    } catch { return null }
+  }
+  function undoRestore() {
+    if (cloud) throw new Error('A restore into an account cannot be undone here.')
+    let u = null
+    try { u = JSON.parse(store().getItem(BEFORE_RESTORE_KEY) || 'null') } catch { /* handled below */ }
+    if (!u || !Array.isArray(u.profiles)) throw new Error('There is no restore to undo.')
+    localLoadStrict() // refuses while the stored list is unreadable
+    localSave(u.profiles)
+    if (u.stamps && typeof u.stamps === 'object') writeStamps(u.stamps)
+    try { store().removeItem(BEFORE_RESTORE_KEY) } catch { /* ignore */ }
+    return { restored: usableProfiles(u.profiles).length }
+  }
+
+  // The Manila date ('YYYY-MM-DD') of the last "Download my data" in this
+  // browser, or null. Local mode only: an account's data is not lost with the
+  // browser's storage.
+  function lastBackupDate() {
+    if (cloud) return null
+    try {
+      const v = store().getItem(LAST_BACKUP_KEY)
+      return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null
+    } catch { return null }
+  }
+  // onlyIfLater: for a restored file's own date; never moves the date back,
+  // and a date in the future (a wrong clock, an edited file) is ignored.
+  function noteBackup(now = new Date(), { onlyIfLater = false } = {}) {
+    if (cloud) return
+    try {
+      const d = iso(manilaToday(now))
+      if (onlyIfLater) {
+        const current = lastBackupDate()
+        if ((current && current >= d) || d > iso(manilaToday())) return
+      }
+      store().setItem(LAST_BACKUP_KEY, d)
+    } catch { /* the reminder simply stays */ }
   }
 
   // M25 / M27 "Erase all data on this device": removes every key this app
@@ -380,18 +664,22 @@ export function createBackend({ client = null, storage } = {}) {
   // Saves each leftover as a new profile of this user. Profiles that could not
   // be saved stay in this browser, so nothing is lost.
   async function importLocalProfiles(userId) {
+    const todo = localLeftovers()
     const left = []
     let imported = 0
-    for (const p of localLeftovers()) {
+    for (let i = 0; i < todo.length; i++) {
       try {
-        await saveProfile(userId, { ...p, id: null })
+        await saveProfile(userId, { ...todo[i], id: null })
         imported++
       } catch {
-        left.push(p)
+        left.push(todo[i])
       }
+      // X20: the browser copy shrinks as each one is saved, so an import that
+      // is cut short never saves the same profile twice on the next try.
+      const rest = [...left, ...todo.slice(i + 1)]
+      if (rest.length) localSave(rest)
+      else eraseLocalLeftovers()
     }
-    if (left.length) localSave(left)
-    else eraseLocalLeftovers()
     return { imported, failed: left.length }
   }
 
@@ -417,6 +705,7 @@ export function createBackend({ client = null, storage } = {}) {
   return {
     hasCloud: cloud, listProfiles, saveProfile, updateProfile, deleteProfile, exportData, eraseLocalData, deleteOwnAccount,
     localLeftovers, importLocalProfiles, eraseLocalLeftovers, stashFigures, clearStashedFigures, replayStashedFigures,
+    importProfiles, lastBackupDate, noteBackup, profileStamps, restoreUndoInfo, undoRestore,
   }
 }
 
@@ -435,3 +724,9 @@ export const eraseLocalLeftovers = (...a) => app.eraseLocalLeftovers(...a)
 export const stashFigures = (...a) => app.stashFigures(...a)
 export const clearStashedFigures = (...a) => app.clearStashedFigures(...a)
 export const replayStashedFigures = (...a) => app.replayStashedFigures(...a)
+export const importProfiles = (...a) => app.importProfiles(...a)
+export const lastBackupDate = (...a) => app.lastBackupDate(...a)
+export const noteBackup = (...a) => app.noteBackup(...a)
+export const profileStamps = (...a) => app.profileStamps(...a)
+export const restoreUndoInfo = (...a) => app.restoreUndoInfo(...a)
+export const undoRestore = (...a) => app.undoRestore(...a)

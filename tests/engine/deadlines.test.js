@@ -8,9 +8,9 @@ import { fromISO, iso, taxableYearQuarters, shiftToBusinessDay } from '../../src
 const OB = obligationsData.obligations
 const HOLIDAYS = new Set(holidaysData.holidays.map(h => h.date))
 
-function gen(profile, fromS, toS) {
+function gen(profile, fromS, toS, more = {}) {
   return generateDeadlines(OB, profile, {
-    from: fromISO(fromS), to: fromISO(toS), holidays: HOLIDAYS, refDate: fromISO(fromS),
+    from: fromISO(fromS), to: fromISO(toS), holidays: HOLIDAYS, refDate: fromISO(fromS), ...more,
   })
 }
 function datesOf(list, obId) {
@@ -37,8 +37,10 @@ describe('self-employed 8% — TY2026 calendar', () => {
 describe('self-employed graduated — percentage tax quarters', () => {
   const p = { ...defaultProfile('individual'), name: 'T', regime: 'graduated_osd' }
   const list = gen(p, '2026-01-01', '2027-01-31')
-  it('2551Q due 25 days after each quarter, weekend-shifted (Apr 25 Sat→27, Jul 25 Sat→27, Oct 25 Sun→26)', () => {
-    expect(datesOf(list, 'bir-2551q')).toEqual(['2026-01-26', '2026-04-27', '2026-07-27', '2026-10-26', '2027-01-25'])
+  it('2551Q due 25 days after each quarter, weekend-shifted (Apr 25 Sat→27, Jul 25 Sat→27); Q3 2026 extended to Oct 29 by RMC 115-2026', () => {
+    expect(datesOf(list, 'bir-2551q')).toEqual(['2026-01-26', '2026-04-27', '2026-07-27', '2026-10-29', '2027-01-25'])
+    // Audit Nov 12, 2026: without the extension Oct 25 (a Sunday) moves to Oct 26.
+    expect(datesOf(gen(p, '2026-01-01', '2027-01-31', { overrides: [] }), 'bir-2551q')[3]).toBe('2026-10-26')
     // 2026-01-25 is a Sunday → Jan 26 for the Q4-2025 return caught in window
   })
   it('graduated individual files 1701A (OSD), not 1701', () => {
@@ -69,7 +71,10 @@ describe('employer facets', () => {
   it('1601-C monthly on the 10th, December due Jan 15', () => {
     const d = datesOf(list, 'bir-1601c')
     expect(d).toContain('2026-02-10')
-    expect(d).toContain('2026-11-10')
+    expect(d).toContain('2026-10-12')
+    // Audit Nov 12, 2026: the October 2026 return (Nov 10) was moved to Nov 13 by RMC 118-2026.
+    expect(d).toContain('2026-11-13')
+    expect(d).not.toContain('2026-11-10')
     // November period → Dec 10 2026 (Thu); December period → Jan 15 2027 (Fri)
     expect(d).toContain('2026-12-10')
     expect(d).toContain('2027-01-15')
@@ -118,9 +123,10 @@ describe('corporation — fiscal year ending June 30', () => {
   it('annual return on the 15th day of the 4th month after FY end (Oct 15)', () => {
     expect(datesOf(list, 'bir-1702-annual')).toContain('2026-10-15')
   })
-  it('quarterly VAT follows fiscal quarters (Q ends Sep 30 → Oct 25 Sun → Oct 26)', () => {
+  it('quarterly VAT follows fiscal quarters (Q ends Sep 30 → Oct 25 Sun → Oct 26, extended to Oct 29 by RMC 115-2026)', () => {
     const d = datesOf(list, 'bir-2550q')
-    expect(d).toContain('2026-10-26')
+    expect(d).toContain('2026-10-29')
+    expect(d).toContain('2026-04-27')
   })
   it('withholding stays calendar-based despite the fiscal year', () => {
     const pe = { ...p, hasEmployees: true }

@@ -31,6 +31,8 @@ describe('M25 Download my data (local mode)', () => {
       storedIn: 'this browser',
       activeProfileId: 'p-free',
       profiles: [maria, paolo],
+      // Audit Nov 12, 2026 (X12): last-changed times, when the app has them.
+      records: [],
     })
   })
 

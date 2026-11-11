@@ -3,18 +3,20 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS, HOLIDAY_SET } from '../lib/deadlineData.js'
 import {
-  generateDeadlines, unproclaimedYears, holidayGapNote, recentDeadlines, RECENT_DAYS, groupByMonth, isUnconfirmed,
+  generateDeadlines, unproclaimedYears, holidayGapNote, pendingHolidayNotes, recentDeadlines, RECENT_DAYS, groupByMonth, isUnconfirmed,
   CATEGORY_LABEL, NO_FILTER, isFiltered, filterDeadlines, filterOptions, trimPick, filterText,
 } from '../engine/deadlines.js'
 import { profileFlags, PROFILE_TYPES, regimeLabel } from '../engine/profile.js'
 import { dueDayText, fixedHolidayExamples } from '../engine/ruleText.js'
-import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
+import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel, fromISO } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { AgencyTag } from '../components/ui.jsx'
 import { ItemBadge, DeadlineDetails } from '../components/Confidence.jsx'
 import { FormCode } from '../components/FormCode.jsx'
 import { PrintHeader, PrintButton } from '../components/PrintHeader.jsx'
 import { deadlineCsv, deadlineCsvFileName, downloadText } from '../lib/exports.js'
+import { backupReminder } from './Profiles.jsx'
+import { deadlineIcs, deadlineIcsFileName, REMINDER_DAYS_BEFORE } from '../lib/ics.js'
 import { formGuideCode, formGuidePath } from '../lib/formGuide.js'
 
 function NoProfile() {
@@ -57,6 +59,11 @@ export default function Dashboard() {
   // Years in the window whose holidays are not yet proclaimed (M07).
   const gapYears = unproclaimedYears(HOLIDAY_SET, t, windowEnd)
   const gapNote = holidayGapNote(gapYears)
+  // Holidays proclaimed separately, closer to the date (D9).
+  const pendingNotes = pendingHolidayNotes(t, windowEnd)
+  // X2: local data can be lost with the browser's storage, so the backup
+  // reminder is on the calendar too, not only on the Profiles page.
+  const backupNote = backupReminder({ hasCloud: app.hasCloud, profileCount: app.profiles.length, lastBackup: app.lastBackup, today: t })
 
   // Due dates of the last 60 days. The calendar is a reference, not a
   // tracker: it does not know what was filed, so these are "recently passed".
@@ -76,7 +83,12 @@ export default function Dashboard() {
   // M22: every deadline on the calendar (the last 60 days and the next 13
   // months, as filtered) as a spreadsheet file.
   function downloadCsv() {
-    downloadText(deadlineCsvFileName(p.name, t, { filtered }), deadlineCsv({ recent: recentShown, upcoming: shown, today: t }))
+    downloadText(deadlineCsvFileName(p.name, t, { filtered }), deadlineCsv({ recent: recentShown, upcoming: shown, today: t, profileName: p.name }))
+  }
+
+  // U12: the upcoming dates as a file a calendar app can import, with reminders.
+  function downloadIcs() {
+    downloadText(deadlineIcsFileName(deadlineCsvFileName(p.name, t, { filtered })), deadlineIcs({ upcoming: shown, today: t, profileName: p.name }), 'text/calendar;charset=utf-8', { bom: false })
   }
 
   if (!app.profilesReady) return null
@@ -85,8 +97,17 @@ export default function Dashboard() {
       <div className="page wrap" style={{ paddingTop: '40px', paddingBottom: '64px', maxWidth: '620px' }}>
         <div className="card pad">
           <h1 className="pg-h1">Couldn’t load your profiles</h1>
-          <p className="pg-sub">This is a connection problem, not lost data. Your saved taxpayers are still there.</p>
-          <button className="btn" style={{ marginTop: '16px' }} onClick={() => app.retryLoad()}>Try again</button>
+          {app.loadError.code === 'damaged-data' ? (
+            <>
+              <p className="pg-sub">The profiles saved in this browser could not be read. Nothing was deleted.</p>
+              <button className="btn" style={{ marginTop: '16px' }} onClick={() => nav('/profiles')}>See what to do</button>
+            </>
+          ) : (
+            <>
+              <p className="pg-sub">This is a loading problem, not lost data. Your saved taxpayers are still there.</p>
+              <button className="btn" style={{ marginTop: '16px' }} onClick={() => app.retryLoad()}>Try again</button>
+            </>
+          )}
         </div>
       </div>
     )
@@ -164,6 +185,20 @@ export default function Dashboard() {
                 (such as {fixedHolidayExamples()}) only; check the official list once it is out.
               </p>
             )}
+            {backupNote && (
+              <p className="mini-warn no-print" role="note" style={{ maxWidth: '640px' }}>
+                {app.lastBackup ? 'Your backup is more than a month old.' : 'You have no backup yet.'} These profiles exist only in this browser.{' '}
+                <Link to="/profiles" style={{ color: 'inherit', fontWeight: 700 }}>Download a backup on the Profiles page</Link>.
+              </p>
+            )}
+            {view === 'feed' && (
+              <p className="print-only" style={{ fontSize: '10pt', marginTop: '6px' }}>
+                This printout lists the next date of each obligation. For every date in the period, print the Table view.
+              </p>
+            )}
+            {pendingNotes.map(n => (
+              <p key={n.year} className="mini-warn" role="note" style={{ maxWidth: '640px' }}>{n.note}</p>
+            ))}
           </div>
           <div className="no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
             <div className="seg" role="group" aria-label="View">
@@ -173,6 +208,8 @@ export default function Dashboard() {
             </div>
             <PrintButton />
             <button type="button" className="btn sm ghost" onClick={downloadCsv}>Download as spreadsheet (CSV)</button>
+            <button type="button" className="btn sm ghost" onClick={downloadIcs}
+              title={`A file your phone or computer calendar can open, with a reminder ${REMINDER_DAYS_BEFORE} days before each date and on the day`}>Add to my calendar app (.ics)</button>
           </div>
         </div>
 
@@ -503,6 +540,7 @@ function ExtendedNote({ d, onDark }) {
   return (
     <div style={{ fontSize: '12px', lineHeight: 1.5, marginTop: '5px', color: onDark ? '#cdddea' : 'var(--accInk)' }}>
       <b>Extended to {fmtDate(d.date)} by {d.extended.basis}</b> (was {fmtDate(d.extended.from)}).
+      {d.extended.scope && <> {d.extended.scope}</>}
     </div>
   )
 }
@@ -512,11 +550,15 @@ function ExtendedNote({ d, onDark }) {
 function RegionalNote({ d, onDark }) {
   if (!d.regionalHoliday) return null
   const h = d.regionalHoliday
+  // Audit Nov 12, 2026 (L1): the agency moved this date for that region only.
+  const x = d.regionalExtension
   return (
     <div style={{ fontSize: '12px', lineHeight: 1.5, marginTop: '5px', color: onDark ? '#f3cf9a' : '#7a5a1f' }}>
       <b>{fmtDay(d.date)} is a special non-working day in {h.region === 'NCR' ? 'NCR (Metro Manila)' : h.region} only ({h.name}).</b> The national due date is
-      shown; filing and paying by then is always on time. No advisory was found saying the deadline moves for
-      taxpayers in {h.region}.
+      shown; filing and paying by then is always on time.{' '}
+      {x
+        ? <>Under a {x.basis}, {x.coverage} may file and pay until <b>{fmtDay(fromISO(x.newDate))}</b> without penalty. Everywhere else the date shown stands.</>
+        : <>No {d.obligation.agency} advisory was found saying the deadline moves for taxpayers in {h.region}.</>}
     </div>
   )
 }
@@ -581,7 +623,7 @@ function DeadlineTable({ deadlines, filtered }) {
                 <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}><FormCode form={d.obligation.form || '—'} className={null} /></td>
                 <td><AgencyTag agency={d.obligation.agency} /></td>
                 <td style={{ color: 'var(--mut)' }}>{CATEGORY_LABEL[d.obligation.category] || ''}</td>
-                <td className="mono" style={{ fontSize: '12px', color: 'var(--dim)', whiteSpace: 'nowrap' }}>{d.label || '—'}</td>
+                <td className="mono" style={{ fontSize: '12px', color: 'var(--dim)', whiteSpace: 'nowrap' }}>{d.label && d.label !== 'Annual' ? d.label : (d.period || d.label || '—')}</td>
               </tr>
             ))}
           </tbody>

@@ -32,7 +32,7 @@ describe('filterOptions: the buttons the filter shows', () => {
 
 describe('filterDeadlines', () => {
   it('nothing picked: everything, unchanged', () => {
-    expect(list).toHaveLength(110)
+    expect(list).toHaveLength(114) // 110 before the quarterly installments of local business tax were dated (Nov 12, 2026)
     expect(isFiltered(NO_FILTER)).toBe(false)
     expect(filterDeadlines(list, NO_FILTER)).toBe(list)
   })

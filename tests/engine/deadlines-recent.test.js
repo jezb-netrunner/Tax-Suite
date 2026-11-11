@@ -23,7 +23,10 @@ const OCT_27 = [
   ['2026-09-30', 'sss-self', 'Aug 2026', 27],
   ['2026-10-12', 'pagibig-self', 'Sep 2026', 15],
   ['2026-10-15', 'bir-annual-itr-2nd-installment', null, 12],
-  ['2026-10-26', 'bir-2551q', 'Q3', 1],
+  // Audit Nov 12, 2026: the quarterly installment of local business tax is
+  // now dated, and the Q3 2551Q (Oct 26) is no longer here: RMC 115-2026
+  // moved it to Oct 29, still ahead on Oct 27.
+  ['2026-10-20', 'lgu-business-tax-quarterly', 'Q4', 7],
 ]
 
 describe('Recently passed: the due dates of the last 60 days', () => {

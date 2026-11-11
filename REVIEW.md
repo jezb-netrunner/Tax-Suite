@@ -1,6 +1,7 @@
 # JEZ Tax Suite: Review
 
 > **Follow-up:** the audit of November 8, 2026 (law re-check, bug hunt and fixes) is in [AUDIT-2026-11.md](AUDIT-2026-11.md).
+> The audit of November 12, 2026 (law, calendar, calculators, data safety, screens) is in [AUDIT-2026-11-12.md](AUDIT-2026-11-12.md).
 
 Branch `review/jez-tax-suite` (from `main` at ed29f5a). Review date: **October 7, 2026** (Asia/Manila).
 Owner decisions are recorded in section 4.3 (Phase 3): all 78 findings approved for fixing. **Phase 4 is complete: all 78 are fixed; see section 6** for the final checks, the rename, and a manual check per fix.

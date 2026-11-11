@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { PROFILE_TYPES, profileInitial } from '../engine/profile.js'
-import { exportFileName } from '../lib/backend.js'
+import { exportFileName, BACKUP_REMINDER_DAYS, sameContent } from '../lib/backend.js'
+import { parseBackup, BACKUP_MAX_BYTES } from '../lib/backup.js'
+import { useManilaToday } from '../lib/useManilaToday.js'
+import { fromISO, daysBetween, fmtDate, manilaToday } from '../engine/dates.js'
 
 function downloadJson(name, obj) {
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' })
@@ -111,6 +114,196 @@ export function LocalLeftovers() {
   )
 }
 
+// Audit Nov 11, 2026: local mode keeps everything in this browser, where
+// clearing the browsing data, a new computer or a new web address loses it.
+// The reminder shows while there are profiles and no backup was downloaded
+// here in the last BACKUP_REMINDER_DAYS days. Pure, for the tests.
+export function backupReminder({ hasCloud, profileCount, lastBackup, today }) {
+  if (hasCloud || !profileCount) return null
+  if (!lastBackup) {
+    return 'No backup yet. These profiles exist only in this browser: clearing its data, or moving to another computer, loses them. Use "Download my data" below and keep the file somewhere safe.'
+  }
+  const days = daysBetween(fromISO(lastBackup), today)
+  if (days <= BACKUP_REMINDER_DAYS) return null
+  return `Your last backup was downloaded on ${fmtDate(fromISO(lastBackup))} (${days} days ago). Use "Download my data" below to save a new one.`
+}
+
+const countText = k => (k === 1 ? '1 profile' : `${k} profiles`)
+
+// What a finished restore did, in one sentence.
+export function restoreResultText(r) {
+  const parts = []
+  if (r.added) parts.push(`${countText(r.added)} added`)
+  if (r.replaced) parts.push(`${countText(r.replaced)} replaced with the backup copy`)
+  if (r.kept) parts.push(`${countText(r.kept)} already here left as ${r.kept === 1 ? 'it is' : 'they are'}`)
+  if (r.overLimit) parts.push(`${countText(r.overLimit)} not added because the limit of profiles was reached`)
+  if (r.failed) parts.push(`${countText(r.failed)} could not be saved`)
+  return parts.length ? `Restore finished: ${parts.join('; ')}.` : 'Nothing was restored.'
+}
+
+// "Restore from a backup file" (audit Nov 11-12, 2026). The file is read in
+// the browser (nothing is uploaded), checked and cleaned (src/lib/backup.js),
+// and its contents are shown before anything is saved. Profiles already here
+// are kept unless the user chooses to replace them with the backup copy; each
+// replacement is listed by name (X5), with the date each side was last
+// changed when known (X12).
+//
+// useRestore holds the state; RestoreButton and RestoreSummary are drawn in
+// different places (the summary goes below the row of buttons, U7).
+function useRestore(app, { onDone, onOpen }) {
+  const [found, setFound] = useState(null) // { profiles, skipped, exportedAt, stamps, activeProfileId, fileName }
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+  const inputRef = useRef(null)
+  const buttonRef = useRef(null)
+  const questionRef = useRef(null)
+  useEffect(() => { if (found && questionRef.current) questionRef.current.focus() }, [found])
+  const backToButton = () => { if (buttonRef.current) buttonRef.current.focus() }
+
+  async function onFile(e) {
+    const file = e.target.files && e.target.files[0]
+    e.target.value = '' // the same file can be chosen again
+    setErr(null); setFound(null); onDone(null)
+    if (!file) return
+    if (file.size > BACKUP_MAX_BYTES) { setErr('That file is too large to be a JEZ Tax Suite backup.'); return }
+    try {
+      const parsed = parseBackup(await file.text())
+      onOpen()
+      setFound({ ...parsed, fileName: file.name })
+    } catch (x) {
+      setErr(x && x.code === 'bad-backup' ? x.message : 'That file could not be read. Choose the .json file saved by "Download my data".')
+    }
+  }
+
+  async function restore(replaceExisting) {
+    setBusy(true); setErr(null)
+    try {
+      const r = await app.restoreBackup(found.profiles, { replaceExisting, exportedAt: found.exportedAt, activeProfileId: found.activeProfileId })
+      setFound(null)
+      onDone({ ok: !r.failed && !r.overLimit, text: restoreResultText(r), undo: Boolean(r.canUndo) })
+    } catch (x) {
+      setErr((x && x.message) || 'The restore did not finish. Nothing was removed; please try again.')
+    }
+    setBusy(false)
+    backToButton() // U3: focus goes back to a control that still exists
+  }
+
+  function cancel() {
+    setFound(null)
+    backToButton()
+  }
+
+  return { found, busy, err, inputRef, buttonRef, questionRef, onFile, restore, cancel, close: () => setFound(null) }
+}
+
+function RestoreButton({ r }) {
+  return (
+    <>
+      <input ref={r.inputRef} type="file" accept="application/json,.json" onChange={r.onFile} hidden aria-hidden="true" tabIndex={-1} />
+      <button ref={r.buttonRef} className="btn sm ghost" type="button" aria-expanded={Boolean(r.found)} onClick={() => r.inputRef.current && r.inputRef.current.click()}>
+        Restore from a backup file
+      </button>
+    </>
+  )
+}
+
+// 'Nov 12, 2026' in Manila for an ISO time, or '' (X20: never the device's zone).
+const manilaDay = isoTime => (isoTime && !Number.isNaN(Date.parse(isoTime)) ? fmtDate(manilaToday(new Date(isoTime))) : '')
+
+// The profiles a restore would replace, each with what is here now (X5).
+export function replacementList(fileProfiles, storedProfiles, fileStamps = {}, storedStamps = {}) {
+  const byId = new Map(storedProfiles.map(p => [p.id, p]))
+  const typeName = p => PROFILE_TYPES[p.type]?.name || p.type
+  return fileProfiles.filter(p => p.id && byId.has(p.id)).map(p => {
+    const here = byId.get(p.id)
+    return {
+      id: p.id,
+      here: `${here.name || 'Unnamed'} (${typeName(here)})`,
+      hereChanged: manilaDay(storedStamps[p.id]),
+      backup: `${p.name || 'Unnamed'} (${typeName(p)})`,
+      backupChanged: manilaDay(fileStamps[p.id]),
+      differs: here.name !== p.name || here.type !== p.type,
+      // The copy here already equals the one in the file: nothing to replace.
+      same: sameContent(here, p),
+    }
+  })
+}
+
+function RestoreSummary({ app, r }) {
+  const found = r.found
+  if (!found && !r.err) return null
+  const matches = found ? replacementList(found.profiles, app.profiles, found.stamps, app.lastChanged) : []
+  const matching = matches.length
+  // Only the ones that differ from the backup copy can be replaced.
+  const changed = matches.filter(m => !m.same)
+  const nothingToDo = Boolean(found) && matching > 0 && changed.length === 0 && found.profiles.length === matching
+  const fresh = found ? found.profiles.length - matching : 0
+  const madeOn = found ? manilaDay(found.exportedAt) : ''
+  return (
+    <>
+      {found && (
+        <div role="group" aria-labelledby="restore-q" className="mini-warn" style={{ marginTop: '14px' }}>
+          <p id="restore-q" ref={r.questionRef} tabIndex={-1} style={{ fontWeight: 600, outline: 'none', overflowWrap: 'anywhere' }}>
+            {found.fileName}{madeOn ? ` (saved ${madeOn})` : ''} holds {countText(found.profiles.length)}.
+          </p>
+          <p style={{ marginTop: '4px', overflowWrap: 'anywhere' }}>
+            {found.profiles.slice(0, 12).map(p => p.name).join(' · ')}{found.profiles.length > 12 ? ` · and ${found.profiles.length - 12} more` : ''}
+          </p>
+          <p style={{ marginTop: '4px' }}>
+            {matching === 0 && `${fresh === 1 ? 'It is' : 'They are'} not here yet and will be added. Nothing already here is changed.`}
+            {matching > 0 && fresh > 0 && `${countText(matching)} ${matching === 1 ? 'is' : 'are'} already here; ${countText(fresh)} ${fresh === 1 ? 'is' : 'are'} not.`}
+            {matching > 0 && fresh === 0 && `${matching === 1 ? 'It is' : 'They are all'} already here.`}
+            {matching > 0 && changed.length < matching && ` ${changed.length === 0 ? (matching === 1 ? 'The copy here is the same as the one in the file' : 'The copies here are the same as the ones in the file') : `${countText(matching - changed.length)} here ${matching - changed.length === 1 ? 'is' : 'are'} the same as in the file`}${nothingToDo ? ': there is nothing to restore.' : '.'}`}
+            {found.skipped > 0 && ` ${found.skipped === 1 ? '1 entry in the file is not a profile and is' : `${found.skipped} entries in the file are not profiles and are`} ignored.`}
+          </p>
+          {changed.length > 0 && (
+            <>
+              <p style={{ marginTop: '8px', fontWeight: 600 }}>
+                Replacing puts the backup copy, with its saved figures, in place of what is here now:
+              </p>
+              <ul style={{ margin: '4px 0 0', paddingLeft: '18px', overflowWrap: 'anywhere' }}>
+                {changed.slice(0, 20).map(m => (
+                  <li key={m.id}>
+                    Here now: {m.here}{m.hereChanged ? `, last changed ${m.hereChanged}` : ''}. In the backup: {m.backup}{m.backupChanged ? `, last changed ${m.backupChanged}` : ''}.
+                    {m.differs && <b> The name or type is different: check that this is the same taxpayer.</b>}
+                  </li>
+                ))}
+                {changed.length > 20 && <li>and {changed.length - 20} more.</li>}
+              </ul>
+              <p style={{ marginTop: '6px' }}>
+                {app.hasCloud
+                  ? 'A replacement in your account cannot be undone. Download your data first if you are not sure.'
+                  : 'What is here now is kept for one "Undo this restore", until the next restore or erase.'}
+              </p>
+            </>
+          )}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+            {fresh > 0 && (
+              <button className="btn sm" type="button" disabled={r.busy} onClick={() => r.restore(false)}>
+                {r.busy ? 'Restoring…' : matching > 0 ? `Add the ${countText(fresh)} not here` : `Restore ${countText(fresh)}`}
+              </button>
+            )}
+            {changed.length > 0 && (
+              <button className="btn sm danger" type="button" disabled={r.busy} onClick={() => r.restore(true)}>
+                {fresh > 0 ? `Add those and replace ${countText(changed.length)} here` : `Replace ${countText(changed.length)} with the backup copy`}
+              </button>
+            )}
+            <button className="btn sm ghost" type="button" disabled={r.busy} onClick={r.cancel}>{nothingToDo ? 'Close' : 'Cancel'}</button>
+          </div>
+        </div>
+      )}
+      {r.err && <div className="form-err" role="alert">{r.err}</div>}
+    </>
+  )
+}
+
+// X10: said after every download, and in the Privacy Notice.
+export const BACKUP_FILE_WARNING = 'The file holds names and income figures in readable form. Keep it somewhere private: erasing data in the app does not delete the file.'
+
+// X2: opened from disk (file://), a browser keeps the data with this file's
+// location, so a newer copy saved elsewhere opens empty.
+export const FILE_COPY_NOTE = 'This copy was opened from a file on this device. Its saved data belongs to this file\'s location: before replacing the file with a newer copy, or moving it, use "Download my data" and restore the file in the new copy.'
+
 // M25: Download my data, Erase all data on this device (local mode),
 // Delete my account (accounts mode). Data Privacy Act rights to access,
 // portability and erasure.
@@ -118,10 +311,20 @@ function YourData({ app }) {
   const [confirm, setConfirm] = useState(null) // null | 'erase' | 'delete'
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState(null) // { ok: boolean, text }
+  const [msg, setMsg] = useState(null) // { ok: boolean, text, undo? }
   const confirmRef = useRef(null)
+  const headingRef = useRef(null)
+  const today = useManilaToday()
   const n = app.profiles.length
   const profilesText = n === 1 ? '1 profile' : `${n} profiles`
+  const reminder = backupReminder({ hasCloud: app.hasCloud, profileCount: n, lastBackup: app.lastBackup, today })
+  const damaged = Boolean(app.loadError && app.loadError.code === 'damaged-data')
+  const fromFile = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:'
+  // U7: only one confirmation is open at a time.
+  const restore = useRestore(app, { onDone: setMsg, onOpen: () => setConfirm(null) })
+  function open(which) {
+    setMsg(null); setTyped(''); restore.close(); setConfirm(which)
+  }
 
   // Move focus into the confirmation so keyboard and screen-reader users land on it.
   useEffect(() => { if (confirm && confirmRef.current) confirmRef.current.focus() }, [confirm])
@@ -131,7 +334,9 @@ function YourData({ app }) {
     try {
       const data = await app.exportData()
       downloadJson(exportFileName(), data)
-      setMsg({ ok: true, text: `Downloaded ${data.profiles.length === 1 ? '1 profile' : `${data.profiles.length} profiles`} as ${exportFileName()}.` })
+      setMsg(data.unreadable
+        ? { ok: false, text: `The profiles saved in this browser could not be read. The saved data was downloaded as it is, as ${exportFileName()}: keep that file. ${BACKUP_FILE_WARNING}` }
+        : { ok: true, text: `Downloaded ${data.profiles.length === 1 ? '1 profile' : `${data.profiles.length} profiles`} as ${exportFileName()}. ${BACKUP_FILE_WARNING}` })
     } catch (e) {
       setMsg({ ok: false, text: e.message || 'Could not prepare the download. Please try again.' })
     }
@@ -142,11 +347,22 @@ function YourData({ app }) {
     try {
       await app.eraseAllData()
       setConfirm(null)
-      setMsg({ ok: true, text: 'All JEZ Tax Suite data was erased from this browser.' })
+      setMsg({ ok: true, text: 'All JEZ Tax Suite data was erased from this browser. Backup files you downloaded are not deleted.' })
+      if (headingRef.current) headingRef.current.focus() // U3
     } catch (e) {
       setMsg({ ok: false, text: e.message })
     }
     setBusy(false)
+  }
+
+  async function undo() {
+    try {
+      const r = await app.undoRestore()
+      setMsg({ ok: true, text: `The restore was undone: ${countText(r.restored)} as before it.` })
+    } catch (e) {
+      setMsg({ ok: false, text: (e && e.message) || 'The restore could not be undone.' })
+    }
+    if (headingRef.current) headingRef.current.focus()
   }
 
   async function deleteAccount() {
@@ -161,20 +377,35 @@ function YourData({ app }) {
 
   return (
     <section className="card pad" aria-labelledby="your-data-h" style={{ marginTop: '26px' }}>
-      <h2 id="your-data-h" className="sec-h">Your data</h2>
+      <h2 id="your-data-h" className="sec-h" ref={headingRef} tabIndex={-1} style={{ outline: 'none' }}>Your data</h2>
       <p style={{ ...TEXT, marginTop: '6px' }}>
-        Download a copy of every profile with the figures saved in it,
+        Download a copy of every profile with the figures saved in it, put a downloaded copy back,
         or remove it all. The <Link to="/privacy" style={{ color: 'var(--accInk)', fontWeight: 600 }}>Privacy Notice</Link> explains what is kept.
       </p>
+      {damaged && (
+        <div className="form-err" role="alert">
+          The profiles saved in this browser could not be read (the saved data may be damaged). Nothing was deleted.
+          First use "Download my data" to keep a copy of the saved data as it is. Then use "Erase all data on this
+          device" and "Restore from a backup file" with your latest backup.
+        </div>
+      )}
+      {reminder && <p className="mini-warn" role="note" style={{ marginTop: '12px' }}>{reminder}</p>}
+      {!app.hasCloud && !reminder && app.lastBackup && n > 0 && (
+        <p style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '8px' }}>Last backup downloaded {fmtDate(fromISO(app.lastBackup))}.</p>
+      )}
+      {!app.hasCloud && fromFile && <p className="cite" role="note" style={{ marginTop: '8px' }}>{FILE_COPY_NOTE}</p>}
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
         <button className="btn sm ghost" type="button" onClick={download}>Download my data</button>
+        {!damaged && <RestoreButton r={restore} />}
         {!app.hasCloud && (
-          <button className="btn sm ghost" type="button" aria-expanded={confirm === 'erase'} onClick={() => { setMsg(null); setConfirm('erase') }}>Erase all data on this device</button>
+          <button className="btn sm ghost" type="button" aria-expanded={confirm === 'erase'} onClick={() => open('erase')}>Erase all data on this device</button>
         )}
         {app.hasCloud && (
-          <button className="btn sm ghost" type="button" aria-expanded={confirm === 'delete'} onClick={() => { setMsg(null); setTyped(''); setConfirm('delete') }}>Delete my account</button>
+          <button className="btn sm ghost" type="button" aria-expanded={confirm === 'delete'} onClick={() => open('delete')}>Delete my account</button>
         )}
       </div>
+
+      <RestoreSummary app={app} r={restore} />
 
       {confirm === 'erase' && (
         <div role="group" aria-labelledby="erase-q" className="mini-warn" style={{ marginTop: '14px' }}>
@@ -211,6 +442,15 @@ function YourData({ app }) {
       <div role="status" aria-live="polite">
         {msg && <div className={msg.ok ? 'form-ok' : 'form-err'}>{msg.text}</div>}
       </div>
+      {!app.hasCloud && app.undoInfo && !restore.found && (
+        <p style={{ fontSize: '12.5px', color: 'var(--mut)', marginTop: '10px' }}>
+          A restore on {manilaDay(app.undoInfo.savedAt)} replaced profiles here.{' '}
+          <button type="button" className="linkbtn" style={{ minHeight: '24px' }} onClick={undo}>
+            Undo this restore
+          </button>{' '}
+          (puts back the {countText(app.undoInfo.count)} as they were just before it; anything added or changed since is lost).
+        </p>
+      )}
     </section>
   )
 }
@@ -260,7 +500,9 @@ export default function ProfilesPage() {
 
       {app.loadError && (
         <div className="form-err" role="alert" style={{ marginTop: '18px' }}>
-          Couldn’t load your saved profiles. This is a loading problem, not lost data.{' '}
+          {app.loadError.code === 'damaged-data'
+            ? 'The profiles saved in this browser could not be read. Nothing was deleted: see "Your data" below for what to do. '
+            : 'Couldn’t load your saved profiles. This is a loading problem, not lost data. '}
           <button className="linkbtn" style={{ color: 'inherit', textDecoration: 'underline' }} onClick={() => app.retryLoad()}>Try again</button>
         </div>
       )}
@@ -282,6 +524,7 @@ export default function ProfilesPage() {
                 {PROFILE_TYPES[p.type]?.name}
                 {(p.type !== 'employee') && <> · {p.vatRegistered ? 'VAT' : 'Non-VAT'}</>}
                 {p.hasEmployees && <> · employer</>}
+                {app.lastChanged && manilaDay(app.lastChanged[p.id]) && <> · last changed {manilaDay(app.lastChanged[p.id])}</>}
               </div>
             </div>
             {confirmId === p.id ? (

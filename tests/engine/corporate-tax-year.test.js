@@ -78,21 +78,33 @@ describe('fiscal-year corporations (year ends June 30)', () => {
   it('Oct 16, 2026: default moves to the FY ending June 2027', () => {
     expect(corporateTaxYears({ today: mkDate(2026, 10, 16), fiscalYearEndMonth: 6 }).defaultYear).toBe(2027)
   })
-  it('MCIT test counts the fiscal year being filed: registered 2022, FY ending June 2026 is the 4th year only if registered Jan-Jun 2022 (audit Nov 2026, E2), so it is shown both ways', () => {
+  // Audit Nov 12, 2026 (L4): RR 9-98 counts a fiscal-year corporation from the
+  // calendar year of registration ("a firm which registered with the BIR on
+  // July 1, 1998 shall be subject to an MCIT ... for the entire fiscal year
+  // ending in the year 2002"), so no registration month is needed. The
+  // November 8 audit (E2) had shown this year both ways.
+  it('MCIT for a fiscal year: registered 2022 (any month), the fiscal year ending June 2026 is under MCIT', () => {
     const r = estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2026, fiscalYearEndMonth: 6 })
-    expect(r.mcitStatus).toBe('unknown')
-    expect(r.mcitApplies).toBe(false)
-    expect(r.incomeTaxDue).toBe(120000) // if MCIT applies
-    expect(r.mcitWarning).toContain('only if it registered with the BIR from January to June 2022')
-    expect(r.mcitWarning).toContain('from July to December 2022, MCIT starts a year later')
+    expect(r.mcitStatus).toBe('applies')
+    expect(r.mcitApplies).toBe(true)
+    expect(r.incomeTaxDue).toBe(120000) // the 2% MCIT
+    expect(r.mcitWarning).toBeNull()
+    expect(JSON.stringify(r.rows)).not.toContain('only if it registered')
     expect(r.period.label).toBe('Fiscal year July 2025 to June 2026')
   })
-  it('registered 2022: the FY ending June 2027 is the 4th year whatever the month (MCIT applies); June 2025 is too early', () => {
+  it('registered 2022: the FY ending June 2027 is under MCIT too; the FY ending June 2025 is too early', () => {
     expect(estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2027, fiscalYearEndMonth: 6 }).mcitApplies).toBe(true)
     const early = estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2025, fiscalYearEndMonth: 6 })
     expect(early.mcitStatus).toBe('notYet')
     expect(early.rows.find(x => x.label === 'Minimum corporate income tax').sub)
-      .toContain('MCIT starts with the fiscal year ending June 2026 if the corporation registered with the BIR from January to June 2022, or with the fiscal year ending June 2027 if it registered from July to December 2022')
+      .toBe('Not yet applicable: MCIT starts with the fiscal year ending June 2026, the 4th taxable year after the year of BIR registration (RR 9-98).')
+  })
+  it('the RR 9-98 example itself: registered July 1, 1998, fiscal year ending in 2002 is the first under MCIT', () => {
+    // The estimator supports recent years only, so the same count is checked on 2022 -> 2026 for every year-end month.
+    for (let m = 1; m <= 11; m++) {
+      expect(estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2026, fiscalYearEndMonth: m }).mcitStatus, `year end ${m}`).toBe('applies')
+      expect(estimateCorporation({ ...lean, registrationYear: 2023, taxYear: 2026, fiscalYearEndMonth: m }).mcitStatus, `year end ${m}`).toBe('notYet')
+    }
   })
   it('calendar-year corporations are unchanged: registered 2022, TY 2026 is the 4th year', () => {
     expect(estimateCorporation({ ...lean, registrationYear: 2022, taxYear: 2026 }).mcitApplies).toBe(true)
