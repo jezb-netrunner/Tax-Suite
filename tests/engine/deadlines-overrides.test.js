@@ -36,9 +36,15 @@ describe('L07 rulebook overrides', () => {
     ])
     for (const o of obligationsData.overrides) expect(OB.some(ob => ob.id === o.obligationId), o.obligationId).toBe(true)
   })
-  it('records the SEC move of the 2025 AFS deadline to June 15, 2026', () => {
+  it('records the SEC move of the 2025 AFS deadline to June 15, 2026, and the BIR extensions of Oct and Nov 2026', () => {
     expect(obligationsData.overrides.filter(o => !o.basis.startsWith('RMC 30-2026')).map(o => [o.obligationId, o.rawDate, o.newDate, o.basis])).toEqual([
       ['sec-afs-calendar', '2026-05-29', '2026-06-15', 'SEC Notice of Apr 14, 2026'],
+      // Audit Nov 12, 2026 (L3, L2).
+      ['bir-2550q', '2026-10-25', '2026-10-29', 'RMC 115-2026'],
+      ['bir-2551q', '2026-10-25', '2026-10-29', 'RMC 115-2026'],
+      ['bir-1601c', '2026-11-10', '2026-11-13', 'RMC 118-2026'],
+      ['bir-0619e', '2026-11-10', '2026-11-13', 'RMC 118-2026'],
+      ['bir-0619f', '2026-11-10', '2026-11-13', 'RMC 118-2026'],
     ])
     const p = { ...defaultProfile('corporation'), name: 'C' }
     expect(view(gen(p, '2026-01-01', '2027-06-30'), 'sec-afs-calendar')).toEqual([

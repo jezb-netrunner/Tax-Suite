@@ -19,10 +19,10 @@
     "notes": "3% of gross quarterly sales/receipts for non-VAT taxpayers under the threshold, unless the 8% option is elected."
   },
   "vatRegistrationDeadline": {
-    "value": "Register as VAT taxpayer before the end of the month following the month the ₱3M threshold was exceeded",
-    "legalBasis": ["NIRC Sec 236(G)(1)"],
-    "confidence": "needs_review",
-    "notes": "Once past the threshold you are liable for output VAT whether or not you register on time."
+    "value": "Update your registration to VAT (BIR Form 1905) within the month after the month your sales passed ₱3M",
+    "legalBasis": ["NIRC Sec 236(G)(1)", "RR 8-2018 (a taxpayer who exceeds the threshold during the year updates the registration within the month following the month the threshold was exceeded)"],
+    "confidence": "verified",
+    "notes": "Once past the threshold you are liable for output VAT whether or not you register on time; percentage tax applies up to then. Confirmed November 12, 2026 from the RR 8-2018 text as quoted in firm summaries. The exact day VAT starts (the app uses the first day of the following month) is not separately confirmed."
   },
   "servicesAccrualBasis": {
     "value": "Since EOPT, VAT and percentage tax on services are computed on gross SALES (billed/accrued), no longer on collections",
@@ -37,8 +37,8 @@
     "notes": "Under EOPT (RR 4-2024) returns may be filed and taxes paid anywhere, electronically or at any AAB/RDO, and the old 25% wrong-venue surcharge is gone."
   },
   "digitalServicesVat": {
-    "value": "12% VAT applies to digital services consumed in the Philippines, including those of nonresident providers; for B2B purchases the Philippine business must withhold and remit the VAT itself (reverse charge) via BIR Form 1600-VT",
-    "legalBasis": ["RA 12023 (VAT on Digital Services, Oct 2024)", "RR 3-2025 (liability from June 2, 2025)", "RMC 47-2025 (registration window)", "RMC 59-2026 (exempt-services registration)"],
+    "value": "12% VAT applies to digital services consumed in the Philippines, including those of nonresident providers; for B2B purchases the Philippine business buyer, whether VAT-registered or not, must withhold and remit the VAT itself (reverse charge) via BIR Form 1600-VT",
+    "legalBasis": ["RA 12023 (VAT on Digital Services, Oct 2024)", "RR 3-2025 (liability from June 2, 2025)", "RMC 47-2025 (the business buyer, VAT-registered or not, files Form 1600-VT; clarifications)", "RMC 59-2026 (exempt-services registration)"],
     "confidence": "verified",
     "notes": "Hits any business buying ads, SaaS, cloud hosting, or marketplace services from nonresident platforms: withhold 12%, remit on Form 1600-VT by the 10th of the following month, and (if VAT-registered) claim it back as input VAT supported by the 1600-VT. Nonresident providers handle B2C sales themselves via the VDS portal (Form 2550-DS). Local digital sellers stay under the ordinary VAT/percentage-tax rules and the ₱3M threshold."
   },

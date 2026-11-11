@@ -61,7 +61,7 @@ describe('WH:WS-24 MCIT counted from the BIR registration year', () => {
     const r = estimateCorporation({ ...lean, registrationYear: 2023 })
     expect(r.mcitStatus).toBe('notYet')
     expect(r.incomeTaxDue).toBe(20000)
-    expect(row(r.rows, /^Minimum corporate income tax/).sub).toBe('Not yet applicable: MCIT starts with TY 2027, the 4th taxable year after the taxable year of BIR registration (RR 9-98).')
+    expect(row(r.rows, /^Minimum corporate income tax/).sub).toBe('Not yet applicable: MCIT starts with TY 2027, the 4th taxable year after the year of BIR registration (RR 9-98).')
   })
 })
 

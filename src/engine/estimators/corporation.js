@@ -118,39 +118,25 @@ const NOLCO_YEARS = NOLCO_RULE.value.carryOverYears
 // Whole-peso return line from a peso input (49 centavos down, 50 up).
 const line = pesos => toWholePesos(toCentavos(pesos || 0))
 
-// H13: MCIT from the 4th taxable year after the taxable year of BIR
-// registration (RR 9-98). The profile holds only the calendar year of
-// registration. Audit Nov 2026 (E2): for a fiscal year ending in month m, a
-// registration from January to month m falls in the taxable year ending that
-// calendar year, but one after month m falls in the taxable year ending the
-// next year, so the first MCIT year is one of two. In that boundary year the
-// status is 'unknown' (shown with and without MCIT), reason 'fiscalBoundary'.
-//   { status: 'applies' | 'notYet' | 'unknown', reason: 'noYear' | 'fiscalBoundary' | null,
-//     first: earliest possible first MCIT year, last: latest possible one }
-function mcitStatusFor(registrationYear, taxYear, fiscalYearEndMonth = 12) {
-  if (registrationYear == null) return { status: 'unknown', reason: 'noYear', first: null, last: null }
+// H13: MCIT from the 4th taxable year after the year of BIR registration
+// (RR 9-98). Audit Nov 12, 2026 (L4): a fiscal-year corporation counts from
+// the same calendar year. RR 9-98: "The reckoning point for firms using the
+// fiscal year shall also be 1998. For example, a firm which registered with
+// the BIR on July 1, 1998 shall be subject to an MCIT on his gross income
+// earned for the entire fiscal year ending in the year 2002." So MCIT applies
+// to the taxable year that ENDS in registration year + 4, whatever the month
+// of registration (taxYear names a taxable year by the calendar year it ends
+// in). The November 8 audit (E2) had shown a boundary year both ways.
+//   { status: 'applies' | 'notYet' | 'unknown', reason: 'noYear' | null, first }
+function mcitStatusFor(registrationYear, taxYear) {
+  if (registrationYear == null) return { status: 'unknown', reason: 'noYear', first: null }
   const first = registrationYear + MCIT_START
-  const last = (Number(fiscalYearEndMonth) || 12) === 12 ? first : first + 1
-  if (taxYear >= last) return { status: 'applies', reason: null, first, last }
-  if (taxYear < first) return { status: 'notYet', reason: null, first, last }
-  return { status: 'unknown', reason: 'fiscalBoundary', first, last }
-}
-
-// "January to June 2022" / "July to December 2022": the registration months
-// that put the taxable year of registration in the year ending in
-// registrationYear (early) or the next one (late), for a fiscal year.
-function registrationMonthsText(registrationYear, fiscalYearEndMonth, late) {
-  const m = Number(fiscalYearEndMonth) || 12
-  return late
-    ? `${MONTH_NAMES[m]} to December ${registrationYear}`
-    : `January to ${MONTH_NAMES[m - 1]} ${registrationYear}`
+  return { status: taxYear >= first ? 'applies' : 'notYet', reason: null, first }
 }
 
 // When MCIT starts, in words, for a status from mcitStatusFor.
-function mcitStartText(mcit, registrationYear, fiscalYearEndMonth) {
-  const name = y => taxablePeriod(y, fiscalYearEndMonth).name
-  if (mcit.first === mcit.last) return `MCIT starts with ${name(mcit.first)}`
-  return `MCIT starts with ${name(mcit.first)} if the corporation registered with the BIR from ${registrationMonthsText(registrationYear, fiscalYearEndMonth, false)}, or with ${name(mcit.last)} if it registered from ${registrationMonthsText(registrationYear, fiscalYearEndMonth, true)}`
+function mcitStartText(mcit, fiscalYearEndMonth) {
+  return `MCIT starts with ${taxablePeriod(mcit.first, fiscalYearEndMonth).name}`
 }
 
 // RCIT vs MCIT on one set of figures: a full year, or the year to date for a
@@ -304,7 +290,7 @@ export function estimateCorporation(in_) {
   }
   const P = fromCentavos
   const deduction = in_.deduction === 'osd' ? 'osd' : 'itemized'
-  const mcitInfo = mcitStatusFor(registrationYear, taxYear, fiscalYearEndMonth)
+  const mcitInfo = mcitStatusFor(registrationYear, taxYear)
   const mcitStatus = mcitInfo.status
   const core = taxCore({
     grossSalesC: line(in_.grossSales), costOfSalesC: line(in_.costOfSales), opexC: line(in_.opex),
@@ -333,16 +319,9 @@ export function estimateCorporation(in_) {
   }
   const mcitApplies = mcitStatus === 'applies'
   const incomeTaxDueC = core.dueC
-  const boundaryWhy = mcitInfo.reason === 'fiscalBoundary'
-    ? `For a fiscal-year corporation registered in ${registrationYear}, this is the ${RT.mcitStartYear} taxable year after the taxable year of registration only if it registered with the BIR from ${registrationMonthsText(registrationYear, fiscalYearEndMonth, false)}; if it registered from ${registrationMonthsText(registrationYear, fiscalYearEndMonth, true)}, MCIT starts a year later (RR 9-98). Check the date on the Certificate of Registration (Form 2303).`
-    : null
   const mcitWarning = mcitStatus !== 'unknown'
     ? null
-    : mcitInfo.reason === 'fiscalBoundary'
-      ? usesMcit
-        ? `${boundaryWhy} If MCIT applies, income tax due is ${formatPesos(mcitC)} (${RT.mcitRate} MCIT); if not, it is ${formatPesos(rcitC)} (regular rate).`
-        : `${boundaryWhy} The regular tax (${formatPesos(rcitC)}) is higher than the ${RT.mcitRate} MCIT (${formatPesos(mcitC)}), so the tax due is the same either way.`
-      : usesMcit
+    : usesMcit
         ? `The year registered with the BIR is not set on the profile. If the corporation is in its ${RT.mcitStartYear} taxable year after that year or later, MCIT applies and income tax due is ${formatPesos(mcitC)} (${RT.mcitRate} MCIT); if not, it is ${formatPesos(rcitC)} (regular rate). Set the year on the profile (RR 9-98).`
         : `The year registered with the BIR is not set on the profile, but the regular tax (${formatPesos(rcitC)}) is higher than the ${RT.mcitRate} MCIT (${formatPesos(mcitC)}), so the tax due is the same either way.`
 
@@ -395,14 +374,12 @@ export function estimateCorporation(in_) {
     })
   } else if (mcitStatus === 'notYet') {
     r('Minimum corporate income tax', null, {
-      sub: `Not yet applicable: ${mcitStartText(mcitInfo, registrationYear, fiscalYearEndMonth)}, the ${RT.mcitStartYear} taxable year after the taxable year of BIR registration (RR 9-98).`,
+      sub: `Not yet applicable: ${mcitStartText(mcitInfo, fiscalYearEndMonth)}, the ${RT.mcitStartYear} taxable year after the year of BIR registration (RR 9-98).`,
     })
   } else {
     r(`Minimum corporate income tax @ ${RT.mcitRate} of gross income, if it applies`, P(mcitC), {
       strong: usesMcit,
-      sub: mcitInfo.reason === 'fiscalBoundary'
-        ? `Whether MCIT applies this year depends on the month the corporation registered with the BIR in ${registrationYear} (see the note above), so it is shown in case it applies.`
-        : `The year registered with the BIR is not set on the profile. MCIT applies from the ${RT.mcitStartYear} taxable year after that year (RR 9-98), so it is shown in case it applies.`,
+      sub: `The year registered with the BIR is not set on the profile. MCIT applies from the ${RT.mcitStartYear} taxable year after that year (RR 9-98), so it is shown in case it applies.`,
     })
   }
   r(mcitStatus === 'unknown' && usesMcit ? 'Income tax due, if MCIT applies' : 'Income tax due', incomeTaxDue, {
@@ -490,6 +467,9 @@ function dayText(d, withYear) {
  *   grossSales, costOfSales, opex   cumulative to the end of the quarter
  *   deduction, totalAssets, registrationYear, taxYear, fiscalYearEndMonth,
  *   priorYearCredits, excessMcit     as for estimateCorporation
+ *   nolcoPrior            unexpired NOLCO from prior years (L5, RR 14-2001: NOLCO is
+ *                         deductible on the quarterly returns too; itemized only,
+ *                         never against the MCIT)
  *   paidEarlierQuarters   income tax paid on this year's earlier 1702Q returns
  *   cwt                   2307s withheld from the start of the year to the end of the quarter
  */
@@ -511,11 +491,11 @@ export function estimateCorporateQuarter(in_, holidays = HOLIDAY_SET) {
   const quarterLabel = `Q${quarter}: ${dayText(q.start, !sameYear)} to ${dayText(q.end, true)}`
 
   const deduction = in_.deduction === 'osd' ? 'osd' : 'itemized'
-  const mcitInfo = mcitStatusFor(registrationYear, taxYear, fiscalYearEndMonth)
+  const mcitInfo = mcitStatusFor(registrationYear, taxYear)
   const mcitStatus = mcitInfo.status
   const core = taxCore({
     grossSalesC: line(in_.grossSales), costOfSalesC: line(in_.costOfSales), opexC: line(in_.opex),
-    deduction, totalAssets, mcitStatus,
+    deduction, totalAssets, mcitStatus, nolcoPriorC: line(in_.nolcoPrior),
   })
   const ex = applyExcessMcit(in_.excessMcit, taxYear, core)
   const creditItems = [
@@ -533,7 +513,7 @@ export function estimateCorporateQuarter(in_, holidays = HOLIDAY_SET) {
   incomeRows(r, core, toDate)
   rcitRow(r, core, toDate)
   if (mcitStatus === 'notYet') {
-    r('Minimum corporate income tax', null, { sub: `Not yet applicable: ${mcitStartText(mcitInfo, registrationYear, fiscalYearEndMonth)}.` })
+    r('Minimum corporate income tax', null, { sub: `Not yet applicable: ${mcitStartText(mcitInfo, fiscalYearEndMonth)}.` })
   } else {
     r(`Minimum corporate income tax @ ${RT.mcitRate} of gross income to date${mcitStatus === 'unknown' ? ', if it applies' : ''}`, P(core.mcitC), {
       strong: core.usesMcit,
@@ -548,7 +528,7 @@ export function estimateCorporateQuarter(in_, holidays = HOLIDAY_SET) {
     strong: true,
     rule: true,
     sub: ifMcit
-      ? `${mcitInfo.reason === 'fiscalBoundary' ? `Whether MCIT applies this year depends on the month the corporation registered with the BIR in ${registrationYear}.` : 'The year registered with the BIR is not set on the profile.'} If MCIT does not apply yet, income tax due to date is the regular tax of ${formatPesos(core.rcitC)}.`
+      ? `The year registered with the BIR is not set on the profile. If MCIT does not apply yet, income tax due to date is the regular tax of ${formatPesos(core.rcitC)}.`
       : undefined,
   })
   for (const x of creditItems) r(x.label, -P(x.c))
@@ -567,6 +547,7 @@ export function estimateCorporateQuarter(in_, holidays = HOLIDAY_SET) {
     osd: core.osd ? P(core.deductionC) : null,
     grossIncome: P(core.grossIncomeC),
     taxableIncome: P(core.taxableIncomeC),
+    nolcoApplied: P(core.nolcoAppliedC),
     rcit: P(core.rcitC),
     mcit: P(core.mcitC),
     mcitStatus,

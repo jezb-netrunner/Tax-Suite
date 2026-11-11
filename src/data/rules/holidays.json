@@ -10,7 +10,7 @@
     "BIR": { "policy": "next_working_day", "legalBasis": ["RMC 65-2016"], "confidence": "verified", "notes": "Applies to eFPS, eBIRForms and manual filers alike." },
     "SSS": { "policy": "next_working_day", "legalBasis": ["SSS payment-deadline rule (sss.gov.ph): a deadline on a Saturday, Sunday or holiday may be paid on the next working day"], "confidence": "verified" },
     "PhilHealth": { "policy": "next_working_day", "legalBasis": ["PhilHealth Circular No. 0001, s. 2014"], "confidence": "verified" },
-    "Pag-IBIG": { "policy": "next_working_day", "legalBasis": ["Secondary sources only (payroll guides); no Pag-IBIG circular found"], "confidence": "needs_review" },
+    "Pag-IBIG": { "policy": "next_working_day", "legalBasis": ["HDMF Circular 499-2026, as reported by the Philippine Information Agency (Nov 7, 2026): a due date on a non-working day moves to the next working day; the circular text was not read here"], "confidence": "needs_review" },
     "LGU": { "policy": "statutory_date", "legalBasis": ["Local Government Code (RA 7160) Secs 139, 161 and 167 set fixed last days; no weekend roll-over rule found"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." },
     "SEC": { "policy": "statutory_date", "legalBasis": ["SEC MC 9-2026 treats a weekend or holiday e-filing as filed on the next working day; it does not extend the deadline"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." },
     "DOLE": { "policy": "statutory_date", "legalBasis": ["PD 851 IRR and the annual DOLE labor advisories set fixed dates; no roll-over rule found"], "confidence": "needs_review", "note": "If this falls on a weekend or holiday, pay or file on the last working day before, unless your LGU or the agency allows later." }
@@ -91,8 +91,37 @@
     ],
     "legalBasis": ["Proclamation No. 1447 s.2026 (signed Sept 17, 2026): Nov 16 to 18, 2026 are special non-working days in the National Capital Region for the 49th ASEAN Summit (reported by the PIA, Philstar, Manila Times and Inquirer)"],
     "confidence": "verified",
-    "notes": "Holidays declared for one region only. They are not in the national list above, so the calendar keeps the national due date: filing and paying by that date is always on time. As of November 8, 2026 no BIR, SSS, PhilHealth or Pag-IBIG issuance was found saying whether a deadline on these days moves to the next working day for taxpayers in that region (for example, the Q3 2026 Form 1701Q, due Monday Nov 16 after the Nov 15 Sunday); check for an advisory before relying on a later date."
+    "notes": "Holidays declared for one region only. They are not in the national list above, so the calendar keeps the national due date: filing and paying by that date is always on time. BIR: a tax advisory reported on November 11, 2026 lets taxpayers registered with the Metro Manila revenue district offices and Large Taxpayers divisions it lists file and pay returns due Nov 16 to 18, 2026 until Thursday, Nov 19, 2026 without penalty (see regionalExtensions); outside those offices the dates did not move. No SSS, PhilHealth or Pag-IBIG advisory for these days was found as of November 12, 2026."
   },
+  "regionalExtensions": {
+    "value": [
+      {
+        "region": "NCR",
+        "agency": "BIR",
+        "dates": [
+          "2026-11-16",
+          "2026-11-17",
+          "2026-11-18"
+        ],
+        "newDate": "2026-11-19",
+        "basis": "BIR tax advisory of November 2026",
+        "coverage": "taxpayers registered with the Metro Manila revenue district offices and Large Taxpayers divisions listed in the advisory"
+      }
+    ],
+    "legalBasis": [
+      "BIR tax advisory signed by the Commissioner (reported Nov 11, 2026 by the Inquirer, the Tribune, the Manila Bulletin and Bombo Radyo): returns and payments due Nov 16 to 18, 2026 may be filed and paid until Nov 19, 2026 by taxpayers of the listed NCR offices",
+      "Proclamation No. 1447 s.2026"
+    ],
+    "confidence": "verified",
+    "notes": "A deadline moved for one region and one agency only. The calendar keeps the national date and shows the later date in a note, because the profile does not say where the taxpayer is registered. The advisory's list of offices was not seen here: check that your revenue district office is on it."
+  },
+  "pendingHolidays": [
+    {
+      "year": 2027,
+      "until": "2027-05-31",
+      "note": "Eid'l Fitr and Eid'l Adha 2027 are not yet proclaimed (estimates: about Mar 9 and May 16): a deadline around Mar 9-10 or May 16-17, 2027 may move one day later."
+    }
+  ],
   "notes2027": {
     "confidence": "needs_review",
     "notes": "Proclamation No. 1427 s.2026 (Sept 8, 2026) set the 2027 holidays: the regular holidays and special days fixed by law, plus special non-working days on Feb 6 (Chinese New Year, a Saturday), Mar 27 (Black Saturday), Nov 2 (All Souls' Day, a Tuesday) and Dec 24 (Christmas Eve, a Friday). Feb 25 (EDSA anniversary) stays a special WORKING day. Still pending: Eid'l Fitr and Eid'l Adha 2027 (astronomical estimates: Eid'l Fitr about Mar 9, Eid'l Adha about May 16), proclaimed separately closer to the dates; add them here when proclaimed. Nov 2, 2027 moves the Q3 2027 1601-EQ, 1601-FQ and QAP and the September 2027 SSS and PhilHealth payments from Tue Nov 2 to Wed Nov 3."

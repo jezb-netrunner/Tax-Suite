@@ -78,18 +78,19 @@ describe('daysLeftLabel', () => {
   })
 })
 
-describe('DL:WS-17 2550Q Q3 2026 (due Mon Oct 26) viewed after the Manila deadline', () => {
+// Audit Nov 12, 2026: RMC 115-2026 moved this return from Mon Oct 26 to Thu Oct 29, 2026.
+describe('DL:WS-17 2550Q Q3 2026 (due Thu Oct 29 after RMC 115-2026) viewed after the Manila deadline', () => {
   const p = { ...defaultProfile('individual'), name: 'V', vatRegistered: true, regime: 'graduated_osd' }
-  it('at 2026-10-27T03:00Z the Oct 26 return has passed; next 2550Q is Jan 25, 2027', () => {
-    at('2026-10-27T03:00:00Z')
+  it('at 2026-10-30T03:00Z the Oct 29 return has passed; next 2550Q is Jan 25, 2027', () => {
+    at('2026-10-30T03:00:00Z')
     const vatReturns = dashboardList(p).filter(d => d.obligation.form === '2550Q')
-    expect(vatReturns.map(d => iso(d.date))).not.toContain('2026-10-26')
+    expect(vatReturns.map(d => iso(d.date))).not.toContain('2026-10-29')
     expect(iso(vatReturns[0].date)).toBe('2027-01-25')
   })
-  it('at 11:59:59 PM Oct 26 Manila it is due today (0 days: "Due today")', () => {
-    at('2026-10-26T15:59:59Z')
+  it('at 11:59:59 PM Oct 29 Manila it is due today (0 days: "Due today")', () => {
+    at('2026-10-29T15:59:59Z')
     const first = dashboardList(p).find(d => d.obligation.form === '2550Q')
-    expect(iso(first.date)).toBe('2026-10-26')
+    expect(iso(first.date)).toBe('2026-10-29')
     expect(first.daysAway).toBe(0)
     expect(daysLeftLabel(first.daysAway)).toBe('Due today')
   })

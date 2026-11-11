@@ -88,14 +88,15 @@ describe('SEC, Pag-IBIG, abatement, closure and freelancer items', () => {
   it('Form 1905 closure follows RMC 47-2026, with no unverified day count', () => {
     expect(ob('bir-1905-updates').notes).toContain('RMC 47-2026')
   })
-  it('freelancers receiving 2307s are reminded of the sworn declaration (deadline unconfirmed)', () => {
+  it('freelancers receiving 2307s are reminded of the sworn declaration (January 15, confirmed Nov 12, 2026)', () => {
     const f = { ...defaultProfile('individual'), name: 'F', receives2307: true }
     const vat = { ...f, vatRegistered: true }
     const ids = p => generateChecklist(OB, p, { today: fromISO('2026-11-08') }).map(o => o.id)
     expect(ids(f)).toContain('bir-payee-sworn-declaration')
     expect(ids(vat)).not.toContain('bir-payee-sworn-declaration')
     expect(ids({ ...f, receives2307: false })).not.toContain('bir-payee-sworn-declaration')
-    expect(ob('bir-payee-sworn-declaration').confidence).toBe('needs_review')
+    expect(ob('bir-payee-sworn-declaration').confidence).toBe('verified')
+    expect(ob('bir-payee-sworn-declaration').notes).toContain('on or before January 15 of each year')
   })
   it('the eAFS file-size limit is not stated as a figure (sources disagree)', () => {
     expect(attachments.eafsSystem.value.fileFormat).not.toMatch(/\d+(\.\d+)?\s*(GB|MB)/)

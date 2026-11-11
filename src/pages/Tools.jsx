@@ -8,7 +8,8 @@ import incomeTax from '../data/rules/income-tax.json'
 import penaltyRules from '../data/rules/penalties.json'
 import { NumField, Seg, Switch, SelectField, Disclaimer } from '../components/ui.jsx'
 import { money, money2, pct } from '../lib/format.js'
-import { iso, fromISO } from '../engine/dates.js'
+import { iso, fromISO, shiftToBusinessDay } from '../engine/dates.js'
+import { REGIONAL_EXTENSIONS } from '../engine/deadlines.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { HOLIDAY_SET, OBLIGATIONS } from '../lib/deadlineData.js'
 import obligationsData from '../data/rules/obligations.json'
@@ -32,7 +33,10 @@ export const KNOWN_EXTENSIONS = (() => {
     if (!o.rawDate) continue
     const key = `${o.rawDate}|${o.newDate}|${o.basis}`
     const ob = OBLIGATIONS.find(x => x.id === o.obligationId)
-    const g = groups.get(key) || { rawDate: o.rawDate, newDate: o.newDate, basis: o.basis, forms: [] }
+    // Audit Nov 12, 2026 (D1): people type the date the return was really due,
+    // which is the weekend-moved one (Oct 26, 2026 for a 25th on a Sunday).
+    const rolledDate = iso(shiftToBusinessDay(fromISO(o.rawDate), HOLIDAY_SET))
+    const g = groups.get(key) || { rawDate: o.rawDate, rolledDate, newDate: o.newDate, basis: o.basis, scope: o.scope || null, forms: [] }
     const form = ob && ob.form && ob.form !== '—' ? ob.form : null
     if (form && !g.forms.includes(form)) g.forms.push(form)
     groups.set(key, g)
@@ -136,13 +140,25 @@ function PenaltyCard() {
       : `${fmtShort(pen.dueDate)} is a holiday${holiday ? ` (${holiday.name})` : ''}`
     notes.push(<>Due date moved to <b>{fmtDay(pen.rolledDueDate)}</b> (weekend/holiday: {why}). Filing and paying by then is on time.</>)
   }
-  for (const ext of KNOWN_EXTENSIONS.filter(e => e.rawDate === dueDate)) {
+  for (const ext of KNOWN_EXTENSIONS.filter(e => e.rawDate === dueDate || e.rolledDate === dueDate)) {
     notes.push(
       <>
-        Returns due {fmtShort(ext.rawDate)} ({ext.forms.join(', ')}) were extended to <b>{fmtDay(ext.newDate)}</b> by {ext.basis}.
-        If this payment is for one of them, the due date is the extended one.{' '}
+        Returns due {fmtShort(ext.rolledDate)} ({ext.forms.join(', ')}) were extended to <b>{fmtDay(ext.newDate)}</b> by {ext.basis}.
+        {ext.scope && <> {ext.scope}</>}{' '}If this payment is for one of them, the due date is the extended one.{' '}
         <button type="button" className="linkbtn" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}
           onClick={() => setDueDate(ext.newDate)}>Use {fmtShort(ext.newDate)}</button>
+      </>,
+    )
+  }
+  // Audit Nov 12, 2026 (L1): an extension for one region only.
+  for (const x of REGIONAL_EXTENSIONS.filter(e => e.dates.includes(pen ? pen.rolledDueDate : dueDate))) {
+    notes.push(
+      <>
+        {fmtShort(pen ? pen.rolledDueDate : dueDate)} was a special non-working day in {x.region === 'NCR' ? 'Metro Manila' : x.region} only.
+        Under a {x.basis}, {x.coverage} may file and pay until <b>{fmtDay(x.newDate)}</b> without penalty.
+        If that is your case, the due date is the later one.{' '}
+        <button type="button" className="linkbtn" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}
+          onClick={() => setDueDate(x.newDate)}>Use {fmtShort(x.newDate)}</button>
       </>,
     )
   }

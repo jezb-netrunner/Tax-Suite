@@ -3,12 +3,12 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../state/AppState.jsx'
 import { OBLIGATIONS, HOLIDAY_SET } from '../lib/deadlineData.js'
 import {
-  generateDeadlines, unproclaimedYears, holidayGapNote, recentDeadlines, RECENT_DAYS, groupByMonth, isUnconfirmed,
+  generateDeadlines, unproclaimedYears, holidayGapNote, pendingHolidayNotes, recentDeadlines, RECENT_DAYS, groupByMonth, isUnconfirmed,
   CATEGORY_LABEL, NO_FILTER, isFiltered, filterDeadlines, filterOptions, trimPick, filterText,
 } from '../engine/deadlines.js'
 import { profileFlags, PROFILE_TYPES, regimeLabel } from '../engine/profile.js'
 import { dueDayText, fixedHolidayExamples } from '../engine/ruleText.js'
-import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel } from '../engine/dates.js'
+import { addDays, fmtDate, fmtMonthShort, lastDayOfMonth, daysLeftLabel, fromISO } from '../engine/dates.js'
 import { useManilaToday } from '../lib/useManilaToday.js'
 import { AgencyTag } from '../components/ui.jsx'
 import { ItemBadge, DeadlineDetails } from '../components/Confidence.jsx'
@@ -57,6 +57,8 @@ export default function Dashboard() {
   // Years in the window whose holidays are not yet proclaimed (M07).
   const gapYears = unproclaimedYears(HOLIDAY_SET, t, windowEnd)
   const gapNote = holidayGapNote(gapYears)
+  // Holidays proclaimed separately, closer to the date (D9).
+  const pendingNotes = pendingHolidayNotes(t, windowEnd)
 
   // Due dates of the last 60 days. The calendar is a reference, not a
   // tracker: it does not know what was filed, so these are "recently passed".
@@ -76,7 +78,7 @@ export default function Dashboard() {
   // M22: every deadline on the calendar (the last 60 days and the next 13
   // months, as filtered) as a spreadsheet file.
   function downloadCsv() {
-    downloadText(deadlineCsvFileName(p.name, t, { filtered }), deadlineCsv({ recent: recentShown, upcoming: shown, today: t }))
+    downloadText(deadlineCsvFileName(p.name, t, { filtered }), deadlineCsv({ recent: recentShown, upcoming: shown, today: t, profileName: p.name }))
   }
 
   if (!app.profilesReady) return null
@@ -164,6 +166,9 @@ export default function Dashboard() {
                 (such as {fixedHolidayExamples()}) only; check the official list once it is out.
               </p>
             )}
+            {pendingNotes.map(n => (
+              <p key={n.year} className="mini-warn" role="note" style={{ maxWidth: '640px' }}>{n.note}</p>
+            ))}
           </div>
           <div className="no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
             <div className="seg" role="group" aria-label="View">
@@ -503,6 +508,7 @@ function ExtendedNote({ d, onDark }) {
   return (
     <div style={{ fontSize: '12px', lineHeight: 1.5, marginTop: '5px', color: onDark ? '#cdddea' : 'var(--accInk)' }}>
       <b>Extended to {fmtDate(d.date)} by {d.extended.basis}</b> (was {fmtDate(d.extended.from)}).
+      {d.extended.scope && <> {d.extended.scope}</>}
     </div>
   )
 }
@@ -512,11 +518,15 @@ function ExtendedNote({ d, onDark }) {
 function RegionalNote({ d, onDark }) {
   if (!d.regionalHoliday) return null
   const h = d.regionalHoliday
+  // Audit Nov 12, 2026 (L1): the agency moved this date for that region only.
+  const x = d.regionalExtension
   return (
     <div style={{ fontSize: '12px', lineHeight: 1.5, marginTop: '5px', color: onDark ? '#f3cf9a' : '#7a5a1f' }}>
       <b>{fmtDay(d.date)} is a special non-working day in {h.region === 'NCR' ? 'NCR (Metro Manila)' : h.region} only ({h.name}).</b> The national due date is
-      shown; filing and paying by then is always on time. No advisory was found saying the deadline moves for
-      taxpayers in {h.region}.
+      shown; filing and paying by then is always on time.{' '}
+      {x
+        ? <>Under a {x.basis}, {x.coverage} may file and pay until <b>{fmtDay(fromISO(x.newDate))}</b> without penalty. Everywhere else the date shown stands.</>
+        : <>No {d.obligation.agency} advisory was found saying the deadline moves for taxpayers in {h.region}.</>}
     </div>
   )
 }
@@ -581,7 +591,7 @@ function DeadlineTable({ deadlines, filtered }) {
                 <td className="mono" style={{ fontSize: '12.5px', color: 'var(--mut)' }}><FormCode form={d.obligation.form || '—'} className={null} /></td>
                 <td><AgencyTag agency={d.obligation.agency} /></td>
                 <td style={{ color: 'var(--mut)' }}>{CATEGORY_LABEL[d.obligation.category] || ''}</td>
-                <td className="mono" style={{ fontSize: '12px', color: 'var(--dim)', whiteSpace: 'nowrap' }}>{d.label || '—'}</td>
+                <td className="mono" style={{ fontSize: '12px', color: 'var(--dim)', whiteSpace: 'nowrap' }}>{d.label && d.label !== 'Annual' ? d.label : (d.period || d.label || '—')}</td>
               </tr>
             ))}
           </tbody>

@@ -282,6 +282,19 @@ function holidayRegister() {
       legalBasis: R.legalBasis || [], notes: R.notes || '', confidence: strongest([R.confidence]),
     })
   }
+  if (holidays.regionalExtensions) {
+    // Audit Nov 12, 2026 (L1): an agency's extension for one region only.
+    const X = holidays.regionalExtensions
+    out.push({
+      id: `${H}:regionalExtensions`, sources: [`${H}:regionalExtensions`], kind: 'regionalExtension',
+      title: 'Deadlines extended in one region only (shown as a note; the national date is kept)',
+      value: {
+        kind: 'table', columns: ['Agency', 'Region', 'Due dates', 'May be filed until', 'Who', 'Basis'],
+        rows: X.value.map(r => [r.agency, r.region, `${r.dates[0]} to ${r.dates[r.dates.length - 1]}`, r.newDate, r.coverage, r.basis]),
+      },
+      legalBasis: X.legalBasis || [], notes: X.notes || '', confidence: strongest([X.confidence]),
+    })
+  }
   out.push({
     id: `${H}:notes2027`, sources: [`${H}:notes2027`], title: 'Notes on the 2027 list',
     value: null, legalBasis: [], notes: holidays.notes2027.notes, confidence: strongest([holidays.notes2027.confidence]),

@@ -369,9 +369,8 @@ function CrossingCard({ crossing, v, set, monthOptions, extraFields, children })
       <h2 className="sec-h">Your sales passed {RT.vatThreshold} this year</h2>
       <div className="mini-warn" role="note">
         {children}
-        {' '}<b>VAT applies from {crossing.vatFrom}: not included in this estimate.</b> Register for VAT (update your
-        registration) by the end of the month after the month your sales passed {RT.vatThreshold}. This timing is not
-        confirmed from an official source: check it with your RDO.
+        {' '}<b>VAT applies from {crossing.vatFrom}: not included in this estimate.</b> Update your registration to VAT
+        (BIR Form 1905) within the month after the month your sales passed {RT.vatThreshold} (RR 8-2018).
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '18px', marginTop: '16px' }}>
         <SelectField
@@ -781,6 +780,8 @@ function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
     paidEarlierQuarters: quarter > 1 ? v.qPaidEarlier : 0, cwt: v.qCwt,
     deduction: v.deduction, totalAssets: v.totalAssets ?? null, registrationYear: p.registrationYear,
     taxYear, fiscalYearEndMonth: fy, priorYearCredits: v.priorYearCredits, excessMcit,
+    // Audit Nov 12, 2026 (L5): RR 14-2001 allows NOLCO on the quarterly returns too.
+    nolcoPrior: v.nolcoPrior,
   }) : null), [hasFigures, quarter, v, p.registrationYear, taxYear, fy, excessMcit])
   return (
     <div className="card pad" style={{ marginTop: '20px' }}>
@@ -813,11 +814,10 @@ function CorporateQuarterCard({ v, set, p, taxYear, fy, excessMcit }) {
             <b style={{ color: 'var(--ink)' }}>{q.quarterLabel}.</b> 1702Q due {fmtISO(q.dueDate)}.
           </p>
           {!osd && Number(v.nolcoPrior) > 0 && (
-            <div className="mini-warn" role="note">
-              The NOLCO from prior years entered above is not deducted in this quarterly estimate: how NOLCO is claimed on
-              the 1702Q was not confirmed for this app. It is applied on the annual return (1702-RT) above; ask your CPA
-              before claiming it on a quarterly return.
-            </div>
+            <p className="cite" role="note" style={{ marginTop: '8px' }}>
+              The NOLCO from prior years entered above is deducted here too, up to the net income to date (RR 14-2001:
+              NOLCO is allowed on the quarterly and the annual returns; it never reduces the MCIT).
+            </p>
           )}
           <Rows rows={q.rows} />
         </>

@@ -109,6 +109,7 @@ export default function References() {
   const years = reg.holidays.filter(e => e.kind === 'year')
   const notes2027 = reg.holidays.find(e => e.id === 'holidays.json:notes2027')
   const regional = reg.holidays.find(e => e.kind === 'regional')
+  const regionalExt = reg.holidays.find(e => e.kind === 'regionalExtension')
   const fixed = reg.holidays.find(e => e.kind === 'fixedByLaw')
 
   return (
@@ -230,6 +231,14 @@ export default function References() {
             <RuleValue node={regional.value} caption={regional.title} />
             <Cite basis={regional.legalBasis} />
             <Notes text={regional.notes} />
+          </div>
+        )}
+        {regionalExt && (
+          <div style={{ marginTop: '18px' }}>
+            <EntryHead title={regionalExt.title} confidence={regionalExt.confidence} />
+            <RuleValue node={regionalExt.value} caption={regionalExt.title} />
+            <Cite basis={regionalExt.legalBasis} />
+            <Notes text={regionalExt.notes} />
           </div>
         )}
 

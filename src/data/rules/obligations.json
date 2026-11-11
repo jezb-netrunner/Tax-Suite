@@ -64,7 +64,7 @@
         "RMC 17-2019 (Form 1701A availability)"
       ],
       "confidence": "verified",
-      "notes": "Income tax due above ₱2,000 may be paid in two equal installments: at filing, and on or before October 15 (NIRC Sec 56(A)(2), as amended by TRAIN). Attachments (SAWT confirmation, 2307s) go to eAFS within 15 days of the statutory deadline or the actual e-filing date, whichever comes later; see the attachments deadline on this calendar. No FS attach on the 8% option or OSD."
+      "notes": "Income tax due above ₱2,000 may be paid in two equal installments: at filing, and on or before October 15 (NIRC Sec 56(A)(2), as amended by TRAIN). Attachments (SAWT confirmation, 2307s) go to eAFS within 15 days of the statutory deadline or the actual e-filing date, whichever comes later; see the attachments deadline on this calendar. No FS attach on the 8% option or OSD. Micro and small taxpayers may instead use the simplified Form 1701-MS where the BIR makes it available for the year (see the Forms page)."
     },
     {
       "id": "bir-1701-annual",
@@ -91,7 +91,7 @@
         "NIRC Sec 51(C), as amended"
       ],
       "confidence": "verified",
-      "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed (the SAWT itself is filed via eSubmission with the return). Itemized-deduction filers attach financial statements: audited with SMR when gross sales exceed ₱3M, not necessarily audited (or the AIF) at or below; only 8%/OSD filers attach no FS at all (NIRC Sec 232; RR 16-2008). Attachments go to eAFS within 15 days of the statutory deadline or actual e-filing, whichever comes later, a separately dated item on this calendar."
+      "notes": "Attach Form 2316 from your employer (mixed income) and SAWT with 2307s where credits are claimed (the SAWT itself is filed via eSubmission with the return). Itemized-deduction filers attach financial statements: audited with SMR when gross sales exceed ₱3M, not necessarily audited (or the AIF) at or below; only 8%/OSD filers attach no FS at all (NIRC Sec 232; RR 16-2008). Attachments go to eAFS within 15 days of the statutory deadline or actual e-filing, whichever comes later, a separately dated item on this calendar. Micro and small taxpayers may instead use the simplified Form 1701-MS where the BIR makes it available for the year (see the Forms page)."
     },
     {
       "id": "bir-sawt-individual",
@@ -165,13 +165,14 @@
     {
       "id": "bir-2316-collect",
       "title": "Collect BIR Form 2316 from your employer",
-      "desc": "Each employer's certificate of compensation paid and tax withheld: collect one from every employer you had this year. With one employer and correct withholding it doubles as your filed return; with more than one, you file Form 1700 with all of them.",
+      "desc": "Each employer's certificate of compensation paid and tax withheld: collect one from every employer you had this year. With one employer and correct withholding it doubles as your filed return; with more than one, you file Form 1700 with all of them. If you also have a business or practice, the 2316 goes with your Form 1701.",
       "form": "2316",
       "agency": "BIR",
       "category": "income",
       "appliesTo": {
-        "allOf": [
-          "type:employee"
+        "anyOf": [
+          "type:employee",
+          "type:mixed"
         ]
       },
       "schedule": {
@@ -462,14 +463,13 @@
     {
       "id": "bir-einvoicing",
       "title": "Be ready for mandatory e-invoicing",
-      "desc": "Taxpayers in e-commerce (except micro), large taxpayers, and users of computerized accounting systems must issue structured electronic invoices by the compliance deadline.",
+      "desc": "Taxpayers in e-commerce, large taxpayers and users of computerized accounting systems must be able to issue structured electronic invoices by Dec 31, 2026 (RMC 98-2026 excepts micro taxpayers). Cash register and POS users, exporters and registered business enterprises follow later, on a date the BIR has not yet set.",
       "form": "EIS",
       "agency": "BIR",
       "category": "admin",
       "appliesTo": {
-        "anyOf": [
-          "books:cas",
-          "crm-pos"
+        "allOf": [
+          "books:cas"
         ]
       },
       "schedule": {
@@ -484,7 +484,7 @@
         "RMC 98-2026 (Sept 22, 2026: coverage and operating rules)"
       ],
       "confidence": "needs_review",
-      "notes": "Coverage shown here is approximate (CAS/POS users; also e-commerce sellers above micro size and large taxpayers). The Dec 31, 2026 date for the first covered group was reconfirmed in October 2026 (RR 26-2025 keeps it) and again on November 8, 2026 (RMC 98-2026 restates it; no extension found), but confirm whether this taxpayer is covered; until then SLSP/eSubmission duties continue unchanged. Separately, invoicing systems must add the creditable withholding tax field (RR 6-2026; RMC 112-2026)."
+      "notes": "Coverage shown here is approximate (users of computerized accounting systems; also e-commerce sellers above micro size and large taxpayers). The Dec 31, 2026 date for the first covered group was reconfirmed in October 2026 (RR 26-2025 keeps it) and again on November 8, 2026 (RMC 98-2026 restates it; no extension found, re-checked November 12, 2026), but confirm whether this taxpayer is covered; until then SLSP/eSubmission duties continue unchanged. Separately, invoicing systems must add the creditable withholding tax field (RR 6-2026; RMC 112-2026)."
     },
     {
       "id": "bir-cwt-invoice-field-cas",
@@ -966,7 +966,7 @@
         "HDMF Circular 499-2026 (employers remit through the eSRS facility with a payment reference number; replaces the Circular 275 remittance schedule; reported effective Aug 21, 2026)"
       ],
       "confidence": "needs_review",
-      "notes": "HDMF Circular 499-2026 requires every employer to prepare the remittance schedule in Virtual Pag-IBIG's eSRS facility and get a payment reference number before paying, and it replaced the old schedule staggered by the first letter of the employer's registered name (A–D the 10th–14th, E–L 15th–19th, M–Q 20th–24th, R–Z 25th–month-end, under Circular 275). The new due days were not confirmed here, so the 10th, the earliest of the old windows, is shown; check your due date in eSRS."
+      "notes": "HDMF Circular 499-2026 (effective Aug 21, 2026, with a six-month transition to about Feb 21, 2027) requires every employer to enroll in Virtual Pag-IBIG for Employers and prepare the remittance schedule in its eSRS facility; after the transition, remittances are accepted only with an eSRS payment reference number. It replaced the old schedule staggered by the first letter of the employer's registered name (A–D the 10th–14th, E–L 15th–19th, M–Q 20th–24th, R–Z 25th–month-end, under Circular 275) with a new letter-based schedule whose due days were not found here, so the 10th, the earliest of the old windows, is shown; check your due date in eSRS. The Philippine Information Agency (Nov 7, 2026) reported that a due date on a non-working day moves to the next working day and that late remittances are charged 1/10 of 1% a day (one source; not confirmed)."
     },
     {
       "id": "sss-self",
@@ -991,7 +991,7 @@
         "SSS Circular 2019-012 (payment deadlines)"
       ],
       "confidence": "verified",
-      "notes": "Self-employed and voluntary members pay the full 15% themselves, monthly (last day of the following month, shown here) or quarterly (last day of the month following the quarter). OFW members get longer windows (Jan–Sep payable to Dec 31; Oct–Dec to Jan 31)."
+      "notes": "Self-employed and voluntary members pay the full 15% themselves, monthly (last day of the following month, shown here) or quarterly (last day of the month following the quarter). OFW members get longer windows (Jan–Sep payable to Dec 31; Oct–Dec to Jan 31). If you are also employed, you still pay on your self-employed earnings; contributions above the maximum salary credit are refunded."
     },
     {
       "id": "philhealth-self",
@@ -1013,10 +1013,11 @@
       },
       "legalBasis": [
         "RA 11223",
-        "PhilHealth Circular 2020-0014"
+        "PhilHealth Circular 2026-0011 (self-paying members)",
+        "PhilHealth Advisory 2026-0016 (No SPA, No Payment from Apr 1, 2026)"
       ],
       "confidence": "needs_review",
-      "notes": "Quarterly, semi-annual, and annual payment options are also available."
+      "notes": "Generate a Statement of Premium Account (SPA) before paying; since April 1, 2026 a payment without one is not accepted. Any number of months may be paid at once. A year's unpaid premiums may be paid without interest until January 31 of the following year (PhilHealth's FAQ on Circular 2026-0011); after that, interest of up to 1.5% a month applies. The monthly dates here are a pay-as-you-go reminder, earlier than that limit. If you are also employed, your employer already remits this from your salary; ask PhilHealth before paying a second time (not confirmed)."
     },
     {
       "id": "pagibig-self",
@@ -1040,7 +1041,7 @@
         "RA 9679"
       ],
       "confidence": "needs_review",
-      "notes": "This is the regular monthly Pag-IBIG savings, not MP2 (Pag-IBIG's separate voluntary savings program). The name of the payment channel is not yet confirmed: check with Pag-IBIG."
+      "notes": "This is the regular monthly Pag-IBIG savings, not MP2 (Pag-IBIG's separate voluntary savings program). The name of the payment channel is not yet confirmed: check with Pag-IBIG. If you are also employed, your employer already remits your Pag-IBIG savings from your salary; ask Pag-IBIG before paying a second time (not confirmed)."
     },
     {
       "id": "dole-13th-month",
@@ -1116,7 +1117,46 @@
         "Local Government Code (RA 7160) Sec 167"
       ],
       "confidence": "verified",
-      "notes": "Local business taxes accrue January 1 and are payable within the first 20 days of January. Many LGUs allow quarterly installments (within the first 20 days of each quarter). Barangay clearance is secured first."
+      "notes": "Local business taxes accrue January 1 and are payable within the first 20 days of January, in full or as the first of four quarterly installments (the other three are shown as their own item). Barangay clearance is secured first."
+    },
+    {
+      "id": "lgu-business-tax-quarterly",
+      "title": "Pay the quarterly installment of local business tax (only if you pay by quarter)",
+      "desc": "If you chose to pay the year's local business tax in four installments, the 2nd, 3rd and 4th are due within the first 20 days of April, July and October.",
+      "form": "Mayor's permit",
+      "agency": "LGU",
+      "category": "registration",
+      "appliesTo": {
+        "allOf": [
+          "lgu"
+        ]
+      },
+      "conditional": true,
+      "schedule": {
+        "kind": "quarterly_fixed",
+        "entries": [
+          {
+            "label": "Q2",
+            "month": 4,
+            "day": 20
+          },
+          {
+            "label": "Q3",
+            "month": 7,
+            "day": 20
+          },
+          {
+            "label": "Q4",
+            "month": 10,
+            "day": 20
+          }
+        ]
+      },
+      "legalBasis": [
+        "Local Government Code (RA 7160) Secs 165 and 167"
+      ],
+      "confidence": "verified",
+      "notes": "Skip this if you paid the whole year in January. Your LGU's ordinance may set other dates."
     },
     {
       "id": "lgu-cedula",
@@ -1311,7 +1351,28 @@
         "SEC MC 16-2026 (May 13, 2026: monthly late-filing penalties for AFS and GIS suspended to Dec 31, 2026)"
       ],
       "confidence": "verified",
-      "notes": "The due date depends on your annual meeting date (often fixed in the by-laws). Diary it 30 days after the meeting; file through eFAST. Late filing in 2026: SEC MC 16-2026 suspends the monthly late-filing penalties for the AFS and GIS from May 13 to Dec 31, 2026; the basic fines under SEC MC 6-2024 still apply, and penalties already paid are not refunded."
+      "notes": "The due date depends on your annual meeting date (often fixed in the by-laws). Diary it 30 days after the meeting; file through eFAST. Late filing in 2026: SEC MC 16-2026 suspends the monthly late-filing penalties for the AFS and GIS from May 13 to Dec 31, 2026; the basic fines under SEC MC 6-2024 still apply, and penalties already paid are not refunded. Beneficial owners are no longer listed on the GIS: they are declared in the SEC's HARBOR registry (see the next item)."
+    },
+    {
+      "id": "sec-harbor-bo",
+      "title": "Declare beneficial owners in the SEC's HARBOR registry",
+      "desc": "Beneficial ownership is no longer declared on the GIS. File it in HARBOR (inside eFAST) with your GIS, and report any change within 7 calendar days.",
+      "form": "SEC HARBOR",
+      "agency": "SEC",
+      "category": "registration",
+      "appliesTo": {
+        "allOf": [
+          "sec"
+        ]
+      },
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "SEC MC 15-2025 (Beneficial Ownership Disclosure Rules; HARBOR registry live Jan 30, 2026)"
+      ],
+      "confidence": "needs_review",
+      "notes": "If your 2026 GIS was filed with the beneficial-ownership page before Jan 30, 2026, firm summaries say the first HARBOR filing comes with the 2027 GIS; confirm with the SEC, together with the penalties for late or missing declarations."
     },
     {
       "id": "bir-8pct-election",
@@ -1381,8 +1442,32 @@
       "legalBasis": [
         "RR 2-98 Sec 2.57.2, as amended by RR 11-2018 and RR 14-2018 (income payee's sworn declaration, Annexes B-1 to B-3)"
       ],
+      "confidence": "verified",
+      "notes": "Give it to each client on or before January 15 of each year, or before the first payment if you start with a client later in the year (RR 11-2018). Without the declaration the client must withhold 10%. Your client in turn files its own sworn declaration with the list of payees at its RDO by January 31. The rates are on the References page under expanded withholding."
+    },
+    {
+      "id": "bir-1600vt-digital",
+      "title": "Remit 12% VAT on digital services bought from foreign providers",
+      "desc": "A business that buys digital services from a provider outside the Philippines (online ads, software subscriptions, cloud hosting, marketplace fees) withholds the 12% VAT and remits it itself on BIR Form 1600-VT, by the 10th of the following month, whether it is VAT-registered or not. Skip this if you buy none.",
+      "form": "1600-VT",
+      "agency": "BIR",
+      "category": "business",
+      "appliesTo": {
+        "allOf": [
+          "business"
+        ]
+      },
+      "conditional": true,
+      "schedule": {
+        "kind": "ongoing"
+      },
+      "legalBasis": [
+        "RA 12023 (VAT on Digital Services)",
+        "RR 3-2025",
+        "RMC 47-2025 (the business buyer, VAT-registered or not, files Form 1600-VT)"
+      ],
       "confidence": "needs_review",
-      "notes": "Give it at the start of each year, before the first payment. The yearly deadline usually cited is January 15, but it was not confirmed from an official source here. Without the declaration the client must withhold 10%. The rates are on the References page under expanded withholding."
+      "notes": "VAT-registered buyers claim the amount back as input VAT, supported by the filed 1600-VT; for a non-VAT buyer it is part of the cost. Purchases for personal use are handled by the provider. Confirmed from firm summaries of RMC 47-2025 (KPMG, Grant Thornton); the circular itself was not read here, and how far it reaches very small buyers should be checked with your RDO."
     },
     {
       "id": "bir-books-current",
@@ -1493,6 +1578,30 @@
       ],
       "confidence": "needs_review",
       "notes": "Requirements vary with machine type and accreditation; confirm your unit's reporting duties with your RDO."
+    },
+    {
+      "id": "bir-esales",
+      "title": "Submit the monthly eSales report (cash register / POS)",
+      "desc": "Monthly sales of each registered cash register, POS or other sales machine, reported through the BIR eSales system.",
+      "form": "eSales",
+      "agency": "BIR",
+      "category": "admin",
+      "appliesTo": {
+        "allOf": [
+          "crm-pos"
+        ]
+      },
+      "schedule": {
+        "kind": "monthly",
+        "day": 8,
+        "monthOffset": 1,
+        "calendarBasis": true
+      },
+      "legalBasis": [
+        "BIR tax calendar for 2026, as reproduced in the Grant Thornton and PwC tax calendars (eSales report: the 8th of the following month for TINs ending in an even number, the 10th for odd)"
+      ],
+      "confidence": "needs_review",
+      "notes": "TIN ending in an even number: the 8th of the following month; odd: the 10th. The 8th is shown, as the earlier date. The issuance behind these dates was not read here; confirm with your RDO."
     },
     {
       "id": "bir-1905-updates",
@@ -1626,6 +1735,47 @@
       "newDate": "2026-05-15",
       "basis": "RMC 30-2026 and RMC 39-2026",
       "notes": "RMC 30-2026 moved the attachments to May 15, 2026 too, and RMC 39-2026 made May 15 the uniform eAFS deadline whatever the e-filing date (see attachments.json itrAttachmentDeadline)."
+    },
+    {
+      "obligationId": "bir-2550q",
+      "rawDate": "2026-10-25",
+      "newDate": "2026-10-29",
+      "basis": "RMC 115-2026",
+      "notes": "RMC 115-2026 (Oct 26, 2026) moved the quarterly VAT and percentage tax returns due October 26, 2026, with their required attachments, to October 29, 2026, without penalties, because the eFPS was unavailable (reported by GMA News, the Inquirer and DZRH)."
+    },
+    {
+      "obligationId": "bir-2551q",
+      "rawDate": "2026-10-25",
+      "newDate": "2026-10-29",
+      "basis": "RMC 115-2026",
+      "notes": "RMC 115-2026 (Oct 26, 2026) moved the quarterly VAT and percentage tax returns due October 26, 2026, with their required attachments, to October 29, 2026, without penalties, because the eFPS was unavailable (reported by GMA News, the Inquirer and DZRH)."
+    },
+    {
+      "obligationId": "bir-1601c",
+      "rawDate": "2026-11-10",
+      "newDate": "2026-11-13",
+      "basis": "RMC 118-2026",
+      "scope": "For returns filed through eBIRForms; eFPS dates did not move.",
+      "coverageConfirmed": false,
+      "notes": "RMC 118-2026 moved returns and payments that fell due on November 10, 2026 (and certain ones due November 10 to 12) to November 13, 2026, nationwide, because the eBIRForms Offline Package was unavailable; deadlines for filings through other systems, such as the eFPS, did not move (reported Nov 11, 2026 by the Tribune, the Inquirer and the Manila Bulletin). The circular's list of returns was not seen here."
+    },
+    {
+      "obligationId": "bir-0619e",
+      "rawDate": "2026-11-10",
+      "newDate": "2026-11-13",
+      "basis": "RMC 118-2026",
+      "scope": "For returns filed through eBIRForms; eFPS dates did not move.",
+      "coverageConfirmed": false,
+      "notes": "RMC 118-2026 moved returns and payments that fell due on November 10, 2026 (and certain ones due November 10 to 12) to November 13, 2026, nationwide, because the eBIRForms Offline Package was unavailable; deadlines for filings through other systems, such as the eFPS, did not move (reported Nov 11, 2026 by the Tribune, the Inquirer and the Manila Bulletin). The circular's list of returns was not seen here."
+    },
+    {
+      "obligationId": "bir-0619f",
+      "rawDate": "2026-11-10",
+      "newDate": "2026-11-13",
+      "basis": "RMC 118-2026",
+      "scope": "For returns filed through eBIRForms; eFPS dates did not move.",
+      "coverageConfirmed": false,
+      "notes": "RMC 118-2026 moved returns and payments that fell due on November 10, 2026 (and certain ones due November 10 to 12) to November 13, 2026, nationwide, because the eBIRForms Offline Package was unavailable; deadlines for filings through other systems, such as the eFPS, did not move (reported Nov 11, 2026 by the Tribune, the Inquirer and the Manila Bulletin). The circular's list of returns was not seen here."
     }
   ]
 }

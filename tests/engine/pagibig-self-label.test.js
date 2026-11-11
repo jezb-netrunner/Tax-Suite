@@ -17,7 +17,7 @@ describe('M15 self-employed Pag-IBIG label', () => {
     expect(ob.title).toBe('Pay Pag-IBIG regular savings (self-employed)')
     expect(ob.form).toBe('Pag-IBIG savings')
     expect(ob.desc).toBe('Self-employed members remit their own regular monthly Pag-IBIG savings.')
-    expect(ob.notes).toBe('This is the regular monthly Pag-IBIG savings, not MP2 (Pag-IBIG\'s separate voluntary savings program). The name of the payment channel is not yet confirmed: check with Pag-IBIG.')
+    expect(ob.notes).toBe('This is the regular monthly Pag-IBIG savings, not MP2 (Pag-IBIG\'s separate voluntary savings program). The name of the payment channel is not yet confirmed: check with Pag-IBIG. If you are also employed, your employer already remits your Pag-IBIG savings from your salary; ask Pag-IBIG before paying a second time (not confirmed).')
     expect(ob.confidence).toBe('needs_review')
     expect(JSON.stringify(OB)).not.toContain('MP2/RTPO')
   })

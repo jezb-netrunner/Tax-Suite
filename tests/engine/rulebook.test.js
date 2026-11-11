@@ -44,8 +44,9 @@ describe('H07 register covers every rule and its confidence', () => {
 
   it('finds the needs_review rules in the rulebook', () => {
     const review = Object.entries(paths).filter(([, c]) => c === 'needs_review').map(([p]) => p).sort()
+    // Audit Nov 12, 2026: the VAT registration timing (RR 8-2018) and the sworn
+    // declaration date are confirmed; three new unconfirmed items were added.
     expect(review).toEqual([
-      'business-tax.json:vatRegistrationDeadline',
       'contributions.json:pagibigCompensationBase',
       'contributions.json:philhealthShareRounding',
       'corporate.json:excessMcitCredit',
@@ -57,16 +58,18 @@ describe('H07 register covers every rule and its confidence', () => {
       'holidays.json:rollOverByAgency.Pag-IBIG',
       'holidays.json:rollOverByAgency.SEC',
       'income-tax.json:netOperatingLossCarryOver',
+      'obligations.json:obligations[id=bir-1600vt-digital]',
       'obligations.json:obligations[id=bir-crm-pos]',
       'obligations.json:obligations[id=bir-einvoicing]',
+      'obligations.json:obligations[id=bir-esales]',
       'obligations.json:obligations[id=bir-fbt-note]',
       'obligations.json:obligations[id=bir-micro-abatement-2026]',
-      'obligations.json:obligations[id=bir-payee-sworn-declaration]',
       'obligations.json:obligations[id=lgu-cedula]',
       'obligations.json:obligations[id=pagibig-employer]',
       'obligations.json:obligations[id=pagibig-self]',
       'obligations.json:obligations[id=philhealth-self]',
       'obligations.json:obligations[id=sec-afs-calendar]',
+      'obligations.json:obligations[id=sec-harbor-bo]',
       'penalties.json:eoptTransition',
       'penalties.json:interestDayCount',
       'withholding-compensation.json:mweContributions',

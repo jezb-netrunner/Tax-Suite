@@ -9,6 +9,11 @@ import { OBLIGATIONS, HOLIDAY_SET } from '../../src/lib/deadlineData.js'
 import { generateDeadlines, recentDeadlines, filterDeadlines } from '../../src/engine/deadlines.js'
 import { defaultProfile } from '../../src/engine/profile.js'
 import { fromISO, addDays } from '../../src/engine/dates.js'
+import meta from '../../src/data/rules/meta.json'
+
+// Audit Nov 12, 2026 (D8, X11): each row ends with the notes shown on screen,
+// the taxpayer, the rulebook date and the day the file was made.
+const RULES = meta.verifiedISO
 
 describe('csvCell: quoting', () => {
   it.each([
@@ -83,11 +88,12 @@ describe('deadlineStatus', () => {
 })
 
 describe('deadlineCsv', () => {
-  const csv = deadlineCsv({ recent, upcoming, today: TODAY })
+  const csv = deadlineCsv({ recent, upcoming, today: TODAY, profileName: 'Santos, Inc.' })
   const lines = csv.split('\r\n')
+  const tail = `"Santos, Inc.",${RULES},2026-10-07`
 
-  it('has the header Date, Form, Title, Agency, Period, Status', () => {
-    expect(lines[0]).toBe('Date,Form,Title,Agency,Period,Status')
+  it('has the header Date, Form, Title, Agency, Period, Status, Notes, Taxpayer, Rules as of, Generated on', () => {
+    expect(lines[0]).toBe('Date,Form,Title,Agency,Period,Status,Notes,Taxpayer,Rules as of,Generated on')
   })
 
   it('has one row per deadline (the last 60 days and the next 13 months), in date order', () => {
@@ -98,10 +104,16 @@ describe('deadlineCsv', () => {
   })
 
   it('writes the worksheet rows exactly', () => {
-    expect(lines).toContain('2026-10-12,1601-C,Remit withholding tax on compensation,BIR,Sep 2026,Due soon')
-    expect(lines).toContain('2026-11-16,1701Q,File & pay quarterly income tax,BIR,Q3 2026,Upcoming')
-    expect(lines).toContain('2026-09-10,1601-C,Remit withholding tax on compensation,BIR,Aug 2026,Date passed')
-    expect(lines).toContain('2026-08-10,1601-C,Remit withholding tax on compensation,BIR,Jul 2026,Date passed')
+    expect(lines).toContain(`2026-10-12,1601-C,Remit withholding tax on compensation,BIR,Sep 2026,Due soon,Moved from 2026-10-10 (weekend),${tail}`)
+    expect(lines).toContain(`2026-09-10,1601-C,Remit withholding tax on compensation,BIR,Aug 2026,Date passed,,${tail}`)
+    expect(lines).toContain(`2026-08-10,1601-C,Remit withholding tax on compensation,BIR,Jul 2026,Date passed,,${tail}`)
+    // The Q3 1701Q falls on an NCR-only holiday that the BIR extended for Metro Manila offices.
+    const q3 = lines.find(l => l.startsWith('2026-11-16,1701Q,'))
+    expect(q3).toContain('File & pay quarterly income tax,BIR,Q3 2026,Upcoming,')
+    expect(q3).toContain('Moved from 2026-11-15 (weekend); NCR-only holiday: BIR tax advisory of November 2026 allows until 2026-11-19')
+    // An extended date says which issuance moved it, and an unconfirmed coverage is flagged.
+    const nov = lines.find(l => l.startsWith('2026-11-13,1601-C,'))
+    expect(nov).toContain('Unconfirmed: check with the agency; Extended by RMC 118-2026 (was 2026-11-10). For returns filed through eBIRForms; eFPS dates did not move.')
   })
 
   it('a filtered calendar (BIR only) writes only the rows it shows', () => {
@@ -116,14 +128,23 @@ describe('deadlineCsv', () => {
     const d = upcoming.find(x => x.id === 'bir-1601c:2026-10-10')
     const noForm = { ...d, obligation: { ...d.obligation, form: '—' } }
     expect(deadlineCsv({ upcoming: [noForm], today: TODAY }))
-      .toBe('Date,Form,Title,Agency,Period,Status\r\n2026-10-12,,Remit withholding tax on compensation,BIR,Sep 2026,Due soon\r\n')
+      .toBe(`Date,Form,Title,Agency,Period,Status,Notes,Taxpayer,Rules as of,Generated on\r\n2026-10-12,,Remit withholding tax on compensation,BIR,Sep 2026,Due soon,Moved from 2026-10-10 (weekend),,${RULES},2026-10-07\r\n`)
   })
 
   it('a title that starts like a formula is protected in the file', () => {
     const d = upcoming.find(x => x.id === 'bir-1601c:2026-10-10')
     const evil = { ...d, obligation: { ...d.obligation, title: '=HYPERLINK("http://x","click")' } }
     expect(deadlineCsv({ upcoming: [evil], today: TODAY }).split('\r\n')[1])
-      .toBe('2026-10-12,1601-C,"\'=HYPERLINK(""http://x"",""click"")",BIR,Sep 2026,Due soon')
+      .toBe(`2026-10-12,1601-C,"'=HYPERLINK(""http://x"",""click"")",BIR,Sep 2026,Due soon,Moved from 2026-10-10 (weekend),,${RULES},2026-10-07`)
+  })
+
+  it('a profile name that starts like a formula is protected too, also behind spaces or in full-width form', () => {
+    const d = upcoming.find(x => x.id === 'bir-1601c:2026-10-10')
+    for (const name of ['=1+1', '  =1+1', '@SUM(A1)', '＝1+1', '-2+3', '+1']) {
+      const cell = deadlineCsv({ upcoming: [d], today: TODAY, profileName: name }).split('\r\n')[1].split(',')[7]
+      expect(cell.startsWith("'"), name).toBe(true)
+    }
+    expect(deadlineCsv({ upcoming: [d], today: TODAY, profileName: 'Maria Santos' }).split('\r\n')[1].split(',')[7]).toBe('Maria Santos')
   })
 })
 

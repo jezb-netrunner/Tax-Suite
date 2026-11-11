@@ -49,7 +49,9 @@ describe('H07 every needs_review obligation yields items flagged unconfirmed', (
   it('the rulebook has needs_review obligations to check', () => {
     expect(review.map(o => o.id)).toEqual([
       'bir-einvoicing', 'pagibig-employer', 'philhealth-self', 'pagibig-self', 'lgu-cedula', 'sec-afs-calendar',
-      'bir-payee-sworn-declaration', 'bir-micro-abatement-2026', 'bir-crm-pos', 'bir-fbt-note',
+      // Audit Nov 12, 2026: the sworn declaration is now confirmed; HARBOR, the
+      // digital-services VAT reminder and the eSales report are new and unconfirmed.
+      'sec-harbor-bo', 'bir-1600vt-digital', 'bir-micro-abatement-2026', 'bir-crm-pos', 'bir-esales', 'bir-fbt-note',
     ])
   })
 

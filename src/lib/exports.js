@@ -2,9 +2,27 @@
 // at the top of every printout. Pure helpers, except downloadText (browser).
 import { toCsv } from './csv.js'
 import { iso, daysBetween, fmtDate } from '../engine/dates.js'
+import { isUnconfirmed } from '../engine/deadlines.js'
 import { BRAND } from './pageTitle.js'
+import meta from '../data/rules/meta.json'
 
-export const DEADLINE_CSV_HEADER = ['Date', 'Form', 'Title', 'Agency', 'Period', 'Status']
+// Audit Nov 12, 2026 (D8, X11): the file carries what the screen shows next to
+// a date (unconfirmed, moved, extended, falls on a non-working day), and says
+// whose calendar it is, which rules it was built from and when, so an old or
+// renamed file is not taken for a current one.
+export const DEADLINE_CSV_HEADER = ['Date', 'Form', 'Title', 'Agency', 'Period', 'Status', 'Notes', 'Taxpayer', 'Rules as of', 'Generated on']
+
+// The warnings shown on screen for one deadline, as one text cell.
+export function deadlineNotes(d) {
+  const notes = []
+  if (isUnconfirmed(d)) notes.push('Unconfirmed: check with the agency')
+  if (d.extended) notes.push(`Extended by ${d.extended.basis} (was ${iso(d.extended.from)})${d.extended.scope ? `. ${d.extended.scope}` : ''}`)
+  else if (d.shifted) notes.push(`Moved from ${iso(d.rawDate)} (${d.shiftReason === 'weekend' ? 'weekend' : 'holiday'})`)
+  if (d.nonWorkingDay && d.lastWorkingDayBefore) notes.push(`Falls on a ${d.nonWorkingDay}: do it by ${iso(d.lastWorkingDayBefore)}`)
+  if (d.regionalExtension) notes.push(`${d.regionalHoliday ? d.regionalHoliday.region : d.regionalExtension.region}-only holiday: ${d.regionalExtension.basis} allows until ${d.regionalExtension.newDate} for ${d.regionalExtension.coverage}`)
+  else if (d.regionalHoliday) notes.push(`${d.regionalHoliday.region}-only holiday; national date shown`)
+  return notes.join('; ')
+}
 
 // Due soon = within 30 days, the same cut-off as the calendar's Timeline view.
 const DUE_SOON_DAYS = 30
@@ -25,7 +43,7 @@ function formCell(form) {
 // Every deadline the calendar shows (the last 60 days and the next 13
 // months, after its filter), in date order. Dates are YYYY-MM-DD so
 // spreadsheets sort them correctly.
-export function deadlineCsv({ recent = [], upcoming = [], today }) {
+export function deadlineCsv({ recent = [], upcoming = [], today, profileName = '' }) {
   const seen = new Set()
   const items = [...recent, ...upcoming].filter(d => (seen.has(d.id) ? false : seen.add(d.id)))
   items.sort((a, b) => a.date - b.date || a.obligation.title.localeCompare(b.obligation.title))
@@ -36,6 +54,10 @@ export function deadlineCsv({ recent = [], upcoming = [], today }) {
     d.obligation.agency,
     d.period || d.label || '',
     deadlineStatus(d, today),
+    deadlineNotes(d),
+    profileName || '',
+    meta.verifiedISO,
+    iso(today),
   ])
   return toCsv([DEADLINE_CSV_HEADER, ...rows])
 }
